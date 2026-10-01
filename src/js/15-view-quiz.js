@@ -13,7 +13,7 @@ const pick = a => a[rnd(a.length)];
 V.quiz = (el, id) => {
   const q = QUIZZES.find(x => x.id === id);
   if (!q) return quizHome(el);
-  return quizRun(el, q);
+  return q.mic ? quizMicRun(el, q) : quizRun(el, q);
 };
 
 function quizHome(el) {
@@ -21,7 +21,7 @@ function quizHome(el) {
   el.innerHTML = `<header class="page-head"><p class="eyebrow">Quiz</p><h1>Decorar o braço jogando</h1>
     <p class="lede">Rodadas de ${QZ.rounds} perguntas. Seu melhor resultado fica salvo.</p></header>
     <div class="quiz-grid">${QUIZZES.map(z => `<a class="quiz-card" href="#quiz-${z.id}">
-      <h2>${z.title}</h2><p>${z.desc}</p>
+      <h2>${z.title}${z.mic ? ' <span class="pill mic">🎤 microfone</span>' : ''}</h2><p>${z.desc}</p>
       <span class="pill ${best[z.id] ? (best[z.id].best >= 90 ? 'ok' : '') : 'muted'}">${best[z.id] ? `Melhor: ${best[z.id].best}% · ${best[z.id].time}s` : 'Ainda não jogado'}</span></a>`).join('')}</div>`;
 }
 

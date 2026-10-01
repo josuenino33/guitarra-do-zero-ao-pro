@@ -3,7 +3,7 @@ const MET = { bpm: 80, beats: 4, sub: 1 };
 const SPEED = { id: 'ex-pent', start: 60, target: 100, step: 5, reps: 2, listen: true };
 
 function treinoTabs(active) {
-  const tabs = [['met', 'treino', 'Metrônomo'], ['lev', 'levadas', 'Levadas'], ['troc', 'trocas', 'Trocas de acordes'], ['afin', 'afinador', 'Afinador'],
+  const tabs = [['met', 'treino', 'Metrônomo'], ['lev', 'levadas', 'Levadas'], ['troc', 'trocas', 'Trocas de acordes'], ['afin', 'afinador', 'Afinador'], ['grav', 'gravar', 'Gravar e looper'],
     ['speed', 'treino-' + SPEED.id, 'Velocidade'], ['jam', 'jam', 'Jam (bases)']];
   return `<header class="page-head"><p class="eyebrow">Treino</p><h1>Ritmo, tempo, velocidade e improviso</h1></header>
     <nav class="subtabs">${tabs.map(([k, h, l]) => `<a href="#${h}" class="${k === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
@@ -71,7 +71,7 @@ V.speed = (el, id) => {
   const lick = lickById(SPEED.id);
   const rec = S.get().bpm[lick.id];
   if (SPEED.lastId !== lick.id) { SPEED.start = Math.round(lick.bpm * 0.7); SPEED.target = rec ? rec + 10 : lick.bpm; SPEED.lastId = lick.id; }
-  const groups = Object.entries(STYLES).map(([k, n]) => `<optgroup label="${n}">${LICKS.filter(l => l.style === k).map(l => `<option value="${l.id}" ${l.id === lick.id ? 'selected' : ''}>${U.esc(l.title)}</option>`).join('')}</optgroup>`).join('');
+  const groups = Object.entries(STYLES).map(([k, n]) => `<optgroup label="${n}">${allLicks().filter(l => l.style === k).map(l => `<option value="${l.id}" ${l.id === lick.id ? 'selected' : ''}>${U.esc(l.title)}</option>`).join('')}</optgroup>`).join('');
   el.innerHTML = treinoTabs('speed') + `
     <section class="panel">
       <div class="ctrl-row"><label class="field grow">Exercício <select data-k="id" id="spd-ex">${groups}</select></label>

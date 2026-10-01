@@ -147,47 +147,126 @@ const U = (() => {
     return `<div class="legend">${list.map(([r, l]) => `<span><i class="dot iv-${r}"></i>${l}</span>`).join('')}</div>`;
   }
 
-  /** Painel de lick: tablatura + controles. Usa o braço `fb` informado. */
+  /** Painel de lick: tablatura + controles, trecho A-B e prática com microfone. Usa o braço `fb` informado. */
   function lickPanel(host, lick, fb, opts = {}) {
     const parsed = TAB.parse(lick.src);
     const root = T.pcOf(lick.key);
     const sc = T.SCALES[lick.scale];
     const level = '●'.repeat(lick.level) + '○'.repeat(5 - lick.level);
+    const sfx = lick.id + (opts.idSuffix || '');
     host.innerHTML = `
       <div class="lick-head">
         <div><h3>${esc(lick.title)}</h3>
-          <p class="meta"><span>${STYLES[lick.style]}</span><span>Tom: ${T.rootName(root, set().latin)}</span><span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
+          <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span><span>Tom: ${T.rootName(root, set().latin)}</span><span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
       </div>
       ${lick.chords ? `<p class="chords">${lick.chords.map((c, i) => `<span>${i + 1}</span>${esc(c)}`).join('')}</p>` : ''}
       <div class="tab-scroll" data-tab></div>
+      <p class="small ab-line"><span data-ab>Toque em duas colunas da tablatura para repetir só aquele trecho.</span> <button type="button" class="linkbtn" data-act="abclear" hidden>Tocar tudo</button></p>
       <div class="ctrl-row">
         <button type="button" class="btn primary" data-act="play">▶ Tocar</button>
-        <label class="field">Velocidade <select data-speed id="spd-${lick.id}${opts.idSuffix || ''}">
+        <label class="field">Velocidade <select data-speed id="spd-${sfx}">
           ${[50, 60, 70, 80, 90, 100, 110, 120].map(p => `<option value="${p}" ${p === (opts.speed || 100) ? 'selected' : ''}>${p}% · ${Math.round(lick.bpm * p / 100)} BPM</option>`).join('')}
         </select></label>
-        <label class="check"><input type="checkbox" data-loop id="loop-${lick.id}${opts.idSuffix || ''}"> Repetir</label>
-        <label class="check"><input type="checkbox" data-click id="clk-${lick.id}${opts.idSuffix || ''}" ${opts.click ? 'checked' : ''}> Metrônomo</label>
+        <label class="check"><input type="checkbox" data-loop id="loop-${sfx}"> Repetir</label>
+        <label class="check"><input type="checkbox" data-click id="clk-${sfx}" ${opts.click ? 'checked' : ''}> Metrônomo</label>
+        <button type="button" class="btn" data-act="mic">🎤 Praticar com microfone</button>
       </div>
+      <p class="tu-msg" data-micmsg aria-live="polite" hidden></p>
       <p class="tip"><b>${esc(lick.tech)}.</b> ${esc(lick.tip)}</p>`;
-    const highlight = TAB.render(host.querySelector('[data-tab]'), parsed);
+    const tabHost = host.querySelector('[data-tab]');
+    const highlight = TAB.render(tabHost, parsed);
     const btn = host.querySelector('[data-act="play"]');
+    let A0 = null, B0 = null, offset = 0;
+    const setActive = ev => fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
     const player = TAB.Player({
-      onEvent(i) {
-        highlight(i);
-        const ev = parsed.events[i];
-        fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
-      },
+      onEvent(i) { const gi = i < 0 ? -1 : i + offset; highlight(gi); setActive(parsed.events[gi]); },
       onEnd() { btn.textContent = '▶ Tocar'; btn.classList.remove('on'); fb && fb.setActive([]); },
     });
-    btn.addEventListener('click', () => {
-      if (player.playing) { player.stop(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); return; }
+    function range() {
+      if (A0 == null) return null;
+      return [Math.min(A0, B0 ?? A0), Math.max(A0, B0 ?? A0)];
+    }
+    function paintAB() {
+      const r = range();
+      tabHost.querySelectorAll('.tab-col').forEach(c => { const i = +c.dataset.i; c.classList.toggle('sel', !!r && i >= r[0] && i <= r[1]); });
+      host.querySelector('[data-ab]').textContent = !r ? 'Toque em duas colunas da tablatura para repetir só aquele trecho.'
+        : B0 == null ? 'Agora toque na última coluna do trecho.' : `Trecho: notas ${r[0] + 1} a ${r[1] + 1}. Ele toca em loop.`;
+      host.querySelector('[data-act="abclear"]').hidden = !r;
+    }
+    function sub() {
+      const r = range();
+      if (!r || B0 == null) { offset = 0; return parsed; }
+      const evs = parsed.events.slice(r[0], r[1] + 1), b0 = evs[0].beat;
+      offset = r[0];
+      return { events: evs.map(e => Object.assign({}, e, { beat: e.beat - b0 })), beats: evs[evs.length - 1].beat + evs[evs.length - 1].d - b0 };
+    }
+    function play() {
       opts.onPlay && opts.onPlay();
       const pct = +host.querySelector('[data-speed]').value;
-      player.play(parsed, { bpm: lick.bpm * pct / 100, loop: host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked });
+      player.play(sub(), { bpm: lick.bpm * pct / 100, loop: B0 != null || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked });
       btn.textContent = '■ Parar'; btn.classList.add('on');
       S.practiced();
+    }
+    btn.addEventListener('click', () => {
+      if (player.playing) { player.stop(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); return; }
+      stopMic(); play();
     });
-    return { player, parsed, root, stop: () => { player.stop(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); } };
+    tabHost.addEventListener('click', e => {
+      const c = e.target.closest('.tab-col'); if (!c) return;
+      const i = +c.dataset.i;
+      if (A0 == null || B0 != null) { A0 = i; B0 = null; } else B0 = i;
+      paintAB();
+      if (B0 != null && player.playing) play();
+    });
+    host.querySelector('[data-act="abclear"]').addEventListener('click', () => { A0 = B0 = null; paintAB(); if (player.playing) play(); });
+
+    /* prática com microfone: o app espera a nota certa para avançar */
+    const msg = host.querySelector('[data-micmsg]'), micBtn = host.querySelector('[data-act="mic"]');
+    let mic = null;
+    function stopMic(text) {
+      if (!mic) return;
+      MIC.stop(); mic = null; micBtn.textContent = '🎤 Praticar com microfone'; micBtn.classList.remove('on');
+      highlight(-1); fb && fb.setActive([]);
+      if (text) msg.textContent = text; else msg.hidden = true;
+    }
+    function targetAt(k) {
+      const ev = mic.evs[k];
+      return ev.notes.filter(o => !o.dead).flatMap(o => [T.TUNING[o.s] + o.f].concat(o.bend ? [T.TUNING[o.s] + o.f + o.bend] : []));
+    }
+    function showTarget() {
+      const gi = mic.idx[mic.k];
+      highlight(gi); setActive(parsed.events[gi]);
+      const names = [...new Set(targetAt(mic.k).map(m => T.noteName(m, false, set().latin)))].join(' ou ');
+      msg.textContent = `Nota ${mic.k + 1} de ${mic.evs.length}: toque ${names}${mic.miss ? ` · ${mic.miss} erro${mic.miss > 1 ? 's' : ''}` : ''}`;
+    }
+    micBtn.addEventListener('click', async () => {
+      if (mic) { stopMic(); return; }
+      player.stop(); btn.textContent = '▶ Tocar'; btn.classList.remove('on');
+      const r = range() && B0 != null ? range() : [0, parsed.events.length - 1];
+      const idx = []; for (let i = r[0]; i <= r[1]; i++) if (parsed.events[i].notes.some(o => !o.dead)) idx.push(i);
+      mic = { k: 0, idx, evs: idx.map(i => parsed.events[i]), stable: 0, last: null, miss: 0, wrongLock: 0, t0: performance.now() };
+      msg.hidden = false;
+      try {
+        await MIC.start(p => {
+          if (!mic) return;
+          if (p.hz < 0) { mic.stable = 0; mic.last = null; return; }
+          if (p.midi === mic.last) mic.stable++; else { mic.stable = 1; mic.last = p.midi; }
+          if (mic.stable < 3 || Math.abs(p.cents) > 45) return;
+          if (targetAt(mic.k).includes(p.midi)) {
+            mic.k++; mic.stable = -6; mic.wrongLock = 0;
+            if (mic.k >= mic.evs.length) {
+              const secs = Math.round((performance.now() - mic.t0) / 1000), miss = mic.miss;
+              S.practiced(); stopMic(`Concluído em ${secs} s${miss ? ` com ${miss} erro${miss > 1 ? 's' : ''}` : ' sem erros'}! Agora tente no tempo do metrônomo.`);
+              msg.hidden = false; return;
+            }
+            showTarget();
+          } else if (mic.stable === 3 && performance.now() > mic.wrongLock) { mic.miss++; mic.wrongLock = performance.now() + 600; showTarget(); }
+        });
+        micBtn.textContent = '■ Parar microfone'; micBtn.classList.add('on');
+        showTarget();
+      } catch (err) { mic = null; msg.textContent = MIC.errorText(err); }
+    });
+    return { player, parsed, root, stop: () => { player.stop(); stopMic(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); } };
   }
 
   return { $, esc, set, rootOptions, chips, toast, fbState, buildDemo, playDemo, legend, lickPanel };

@@ -87,4 +87,4 @@ const LICKS = [
   );
 })();
 
-const lickById = id => LICKS.find(l => l.id === id);
+const lickById = id => LICKS.find(l => l.id === id) || (S.get().myLicks || []).find(l => l.id === id && !l.deleted);

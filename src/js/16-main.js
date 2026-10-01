@@ -70,14 +70,17 @@ const APP = (() => {
   const host = () => document.getElementById('view');
 
   function route() {
-    const h = (location.hash || '#trilha').slice(1);
+    const h = (location.hash || '#hoje').slice(1);
     const pre = (p) => h.startsWith(p) ? h.slice(p.length) : null;
     if (pre('aula-') != null) return ['trilha', el => V.lesson(el, pre('aula-'))];
     if (h === 'licks' || pre('lick-') != null) return ['licks', el => V.licks(el, pre('lick-'))];
+    if (h === 'editor' || pre('editor-') != null) return ['licks', el => V.editor(el, pre('editor-'))];
     if (h === 'treino') return ['treino', el => V.metronomo(el)];
     if (h === 'levadas' || pre('levadas-') != null) return ['treino', el => V.levadas(el, pre('levadas-'))];
     if (h === 'trocas') return ['treino', el => V.trocas(el)];
     if (h === 'afinador') return ['treino', el => V.afinador(el)];
+    if (h === 'gravar') return ['treino', el => V.gravar(el)];
+    if (h === 'hoje' || h === '') return ['hoje', el => V.hoje(el)];
     if (pre('treino-') != null) return ['treino', el => V.speed(el, pre('treino-'))];
     if (h === 'jam' || pre('jam-') != null) return ['treino', el => V.jam(el, pre('jam-'))];
     if (h === 'quiz' || pre('quiz-') != null) return ['quiz', el => V.quiz(el, pre('quiz-'))];

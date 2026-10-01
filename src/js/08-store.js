@@ -2,13 +2,14 @@
 const S = (() => {
   const KEY = 'mapa-do-braco-v1';
   const DEF = () => ({ v:1, done:{}, bpm:{}, quiz:{}, days:[], changes:{}, goals:{},
+    minutes:{}, plan:null, myLicks:[], songs:[], badges:{}, challenges:{},
     settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8 } });
   let state = DEF(), ref = null, mode = 'local', timer = null, writing = Promise.resolve();
   const subs = new Set();
 
   try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(DEF(), JSON.parse(raw)); } catch (e) {}
   state.settings = Object.assign(DEF().settings, state.settings);
-  state.changes = state.changes || {}; state.goals = state.goals || {};
+  { const d = DEF(); for (const k in d) if (state[k] === undefined) state[k] = d[k]; }
 
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -24,6 +25,20 @@ const S = (() => {
     out.goals = Object.assign({}, b.goals, a.goals);
     for (const src of [a.changes || {}, b.changes || {}]) for (const k in src) out.changes[k] = Math.max(out.changes[k] || 0, src[k]);
     out.settings = Object.assign(DEF().settings, b.settings, a.settings);
+    for (const src of [a.minutes || {}, b.minutes || {}]) for (const k in src) out.minutes[k] = Math.max(out.minutes[k] || 0, src[k]);
+    out.badges = Object.assign({}, b.badges, a.badges);
+    out.challenges = Object.assign({}, b.challenges, a.challenges);
+    const pa = a.plan, pb = b.plan;
+    out.plan = !pa ? pb || null : !pb ? pa : pa.date !== pb.date ? (pa.date > pb.date ? pa : pb)
+      : Object.assign({}, pb, pa, { done: Object.assign({}, pb.done, pa.done) });
+    // listas com id e updatedAt: fica a versão mais recente de cada item (apagados ficam marcados com deleted)
+    const mergeList = (x = [], y = []) => {
+      const m = new Map();
+      [...y, ...x].forEach(it => { const cur = m.get(it.id); if (!cur || (it.updatedAt || 0) >= (cur.updatedAt || 0)) m.set(it.id, it); });
+      return [...m.values()];
+    };
+    out.myLicks = mergeList(a.myLicks, b.myLicks);
+    out.songs = mergeList(a.songs, b.songs);
     return out;
   }
 
@@ -67,6 +82,12 @@ const S = (() => {
     } catch (e) { mode = 'local'; emit(); }
   }
 
+  function addMinutes(n) {
+    if (!(n > 0)) return;
+    const d = today();
+    update(s => { s.minutes[d] = Math.round(((s.minutes[d] || 0) + n) * 10) / 10; if (!s.days.includes(d)) s.days.push(d); });
+  }
+
   function practiced() {
     const d = today();
     if (!state.days.includes(d)) update(s => { s.days.push(d); });
@@ -96,7 +117,7 @@ const S = (() => {
 
   return {
     get: () => state, get mode() { return mode; }, standalone, importData, exportData,
-    update, connect, practiced, streak, today,
+    update, connect, practiced, streak, today, addMinutes,
     on(fn) { subs.add(fn); return () => subs.delete(fn); },
     reset() { const keep = state.settings; state = DEF(); state.settings = keep; saveLocal(); scheduleRemote(); emit(); },
   };
