@@ -1,5 +1,6 @@
 /* ===== Biblioteca de licks ===== */
 let LICK_FILTER = 'all';
+UIP.track('lickFilter', () => LICK_FILTER, v => { if (typeof v === 'string') LICK_FILTER = v; });
 
 V.licks = (el, id, opt = {}) => {
   if (opt.estudos) LICK_FILTER = 'estudo';

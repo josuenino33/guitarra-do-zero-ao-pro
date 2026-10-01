@@ -1,6 +1,8 @@
 /* ===== Treino: metrônomo e velocidade progressiva ===== */
 const MET = { bpm: 80, beats: 4, sub: 1 };
 const SPEED = { id: 'ex-pent', start: 60, target: 100, step: 5, reps: 2, listen: true };
+UIP.track('metronomo', MET);
+UIP.track('velocidade', SPEED);
 
 function treinoTabs(active) {
   const tabs = [['met', 'treino', 'Metrônomo'], ['lev', 'levadas', 'Levadas'], ['troc', 'trocas', 'Trocas de acordes'], ['afin', 'afinador', 'Afinador'], ['grav', 'gravar', 'Gravar e looper'],
@@ -68,14 +70,15 @@ V.metronomo = (el) => {
 
 V.speed = (el, id) => {
   if (id && lickById(id)) SPEED.id = id;
-  const lick = lickById(SPEED.id);
+  if (!lickById(SPEED.id)) SPEED.id = 'ex-pent';
+  const lick = U.lickInKey(lickById(SPEED.id), UIP.lickKey(SPEED.id));
   const rec = S.get().bpm[lick.id];
   if (SPEED.lastId !== lick.id) { SPEED.start = Math.round(lick.bpm * 0.7); SPEED.target = rec ? rec + 10 : lick.bpm; SPEED.lastId = lick.id; }
   const groups = Object.entries(STYLES).map(([k, n]) => `<optgroup label="${n}">${allLicks().filter(l => l.style === k).map(l => `<option value="${l.id}" ${l.id === lick.id ? 'selected' : ''}>${U.esc(l.title)}</option>`).join('')}</optgroup>`).join('');
   el.innerHTML = treinoTabs('speed') + `
     <section class="panel">
       <div class="ctrl-row"><label class="field grow">Exercício <select data-k="id" id="spd-ex">${groups}</select></label>
-        <span class="pill">${rec ? `Recorde: ${rec} BPM` : 'Sem recorde ainda'}</span></div>
+        <span class="pill">${rec ? `Recorde: ${rec} BPM` : 'Sem recorde ainda'}</span><span class="small">Tom: ${T.rootName(T.pcOf(lick.key), U.set().latin)} (troque na aba Licks)</span></div>
       <div class="ctrl-row">
         <label class="field">Começar em <input type="number" min="30" max="260" value="${SPEED.start}" data-k="start" id="spd-start"> BPM</label>
         <label class="field">Meta <input type="number" min="30" max="300" value="${SPEED.target}" data-k="target" id="spd-target"> BPM</label>

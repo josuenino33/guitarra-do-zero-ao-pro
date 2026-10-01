@@ -1,7 +1,15 @@
 /* ===== Explorador do braço ===== */
 const EXP = { type:'scale', root:9, scale:'pent_menor', pos:0, quality:'maior', set:'123', inv:-1, shape:'all', layer:'chord', chord:'maior', labels:'iv' };
+UIP.track('braco', EXP);
 
 V.braco = (el) => {
+  // valores lembrados de versões antigas que não existem mais voltam ao padrão
+  if (!T.SCALES[EXP.scale]) EXP.scale = 'pent_menor';
+  if (!T.CHORDS[EXP.chord]) EXP.chord = 'maior';
+  if (!['scale', 'triad', 'caged', 'chord', 'note'].includes(EXP.type)) EXP.type = 'scale';
+  if (!T.STRING_SETS.some(x => x.id === EXP.set)) EXP.set = '123';
+  EXP.root = T.mod(+EXP.root || 0);
+  EXP.pos = Math.max(-1, Math.min(+EXP.pos || 0, T.positionsCount(EXP.scale) - 1));
   el.innerHTML = `
     <header class="page-head"><p class="eyebrow">Braço</p><h1>O braço inteiro, em qualquer tom</h1></header>
     ${bracoTabs('exp')}

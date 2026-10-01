@@ -7,6 +7,7 @@ const QUIZZES = [
   { id:'ouvido', title:'Treino de ouvido', desc:'Ouça duas notas e diga o intervalo, sem olhar o braço.' },
 ];
 const QZ = { scope:'65', rounds:10 };
+UIP.track('quiz', QZ);
 const rnd = n => Math.floor(Math.random() * n);
 const pick = a => a[rnd(a.length)];
 

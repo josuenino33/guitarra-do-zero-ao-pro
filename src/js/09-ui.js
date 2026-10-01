@@ -155,19 +155,33 @@ const U = (() => {
     return `<div class="legend">${list.map(([r, l]) => `<span><i class="dot iv-${r}"></i>${l}</span>`).join('')}</div>`;
   }
 
-  /** Painel de lick: tablatura + controles, trecho A-B e prática com microfone. Usa o braço `fb` informado. */
-  function lickPanel(host, lick, fb, opts = {}) {
-    const parsed = TAB.parse(lick.src);
-    const root = T.pcOf(lick.key);
+  /** O lick no tom escolhido (pc = classe de altura da nova tônica). */
+  function lickInKey(lick, pc) {
+    const orig = T.pcOf(lick.key);
+    if (pc == null || T.mod(pc) === orig || !TAB.transposable(lick.src)) return lick;
+    let d = T.mod(pc - orig); if (d > 6) d -= 12;
+    const r = TAB.transpose(lick.src, d);
+    const flats = T.useFlats(T.mod(pc), T.SCALES[lick.scale]?.parent || 0);
+    return Object.assign({}, lick, { src: r.src, key: T.ROOTS[T.mod(pc)], chords: lick.chords && lick.chords.map(c => transposeChord(c, d, flats)) });
+  }
+
+  /** Painel de lick: tablatura + controles, tom, trecho A-B e prática com microfone. Usa o braço `fb` informado. */
+  function lickPanel(host, lick0, fb, opts = {}) {
+    const canKey = opts.keySel !== false && TAB.transposable(lick0.src);
+    let lick = canKey ? lickInKey(lick0, UIP.lickKey(lick0.id)) : lick0;
+    let parsed = TAB.parse(lick.src);
+    let root = T.pcOf(lick.key);
+    const origNote = () => lick !== lick0 ? `tom original: ${T.rootName(T.pcOf(lick0.key), set().latin)} (a dica fala desse tom)` : '';
+    const chordsHtml = () => (lick.chords || []).map((c, i) => `<span>${i + 1}</span>${esc(prettyChord(c))}`).join('');
     const sc = T.SCALES[lick.scale];
     const level = '●'.repeat(lick.level) + '○'.repeat(5 - lick.level);
     const sfx = lick.id + (opts.idSuffix || '');
     host.innerHTML = `
       <div class="lick-head">
         <div><h3>${esc(lick.title)}</h3>${lick.credit ? `<p class="small">${esc(lick.credit)}</p>` : ''}
-          <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span><span>Tom: ${T.rootName(root, set().latin)}</span><span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
+          <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span>${canKey ? `<label class="field key-sel">Tom <select data-lkey id="lkey-${sfx}">${rootOptions(root)}</select></label><span class="orig" data-orig>${origNote()}</span>` : `<span>Tom: ${T.rootName(root, set().latin)}</span>`}<span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
       </div>
-      ${lick.chords ? `<p class="chords">${lick.chords.map((c, i) => `<span>${i + 1}</span>${esc(c)}`).join('')}</p>` : ''}
+      ${lick.chords ? `<p class="chords" data-chords>${chordsHtml()}</p>` : ''}
       <div class="tab-scroll" data-tab></div>
       <p class="small ab-line"><span data-ab>Toque em duas colunas da tablatura para repetir só aquele trecho.</span> <button type="button" class="linkbtn" data-act="abclear" hidden>Tocar tudo</button></p>
       <div class="ctrl-row">
@@ -183,7 +197,7 @@ const U = (() => {
       <p class="tip"><b>${esc(lick.tech)}.</b> ${esc(lick.tip)}</p>`;
     const tabHost = host.querySelector('[data-tab]');
     const meterOpt = { meter: lick.meter || 4, pickup: lick.pickup || 0 };
-    const highlight = TAB.render(tabHost, parsed, meterOpt);
+    let highlight = TAB.render(tabHost, parsed, meterOpt);
     const btn = host.querySelector('[data-act="play"]');
     let A0 = null, B0 = null, offset = 0;
     const setActive = ev => fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
@@ -210,7 +224,7 @@ const U = (() => {
       return { events: evs.map(e => Object.assign({}, e, { beat: e.beat - b0 })), beats: evs[evs.length - 1].beat + evs[evs.length - 1].d - b0 };
     }
     function play() {
-      opts.onPlay && opts.onPlay();
+      opts.onPlay && opts.onPlay(lick);
       const pct = +host.querySelector('[data-speed]').value;
       const ab = B0 != null;
       player.play(sub(), { bpm: lick.bpm * pct / 100, loop: ab || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked,
@@ -277,8 +291,26 @@ const U = (() => {
         showTarget();
       } catch (err) { mic = null; msg.textContent = MIC.errorText(err); }
     });
-    return { player, parsed, root, stop: () => { player.stop(); stopMic(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); } };
+    /* troca de tom: tablatura, acordes e braço acompanham */
+    function paintFb() {
+      if (!fb || opts.ownsFb === false) return;
+      const mx = Math.max(0, ...parsed.events.flatMap(e => e.notes.map(o => o.f || 0)));
+      fb.set({ marks: TAB.marks(parsed, root), frets: Math.min(22, Math.max(set().frets, mx + 1)), flats: T.useFlats(root, sc?.parent || 0) });
+    }
+    if (lick !== lick0) paintFb();
+    host.querySelector('[data-lkey]')?.addEventListener('change', e => {
+      const pc = +e.target.value;
+      player.stop(); stopMic(); btn.textContent = '▶ Tocar'; btn.classList.remove('on');
+      lick = lickInKey(lick0, pc); parsed = TAB.parse(lick.src); root = T.pcOf(lick.key);
+      A0 = B0 = null; highlight = TAB.render(tabHost, parsed, meterOpt); paintAB();
+      const ch = host.querySelector('[data-chords]'); if (ch) ch.innerHTML = chordsHtml();
+      const on = host.querySelector('[data-orig]'); if (on) on.textContent = origNote();
+      UIP.setLickKey(lick0.id, pc === T.pcOf(lick0.key) ? null : pc);
+      paintFb();
+      opts.onKey && opts.onKey(lick);
+    });
+    return { player, get parsed() { return parsed; }, get lick() { return lick; }, stop: () => { player.stop(); stopMic(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); } };
   }
 
-  return { $, esc, set, rootOptions, chips, toast, fbState, buildDemo, playDemo, legend, lickPanel };
+  return { $, esc, set, rootOptions, chips, toast, fbState, buildDemo, playDemo, legend, lickPanel, lickInKey };
 })();

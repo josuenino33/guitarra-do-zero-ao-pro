@@ -25,6 +25,7 @@ const JAMS = [
     chords:['G','D','D','G'], scales:['maior','pent_maior'] },
 ];
 const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, labels:'iv' };
+UIP.track('jam', JAM);
 
 function parseChord(name) {
   const p = CH.parse(name);
@@ -38,6 +39,7 @@ function transposeChord(name, shift, flats) {
 
 V.jam = (el, id) => {
   if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; JAM.key = null; } JAM.id = id; }
+  if (!JAMS.some(j => j.id === JAM.id)) JAM.id = 'blues';
   const jam = JAMS.find(j => j.id === JAM.id);
   if (!JAM.scale || !jam.scales.includes(JAM.scale)) JAM.scale = jam.scales[0];
   if (!JAM.bpm) JAM.bpm = jam.bpm;

@@ -151,12 +151,13 @@ V.lesson = (el, id) => {
       const d = U.buildDemo({ kind: 'lick', lick: lk.id });
       fb.set(U.fbState({ marks: d.marks, labels: 'iv', flats: d.flats, frets: d.frets }));
     }
+    const ownsFb = demo0.kind === 'lick' || !!widget;
     lp = U.lickPanel(lickHost, lk, fb, {
-      idSuffix: '-aula',
-      onPlay() {
-        if (demo0.kind !== 'lick' && !widget) {
-          const d = U.buildDemo({ kind: 'lick', lick: lk.id });
-          fb.set({ marks: d.marks, labels: labelsMode, flats: d.flats, frets: d.frets });
+      idSuffix: '-aula', ownsFb,
+      onPlay(l) {
+        if (!ownsFb) {
+          const p = TAB.parse(l.src), mx = Math.max(0, ...p.events.flatMap(e => e.notes.map(o => o.f || 0)));
+          fb.set({ marks: TAB.marks(p, T.pcOf(l.key)), labels: labelsMode, frets: Math.min(22, Math.max(U.set().frets, mx + 1)) });
         }
       },
     });

@@ -481,6 +481,12 @@ code { font: 13px var(--f-mono); background: var(--surface-2); padding: 1px 5px;
   .nav a { font-size: 10.5px; letter-spacing: .02em; }
 }
 
+/* seletor de tom do lick */
+.meta .key-sel { font-size: 13.5px; }
+.meta .key-sel select { padding: 3px 6px; font-size: 13.5px; }
+.meta .orig { font-size: 12px; color: var(--muted); }
+.meta .orig:empty { display: none; }
+
 /* ===== dicionário de acordes ===== */
 .grp { min-width: 72px; font-weight: 700; }
 .dict-head { margin-block: 14px 10px; }
@@ -2005,6 +2011,19 @@ const TAB = (() => {
     });
   }
 
+  /** Transpõe uma tablatura em `shift` semitons; muda de oitava se sair do braço. */
+  function transpose(src, shift, maxFret = 22) {
+    const frets = [...src.matchAll(/(^|[\s+])[1-6]:(\d+)/g)].map(m => +m[2]);
+    if (!frets.length || !shift) return { src, shift: 0 };
+    let s = shift;
+    const lo = Math.min(...frets), hi = Math.max(...frets);
+    if (lo + s < 0) s += 12;
+    if (hi + s > maxFret && lo + s - 12 >= 0) s -= 12;
+    return { src: src.replace(/(^|[\s+])([1-6]):(\d+)/g, (m, pre, st, f) => `${pre}${st}:${+f + s}`), shift: s };
+  }
+  // harmônicos naturais dependem da casa exata: esses exercícios não mudam de tom
+  const transposable = src => !/:\d+[^\s+|]*n/.test(src);
+
   /** Reprodutor. cb.onEvent(i), cb.onEnd() */
   function Player(cb = {}) {
     let raf = null, sched = [], tEnd = 0, opt = {}, parsed = null, playing = false, lastIdx = -1;
@@ -2055,7 +2074,7 @@ const TAB = (() => {
     return { play, stop, get playing() { return playing; } };
   }
 
-  return { parse, render, marks, Player, noteLabel, scheduleNotes };
+  return { parse, render, marks, Player, noteLabel, scheduleNotes, transpose, transposable };
 })();
 
 /* ===== Trilha de aulas — módulos 1 a 4 ===== */
@@ -3025,6 +3044,47 @@ const S = (() => {
   };
 })();
 
+/* ===== Preferências de tela (tom, escala, estilo, filtros) lembradas neste aparelho ===== */
+const UIP = (() => {
+  const KEY = 'mapa-do-braco-ui';
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { data = {}; }
+  const tracked = [];
+
+  function save() {
+    tracked.forEach(t => { try { data[t.name] = JSON.parse(JSON.stringify(t.get())); } catch (e) {} });
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+  }
+  let tm = null;
+  const soon = () => { clearTimeout(tm); tm = setTimeout(save, 250); };
+
+  /**
+   * Lembra um objeto de estado (copia os campos salvos para ele agora)
+   * ou um valor solto com get/restore.
+   */
+  function track(name, obj, restore) {
+    if (typeof obj === 'function') {
+      tracked.push({ name, get: obj });
+      if (data[name] !== undefined) { try { restore(data[name]); } catch (e) {} }
+    } else {
+      tracked.push({ name, get: () => obj });
+      if (data[name] && typeof data[name] === 'object') Object.assign(obj, data[name]);
+    }
+  }
+
+  const lickKey = id => (data.lickKeys || {})[id] ?? null;
+  function setLickKey(id, pc) {
+    data.lickKeys = data.lickKeys || {};
+    if (pc == null) delete data.lickKeys[id]; else data.lickKeys[id] = pc;
+    soon();
+  }
+
+  ['change', 'input', 'click'].forEach(ev => document.addEventListener(ev, soon, true));
+  window.addEventListener('pagehide', save);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
+  return { track, save, lickKey, setLickKey };
+})();
+
 /* ===== Componentes compartilhados ===== */
 const U = (() => {
   const $ = (sel, el = document) => el.querySelector(sel);
@@ -3182,19 +3242,33 @@ const U = (() => {
     return `<div class="legend">${list.map(([r, l]) => `<span><i class="dot iv-${r}"></i>${l}</span>`).join('')}</div>`;
   }
 
-  /** Painel de lick: tablatura + controles, trecho A-B e prática com microfone. Usa o braço `fb` informado. */
-  function lickPanel(host, lick, fb, opts = {}) {
-    const parsed = TAB.parse(lick.src);
-    const root = T.pcOf(lick.key);
+  /** O lick no tom escolhido (pc = classe de altura da nova tônica). */
+  function lickInKey(lick, pc) {
+    const orig = T.pcOf(lick.key);
+    if (pc == null || T.mod(pc) === orig || !TAB.transposable(lick.src)) return lick;
+    let d = T.mod(pc - orig); if (d > 6) d -= 12;
+    const r = TAB.transpose(lick.src, d);
+    const flats = T.useFlats(T.mod(pc), T.SCALES[lick.scale]?.parent || 0);
+    return Object.assign({}, lick, { src: r.src, key: T.ROOTS[T.mod(pc)], chords: lick.chords && lick.chords.map(c => transposeChord(c, d, flats)) });
+  }
+
+  /** Painel de lick: tablatura + controles, tom, trecho A-B e prática com microfone. Usa o braço `fb` informado. */
+  function lickPanel(host, lick0, fb, opts = {}) {
+    const canKey = opts.keySel !== false && TAB.transposable(lick0.src);
+    let lick = canKey ? lickInKey(lick0, UIP.lickKey(lick0.id)) : lick0;
+    let parsed = TAB.parse(lick.src);
+    let root = T.pcOf(lick.key);
+    const origNote = () => lick !== lick0 ? `tom original: ${T.rootName(T.pcOf(lick0.key), set().latin)} (a dica fala desse tom)` : '';
+    const chordsHtml = () => (lick.chords || []).map((c, i) => `<span>${i + 1}</span>${esc(prettyChord(c))}`).join('');
     const sc = T.SCALES[lick.scale];
     const level = '●'.repeat(lick.level) + '○'.repeat(5 - lick.level);
     const sfx = lick.id + (opts.idSuffix || '');
     host.innerHTML = `
       <div class="lick-head">
         <div><h3>${esc(lick.title)}</h3>${lick.credit ? `<p class="small">${esc(lick.credit)}</p>` : ''}
-          <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span><span>Tom: ${T.rootName(root, set().latin)}</span><span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
+          <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span>${canKey ? `<label class="field key-sel">Tom <select data-lkey id="lkey-${sfx}">${rootOptions(root)}</select></label><span class="orig" data-orig>${origNote()}</span>` : `<span>Tom: ${T.rootName(root, set().latin)}</span>`}<span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
       </div>
-      ${lick.chords ? `<p class="chords">${lick.chords.map((c, i) => `<span>${i + 1}</span>${esc(c)}`).join('')}</p>` : ''}
+      ${lick.chords ? `<p class="chords" data-chords>${chordsHtml()}</p>` : ''}
       <div class="tab-scroll" data-tab></div>
       <p class="small ab-line"><span data-ab>Toque em duas colunas da tablatura para repetir só aquele trecho.</span> <button type="button" class="linkbtn" data-act="abclear" hidden>Tocar tudo</button></p>
       <div class="ctrl-row">
@@ -3210,7 +3284,7 @@ const U = (() => {
       <p class="tip"><b>${esc(lick.tech)}.</b> ${esc(lick.tip)}</p>`;
     const tabHost = host.querySelector('[data-tab]');
     const meterOpt = { meter: lick.meter || 4, pickup: lick.pickup || 0 };
-    const highlight = TAB.render(tabHost, parsed, meterOpt);
+    let highlight = TAB.render(tabHost, parsed, meterOpt);
     const btn = host.querySelector('[data-act="play"]');
     let A0 = null, B0 = null, offset = 0;
     const setActive = ev => fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
@@ -3237,7 +3311,7 @@ const U = (() => {
       return { events: evs.map(e => Object.assign({}, e, { beat: e.beat - b0 })), beats: evs[evs.length - 1].beat + evs[evs.length - 1].d - b0 };
     }
     function play() {
-      opts.onPlay && opts.onPlay();
+      opts.onPlay && opts.onPlay(lick);
       const pct = +host.querySelector('[data-speed]').value;
       const ab = B0 != null;
       player.play(sub(), { bpm: lick.bpm * pct / 100, loop: ab || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked,
@@ -3304,10 +3378,28 @@ const U = (() => {
         showTarget();
       } catch (err) { mic = null; msg.textContent = MIC.errorText(err); }
     });
-    return { player, parsed, root, stop: () => { player.stop(); stopMic(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); } };
+    /* troca de tom: tablatura, acordes e braço acompanham */
+    function paintFb() {
+      if (!fb || opts.ownsFb === false) return;
+      const mx = Math.max(0, ...parsed.events.flatMap(e => e.notes.map(o => o.f || 0)));
+      fb.set({ marks: TAB.marks(parsed, root), frets: Math.min(22, Math.max(set().frets, mx + 1)), flats: T.useFlats(root, sc?.parent || 0) });
+    }
+    if (lick !== lick0) paintFb();
+    host.querySelector('[data-lkey]')?.addEventListener('change', e => {
+      const pc = +e.target.value;
+      player.stop(); stopMic(); btn.textContent = '▶ Tocar'; btn.classList.remove('on');
+      lick = lickInKey(lick0, pc); parsed = TAB.parse(lick.src); root = T.pcOf(lick.key);
+      A0 = B0 = null; highlight = TAB.render(tabHost, parsed, meterOpt); paintAB();
+      const ch = host.querySelector('[data-chords]'); if (ch) ch.innerHTML = chordsHtml();
+      const on = host.querySelector('[data-orig]'); if (on) on.textContent = origNote();
+      UIP.setLickKey(lick0.id, pc === T.pcOf(lick0.key) ? null : pc);
+      paintFb();
+      opts.onKey && opts.onKey(lick);
+    });
+    return { player, get parsed() { return parsed; }, get lick() { return lick; }, stop: () => { player.stop(); stopMic(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); } };
   }
 
-  return { $, esc, set, rootOptions, chips, toast, fbState, buildDemo, playDemo, legend, lickPanel };
+  return { $, esc, set, rootOptions, chips, toast, fbState, buildDemo, playDemo, legend, lickPanel, lickInKey };
 })();
 
 /* ===== Componentes de aula: acordes, trocas, levadas, música com cifra ===== */
@@ -4093,12 +4185,13 @@ V.lesson = (el, id) => {
       const d = U.buildDemo({ kind: 'lick', lick: lk.id });
       fb.set(U.fbState({ marks: d.marks, labels: 'iv', flats: d.flats, frets: d.frets }));
     }
+    const ownsFb = demo0.kind === 'lick' || !!widget;
     lp = U.lickPanel(lickHost, lk, fb, {
-      idSuffix: '-aula',
-      onPlay() {
-        if (demo0.kind !== 'lick' && !widget) {
-          const d = U.buildDemo({ kind: 'lick', lick: lk.id });
-          fb.set({ marks: d.marks, labels: labelsMode, flats: d.flats, frets: d.frets });
+      idSuffix: '-aula', ownsFb,
+      onPlay(l) {
+        if (!ownsFb) {
+          const p = TAB.parse(l.src), mx = Math.max(0, ...p.events.flatMap(e => e.notes.map(o => o.f || 0)));
+          fb.set({ marks: TAB.marks(p, T.pcOf(l.key)), labels: labelsMode, frets: Math.min(22, Math.max(U.set().frets, mx + 1)) });
         }
       },
     });
@@ -4132,8 +4225,16 @@ V.lesson = (el, id) => {
 
 /* ===== Explorador do braço ===== */
 const EXP = { type:'scale', root:9, scale:'pent_menor', pos:0, quality:'maior', set:'123', inv:-1, shape:'all', layer:'chord', chord:'maior', labels:'iv' };
+UIP.track('braco', EXP);
 
 V.braco = (el) => {
+  // valores lembrados de versões antigas que não existem mais voltam ao padrão
+  if (!T.SCALES[EXP.scale]) EXP.scale = 'pent_menor';
+  if (!T.CHORDS[EXP.chord]) EXP.chord = 'maior';
+  if (!['scale', 'triad', 'caged', 'chord', 'note'].includes(EXP.type)) EXP.type = 'scale';
+  if (!T.STRING_SETS.some(x => x.id === EXP.set)) EXP.set = '123';
+  EXP.root = T.mod(+EXP.root || 0);
+  EXP.pos = Math.max(-1, Math.min(+EXP.pos || 0, T.positionsCount(EXP.scale) - 1));
   el.innerHTML = `
     <header class="page-head"><p class="eyebrow">Braço</p><h1>O braço inteiro, em qualquer tom</h1></header>
     ${bracoTabs('exp')}
@@ -4307,6 +4408,7 @@ V.campo = (el) => {
 
 /* ===== Biblioteca de licks ===== */
 let LICK_FILTER = 'all';
+UIP.track('lickFilter', () => LICK_FILTER, v => { if (typeof v === 'string') LICK_FILTER = v; });
 
 V.licks = (el, id, opt = {}) => {
   if (opt.estudos) LICK_FILTER = 'estudo';
@@ -4423,7 +4525,7 @@ V.editor = (el, id) => {
       err.textContent = `${p.events.length} notas · ${p.beats % 1 ? p.beats.toFixed(2) : p.beats} tempos${p.beats % 4 ? ' (o compasso ainda não fechou: faltam ' + +(4 - p.beats % 4).toFixed(2) + ' tempos)' : ''}`;
       const mx = Math.max(15, ...p.events.flatMap(e => e.notes.map(o => o.f || 0)).map(f => f + 1));
       fb.set(U.fbState({ marks: TAB.marks(p, T.pcOf(L.key)), labels: 'iv', frets: Math.min(22, mx), onPick }));
-      panel = U.lickPanel($('[data-preview]'), Object.assign({}, L, { src: src.value, title: L.title || 'Sem nome', tip: L.tip || '', tech: L.tech || 'Meu lick' }), fb, { idSuffix: '-ed' });
+      panel = U.lickPanel($('[data-preview]'), Object.assign({}, L, { src: src.value, title: L.title || 'Sem nome', tip: L.tip || '', tech: L.tech || 'Meu lick' }), fb, { idSuffix: '-ed', keySel: false });
     } catch (e) { err.textContent = 'Erro na notação: ' + e.message.replace('Token inválido', 'não entendi'); }
   }
   function lastDur() { const m = [...src.value.matchAll(/\|([whqestx]\.?)/g)]; return m.length ? m[m.length - 1][1] : null; }
@@ -4589,6 +4691,8 @@ V.repertorio = (el) => {
 /* ===== Treino: metrônomo e velocidade progressiva ===== */
 const MET = { bpm: 80, beats: 4, sub: 1 };
 const SPEED = { id: 'ex-pent', start: 60, target: 100, step: 5, reps: 2, listen: true };
+UIP.track('metronomo', MET);
+UIP.track('velocidade', SPEED);
 
 function treinoTabs(active) {
   const tabs = [['met', 'treino', 'Metrônomo'], ['lev', 'levadas', 'Levadas'], ['troc', 'trocas', 'Trocas de acordes'], ['afin', 'afinador', 'Afinador'], ['grav', 'gravar', 'Gravar e looper'],
@@ -4656,14 +4760,15 @@ V.metronomo = (el) => {
 
 V.speed = (el, id) => {
   if (id && lickById(id)) SPEED.id = id;
-  const lick = lickById(SPEED.id);
+  if (!lickById(SPEED.id)) SPEED.id = 'ex-pent';
+  const lick = U.lickInKey(lickById(SPEED.id), UIP.lickKey(SPEED.id));
   const rec = S.get().bpm[lick.id];
   if (SPEED.lastId !== lick.id) { SPEED.start = Math.round(lick.bpm * 0.7); SPEED.target = rec ? rec + 10 : lick.bpm; SPEED.lastId = lick.id; }
   const groups = Object.entries(STYLES).map(([k, n]) => `<optgroup label="${n}">${allLicks().filter(l => l.style === k).map(l => `<option value="${l.id}" ${l.id === lick.id ? 'selected' : ''}>${U.esc(l.title)}</option>`).join('')}</optgroup>`).join('');
   el.innerHTML = treinoTabs('speed') + `
     <section class="panel">
       <div class="ctrl-row"><label class="field grow">Exercício <select data-k="id" id="spd-ex">${groups}</select></label>
-        <span class="pill">${rec ? `Recorde: ${rec} BPM` : 'Sem recorde ainda'}</span></div>
+        <span class="pill">${rec ? `Recorde: ${rec} BPM` : 'Sem recorde ainda'}</span><span class="small">Tom: ${T.rootName(T.pcOf(lick.key), U.set().latin)} (troque na aba Licks)</span></div>
       <div class="ctrl-row">
         <label class="field">Começar em <input type="number" min="30" max="260" value="${SPEED.start}" data-k="start" id="spd-start"> BPM</label>
         <label class="field">Meta <input type="number" min="30" max="300" value="${SPEED.target}" data-k="target" id="spd-target"> BPM</label>
@@ -4743,9 +4848,12 @@ const PROGS = [
   { label:'Am7 D', c:['Am7','Am7','D','D'] }, { label:'Em', c:['Em'] },
 ];
 let LEV = { id:'pop', prog:0 };
+UIP.track('levadas', LEV);
 
 V.levadas = (el, id) => {
   if (id && RH.PATTERNS.some(p => p.id === id)) LEV.id = id;
+  if (!RH.PATTERNS.some(p => p.id === LEV.id)) LEV.id = 'pop';
+  if (!PROGS[LEV.prog]) LEV.prog = 0;
   const groups = {};
   RH.PATTERNS.forEach(p => { (groups[p.style] ||= []).push(p); });
   el.innerHTML = treinoTabs('lev') + `
@@ -4781,6 +4889,7 @@ V.afinador = (el) => {
 
 /* ===== Treino: gravador e looper ===== */
 const LOOPCFG = { bpm: 90, bars: 4 };
+UIP.track('looper', LOOPCFG);
 
 function saveBlob(blob, name) {
   const a = document.createElement('a');
@@ -4933,6 +5042,7 @@ const JAMS = [
     chords:['G','D','D','G'], scales:['maior','pent_maior'] },
 ];
 const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, labels:'iv' };
+UIP.track('jam', JAM);
 
 function parseChord(name) {
   const p = CH.parse(name);
@@ -4946,6 +5056,7 @@ function transposeChord(name, shift, flats) {
 
 V.jam = (el, id) => {
   if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; JAM.key = null; } JAM.id = id; }
+  if (!JAMS.some(j => j.id === JAM.id)) JAM.id = 'blues';
   const jam = JAMS.find(j => j.id === JAM.id);
   if (!JAM.scale || !jam.scales.includes(JAM.scale)) JAM.scale = jam.scales[0];
   if (!JAM.bpm) JAM.bpm = jam.bpm;
@@ -5105,6 +5216,7 @@ const QUIZZES = [
   { id:'ouvido', title:'Treino de ouvido', desc:'Ouça duas notas e diga o intervalo, sem olhar o braço.' },
 ];
 const QZ = { scope:'65', rounds:10 };
+UIP.track('quiz', QZ);
 const rnd = n => Math.floor(Math.random() * n);
 const pick = a => a[rnd(a.length)];
 

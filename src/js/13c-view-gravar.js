@@ -1,5 +1,6 @@
 /* ===== Treino: gravador e looper ===== */
 const LOOPCFG = { bpm: 90, bars: 4 };
+UIP.track('looper', LOOPCFG);
 
 function saveBlob(blob, name) {
   const a = document.createElement('a');

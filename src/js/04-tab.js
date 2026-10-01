@@ -134,6 +134,19 @@ const TAB = (() => {
     });
   }
 
+  /** Transpõe uma tablatura em `shift` semitons; muda de oitava se sair do braço. */
+  function transpose(src, shift, maxFret = 22) {
+    const frets = [...src.matchAll(/(^|[\s+])[1-6]:(\d+)/g)].map(m => +m[2]);
+    if (!frets.length || !shift) return { src, shift: 0 };
+    let s = shift;
+    const lo = Math.min(...frets), hi = Math.max(...frets);
+    if (lo + s < 0) s += 12;
+    if (hi + s > maxFret && lo + s - 12 >= 0) s -= 12;
+    return { src: src.replace(/(^|[\s+])([1-6]):(\d+)/g, (m, pre, st, f) => `${pre}${st}:${+f + s}`), shift: s };
+  }
+  // harmônicos naturais dependem da casa exata: esses exercícios não mudam de tom
+  const transposable = src => !/:\d+[^\s+|]*n/.test(src);
+
   /** Reprodutor. cb.onEvent(i), cb.onEnd() */
   function Player(cb = {}) {
     let raf = null, sched = [], tEnd = 0, opt = {}, parsed = null, playing = false, lastIdx = -1;
@@ -184,5 +197,5 @@ const TAB = (() => {
     return { play, stop, get playing() { return playing; } };
   }
 
-  return { parse, render, marks, Player, noteLabel, scheduleNotes };
+  return { parse, render, marks, Player, noteLabel, scheduleNotes, transpose, transposable };
 })();

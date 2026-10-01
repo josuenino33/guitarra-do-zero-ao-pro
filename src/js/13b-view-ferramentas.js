@@ -5,9 +5,12 @@ const PROGS = [
   { label:'Am7 D', c:['Am7','Am7','D','D'] }, { label:'Em', c:['Em'] },
 ];
 let LEV = { id:'pop', prog:0 };
+UIP.track('levadas', LEV);
 
 V.levadas = (el, id) => {
   if (id && RH.PATTERNS.some(p => p.id === id)) LEV.id = id;
+  if (!RH.PATTERNS.some(p => p.id === LEV.id)) LEV.id = 'pop';
+  if (!PROGS[LEV.prog]) LEV.prog = 0;
   const groups = {};
   RH.PATTERNS.forEach(p => { (groups[p.style] ||= []).push(p); });
   el.innerHTML = treinoTabs('lev') + `
