@@ -1,0 +1,27 @@
+# Publica a pasta docs/ na branch gh-pages sempre que ela muda na main.
+name: Publicar site
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Envia docs/ para a branch gh-pages
+        run: |
+          git subtree split --prefix docs -b gh-pages-build
+          git push -f origin gh-pages-build:gh-pages
