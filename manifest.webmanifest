@@ -3,7 +3,7 @@
   "short_name": "Mapa do Braço",
   "description": "Escola de guitarra interativa: tríades, CAGED, escalas, licks, metrônomo, jam e quizzes.",
   "lang": "pt-BR",
-  "start_url": "./#trilha",
+  "start_url": "./#hoje",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
