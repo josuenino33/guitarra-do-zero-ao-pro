@@ -1,0 +1,2596 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Escola de guitarra interativa: tríades, CAGED, escalas, licks, metrônomo, jam e quizzes.">
+<meta name="theme-color" content="#E7ECE9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1412" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mapa do Braço">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Mapa do Braço</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: app de estudo com barra de seções no topo (no celular, embaixo); coluna de até 1180px; o braço da guitarra é a peça principal de cada tela */
+:root {
+  --bg: #E7ECE9; --surface: #F7F9F7; --surface-2: #DCE3DF; --fg: #17201C; --muted: #53625B; --line: #C4CDC8;
+  --accent: #1C5887; --accent-ink: #FFFFFF; --accent-soft: #D5E4F0;
+  --ok: #2B7A4C; --bad: #B23E2C;
+  --wood: #3B2719; --wood-edge: #2A1B11; --fret: #CBD0D5; --nut: #EFE8D6; --pearl: #ECE5D2; --string: #B7BCC1; --string-w: #A0927A;
+  --iv-r: #D2412B; --iv-3: #E59D1E; --iv-5: #2C8A60; --iv-7: #7357C4; --iv-2: #3A84BF; --iv-4: #C04F7E; --iv-6: #7B8A28; --iv-b5: #13698F;
+  --iv-n: #CFC9B9; --iv-pair: #E8B24D; --iv-q: #F4F1E8;
+  --f-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --f-body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1412; --surface: #161D1A; --surface-2: #212A26; --fg: #E3EAE6; --muted: #93A29B; --line: #2C3632;
+  --accent: #7DB2E2; --accent-ink: #0A1824; --accent-soft: #1B3145;
+  --ok: #4DB37A; --bad: #E2705E;
+  --wood: #2E1E14; --wood-edge: #1E130C; --fret: #9EA4AA; --nut: #CFC7B2; --pearl: #CBC2AC; --string: #8E949A; --string-w: #857862;
+  --iv-n: #8F8A7D; --iv-q: #E3DED2;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0F1412; --surface: #161D1A; --surface-2: #212A26; --fg: #E3EAE6; --muted: #93A29B; --line: #2C3632;
+  --accent: #7DB2E2; --accent-ink: #0A1824; --accent-soft: #1B3145;
+  --ok: #4DB37A; --bad: #E2705E;
+  --wood: #2E1E14; --wood-edge: #1E130C; --fret: #9EA4AA; --nut: #CFC7B2; --pearl: #CBC2AC; --string: #8E949A; --string-w: #857862;
+  --iv-n: #8F8A7D; --iv-q: #E3DED2;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: .005em; }
+h1 { font-size: clamp(32px, 5vw, 46px); }
+h2 { font-size: 26px; }
+h3 { font-size: 22px; }
+p { margin: 0; }
+.eyebrow { font: 600 12px/1.2 var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); margin-bottom: 8px; }
+.lede { color: var(--muted); max-width: 62ch; margin-top: 10px; }
+.small { font-size: 14px; color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* casca */
+.app { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 0 110px; }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; gap: 18px;
+  margin-inline: -20px; padding: 10px 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); font: 700 23px/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.brand svg { width: 34px; height: 34px; flex: none; }
+.nav { display: flex; gap: 2px; }
+.nav a { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; text-decoration: none; color: var(--muted);
+  font: 600 17px/1 var(--f-display); text-transform: uppercase; letter-spacing: .07em; }
+.nav a:hover { color: var(--fg); }
+.nav a.on { color: var(--accent); background: var(--accent-soft); }
+.nav svg { display: none; width: 22px; height: 22px; }
+.top-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.sync { font: 500 12px var(--f-mono); color: var(--muted); white-space: nowrap; }
+.sync.conta::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; }
+.icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; font-size: 20px; }
+.icon-btn svg { width: 20px; height: 20px; }
+
+.view { display: flex; flex-direction: column; gap: 18px; padding-block: 22px; min-width: 0; }
+.view > * { min-width: 0; }
+.page-head { padding-block: 6px 2px; }
+.crumbs { display: flex; gap: 8px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+.crumbs a { color: var(--muted); }
+
+/* blocos */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; font: 700 15px/1.2 var(--f-body); padding: 9px 15px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; text-decoration: none; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.btn.ghost { background: transparent; }
+.btn.big { padding: 12px 20px; font-size: 16px; }
+.btn.round { width: 50px; height: 50px; border-radius: 50%; justify-content: center; padding: 0; font-family: var(--f-mono); }
+.btn.on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.btn.warn { border-color: var(--bad); color: var(--bad); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 700 14px/1 var(--f-body); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.chip:hover { color: var(--fg); }
+.chip.on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.ctrl-row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.ctrl-row + .ctrl-row, .ctrl-row + div, div + .ctrl-row { margin-top: 12px; }
+.ctrl-row.center { justify-content: center; }
+.ctrl-right { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-left: auto; }
+.field { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+.field.grow { flex: 1 1 260px; }
+.field.grow select { flex: 1; min-width: 0; }
+select, input[type="number"] { font: 15px var(--f-body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; max-width: 100%; }
+input[type="number"] { width: 5.2em; font-family: var(--f-mono); }
+input[type="range"] { accent-color: var(--accent); }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 17px; height: 17px; }
+.pill { display: inline-block; font: 600 12.5px/1.3 var(--f-mono); padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg); }
+.pill.ok { background: var(--ok); color: #fff; }
+.pill.muted { color: var(--muted); }
+.bar { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.caption { color: var(--muted); font-size: 14px; margin-top: 10px; }
+.tip { font-size: 14px; color: var(--muted); margin-top: 12px; max-width: 75ch; }
+.tip b { color: var(--fg); }
+
+/* cores por função do intervalo */
+.iv-r { --c: var(--iv-r); --ink: #fff; } .iv-3 { --c: var(--iv-3); --ink: #2B1A00; } .iv-5 { --c: var(--iv-5); --ink: #fff; }
+.iv-7 { --c: var(--iv-7); --ink: #fff; } .iv-2 { --c: var(--iv-2); --ink: #fff; } .iv-4 { --c: var(--iv-4); --ink: #fff; }
+.iv-6 { --c: var(--iv-6); --ink: #fff; } .iv-b5 { --c: var(--iv-b5); --ink: #fff; } .iv-n { --c: var(--iv-n); --ink: #241D10; }
+.iv-pair { --c: var(--iv-pair); --ink: #2B1A00; } .iv-q { --c: var(--iv-q); --ink: #17201C; } .iv-bad { --c: var(--bad); --ink: #fff; }
+.dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--c, var(--iv-n)); margin-right: 6px; vertical-align: -1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+/* braço */
+.fb-wrap { overflow-x: auto; overscroll-behavior-x: contain; margin-top: 12px; border-radius: 8px; -webkit-overflow-scrolling: touch; }
+.fb { display: block; width: 100%; height: auto; }
+.fb-wood { fill: var(--wood); stroke: var(--wood-edge); stroke-width: 2; }
+.fb-inlay { fill: var(--pearl); opacity: .8; }
+.fb-fret { fill: var(--fret); }
+.fb-nut { fill: var(--nut); }
+.fb-string { stroke: var(--string); }
+.fb-string.wound { stroke: var(--string-w); }
+.fb-sname, .fb-num { fill: var(--muted); font: 600 11px var(--f-mono); text-anchor: middle; }
+.fb-num.strong { fill: var(--fg); }
+.fb-hit { fill: transparent; cursor: pointer; }
+.fb-hit:hover { fill: rgba(255, 255, 255, .09); }
+.fb-note { cursor: pointer; transform-box: fill-box; transform-origin: center; transition: transform .09s ease-out; }
+.fb-note circle { fill: var(--c); stroke: rgba(0, 0, 0, .3); stroke-width: 1; }
+.fb-note text { fill: var(--ink); font-family: var(--f-mono); font-weight: 600; text-anchor: middle; pointer-events: none; }
+.fb-note.dim { opacity: .5; }
+.fb-note.ring circle { fill-opacity: .35; stroke: var(--c); stroke-width: 2; }
+.fb-note.is-on { transform: scale(1.28); }
+.fb-note.is-on circle { stroke: #fff; stroke-width: 3; }
+
+/* tablatura */
+.tab-scroll { overflow-x: auto; margin-top: 12px; padding-bottom: 6px; background: var(--surface); }
+.tab { display: flex; width: max-content; font: 14px/1 var(--f-mono); }
+.tab-names, .tab-col { display: flex; flex-direction: column; }
+.tab-col { width: calc(var(--w) * 1ch + 4px); border-radius: 4px; }
+.tab-top { height: 20px; display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: var(--muted); }
+.tab-top i { font-style: normal; font-size: 9px; color: var(--accent); }
+.tab-cell { height: 22px; display: flex; align-items: center; justify-content: center; background: linear-gradient(var(--line), var(--line)) center / 100% 1px no-repeat; }
+.tab-cell b { background: var(--surface); padding: 0 2px; font-weight: 600; white-space: nowrap; }
+.tab-names .tab-cell { width: 2.2ch; background: none; color: var(--muted); }
+.tab-bar { width: 2px; margin-top: 20px; height: 132px; background: var(--muted); opacity: .55; }
+.tab-col.on { background: var(--accent-soft); }
+.tab-col.on b { background: var(--accent-soft); color: var(--accent); }
+
+/* trilha */
+.hero-strip { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; align-items: end; padding-block: 8px 4px; }
+.stat-row { display: flex; flex-wrap: wrap; gap: 14px 26px; align-items: center; }
+.stat-row.wide { gap: 14px 40px; }
+.stat b { display: block; font: 700 46px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.stat b small { font-size: 24px; color: var(--muted); }
+.stat span { font-size: 13px; color: var(--muted); }
+.modules { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+.module { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 16px 6px; display: flex; flex-direction: column; gap: 8px; }
+.module header { display: flex; justify-content: space-between; gap: 8px; }
+.mod-n { font: 600 12px var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.tag { font: 600 12px var(--f-mono); color: var(--accent); }
+.lessons { list-style: none; margin: 4px 0 0; padding: 0; }
+.lessons a { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 22px; gap: 8px; align-items: center; padding: 9px 2px; border-top: 1px solid var(--line); color: var(--fg); text-decoration: none; }
+.lessons a:hover .lt { color: var(--accent); }
+.ln, .lm { font: 500 12.5px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.lt { font-weight: 700; }
+.ck { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; }
+.done .ck { background: var(--ok); border-color: var(--ok); }
+.done .ck::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 700; }
+
+/* aula */
+.lesson-head { margin-bottom: 14px; }
+.prose { max-width: 68ch; display: flex; flex-direction: column; gap: 12px; }
+.prose ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.mono-line { font: 14px/1.8 var(--f-mono); background: var(--surface-2); padding: 10px 14px; border-radius: 8px; overflow-x: auto; white-space: nowrap; }
+.practice h2 { margin-bottom: 10px; }
+.tasks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; max-width: 75ch; }
+.tasks li { padding-left: 28px; position: relative; }
+.tasks li::before { content: ''; position: absolute; left: 0; top: 3px; width: 16px; height: 16px; border: 2px solid var(--accent); border-radius: 4px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.lesson-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--line); }
+
+/* licks */
+.licks-layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 16px; align-items: start; }
+.lick-list { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 76px); max-height: calc(100vh - 100px); overflow: auto; }
+.lick-list ul { list-style: none; margin: 12px 0 0; padding: 0; }
+.lick-list a { display: flex; flex-direction: column; padding: 9px 10px; border-radius: 8px; text-decoration: none; color: var(--fg); }
+.lick-list a:hover { background: var(--surface); }
+.lick-list a.on { background: var(--accent-soft); }
+.lick-list a.on .lt { color: var(--accent); }
+.lick-list .lm { font-size: 12px; }
+.lick-head { margin-top: 14px; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+.chords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; font: 600 14px var(--f-mono); }
+.chords span { font-size: 10px; color: var(--muted); margin-right: -3px; align-self: flex-start; }
+
+/* treino */
+.subtabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.subtabs a { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); text-decoration: none; font-weight: 700; font-size: 14px; }
+.subtabs a.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.met { display: flex; flex-direction: column; gap: 18px; align-items: stretch; }
+.met-bpm { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.bpm-read { text-align: center; min-width: 150px; }
+.bpm-read b { display: block; font: 700 92px/0.9 var(--f-display); font-variant-numeric: tabular-nums; }
+.bpm-read span { font: 600 12px var(--f-mono); color: var(--muted); letter-spacing: .12em; }
+.met input[type="range"] { width: 100%; }
+.beats { display: flex; justify-content: center; gap: 12px; }
+.beats i { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); }
+.beats i.acc { border-color: var(--accent); }
+.beats i.on { background: var(--accent); border-color: var(--accent); }
+.speed-read { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin-top: 14px; }
+.speed-read b { display: block; font: 700 46px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.speed-read span { font-size: 13px; color: var(--muted); }
+.bar.wide { flex: 1 1 200px; height: 10px; }
+.jam-now { display: flex; align-items: center; gap: 14px 26px; flex-wrap: wrap; margin-top: 14px; }
+.now span { display: block; font: 600 11px var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.now b { font: 700 44px/1 var(--f-display); }
+.now.dim b { color: var(--muted); font-size: 30px; }
+.bars { display: flex; flex-wrap: wrap; gap: 5px; list-style: none; margin: 0; padding: 0; flex: 1 1 260px; }
+.bars li { font: 600 13px var(--f-mono); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.bars li.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* explorador */
+.explorer-ctrl .ctrl-row { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.explorer-ctrl .ctrl-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.degrees { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 4px 12px; }
+.deg { padding: 6px 12px; border: 1px solid var(--line); border-top: 5px solid var(--c); border-radius: 6px; text-align: center; min-width: 54px; }
+.deg b { display: block; font: 700 22px/1.1 var(--f-display); }
+.deg span { font: 600 12px var(--f-mono); color: var(--muted); }
+
+/* quiz */
+.quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.quiz-card { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--fg); text-decoration: none; }
+.quiz-card:hover { border-color: var(--accent); }
+.quiz-card p { color: var(--muted); font-size: 15px; flex: 1; }
+.quiz-top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.quiz-top h1 { font-size: 30px; margin-right: auto; }
+.prompt { font-size: 19px; margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.answers { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; margin-top: 14px; }
+.answers .btn { justify-content: center; text-align: center; }
+.answers .result { grid-column: 1 / -1; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.result b { font: 700 80px/1 var(--f-display); }
+.btn.ans.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+.btn.ans.bad { background: var(--bad); color: #fff; border-color: var(--bad); }
+.feedback { min-height: 1.6em; margin-top: 12px; font-weight: 700; }
+.feedback.ok { color: var(--ok); }
+.feedback.bad { color: var(--bad); }
+
+/* progresso */
+.heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 14px); grid-auto-columns: 14px; gap: 3px; margin-block: 6px 12px; overflow-x: auto; }
+.heat i { border-radius: 3px; background: var(--surface-2); }
+.heat i.on { background: var(--ok); }
+.mod-prog { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.mod-prog li { display: grid; grid-template-columns: minmax(0, 1fr) 90px 36px; gap: 10px; align-items: center; font-size: 14.5px; }
+.mod-prog em { font: normal 600 12.5px var(--f-mono); color: var(--muted); text-align: right; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.tbl th { text-align: left; font: 600 11px var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 6px 4px; }
+.tbl td { padding: 8px 4px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.danger { display: flex; justify-content: flex-end; }
+.backup .ctrl-row { margin-top: 12px; }
+
+/* configurações e aviso */
+.sheet-wrap { position: fixed; inset: 0; z-index: 50; background: rgba(8, 12, 10, .45); display: flex; justify-content: flex-end; }
+.sheet { width: min(380px, 100%); height: 100%; background: var(--surface); padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 24px; overflow: auto; border-left: 1px solid var(--line); }
+.sheet header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.set-row { display: flex; flex-direction: column; gap: 8px; padding-block: 12px; border-bottom: 1px solid var(--line); font-weight: 700; }
+.set-row input[type="range"] { width: 100%; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); z-index: 60; background: var(--fg); color: var(--bg);
+  padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
+
+@media (max-width: 900px) {
+  .licks-layout { grid-template-columns: minmax(0, 1fr); }
+  .lick-list { position: static; max-height: none; }
+  .lick-list ul { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+  .lick-list li { flex: 0 0 auto; }
+  .lick-list a { border: 1px solid var(--line); background: var(--surface); }
+  .lick-list .lm { display: none; }
+  .hero-strip { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .app { padding-inline: 16px; }
+  .top { margin-inline: -16px; padding-inline: 16px; }
+  .sync { display: none; }
+  .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0;
+    background: var(--surface); border-top: 1px solid var(--line); padding: 6px 4px calc(env(safe-area-inset-bottom, 0px) + 6px); }
+  .nav a { flex-direction: column; gap: 3px; padding: 6px 2px; border-radius: 10px; font-size: 12px; letter-spacing: .04em; }
+  .nav svg { display: block; }
+  .modules { grid-template-columns: minmax(0, 1fr); }
+  .ctrl-right { margin-left: 0; }
+  .bpm-read b { font-size: 76px; }
+  .stat b { font-size: 38px; }
+  .lesson-foot .btn.ghost { flex: 1 1 100%; justify-content: center; }
+  .lesson-foot .btn:not(.ghost) { order: -1; flex: 1 1 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head><body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="#trilha" aria-label="Mapa do Braço, início">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="9" width="36" height="22" rx="3" fill="var(--wood)"/><rect x="7" y="9" width="2.5" height="22" fill="var(--nut)"/><rect x="18" y="9" width="1.6" height="22" fill="var(--fret)"/><rect x="28" y="9" width="1.6" height="22" fill="var(--fret)"/><g stroke="var(--string)" stroke-width="1"><line x1="2" y1="13" x2="38" y2="13"/><line x1="2" y1="17.5" x2="38" y2="17.5"/><line x1="2" y1="22" x2="38" y2="22"/><line x1="2" y1="26.5" x2="38" y2="26.5"/></g><circle cx="23.3" cy="17.5" r="4" fill="var(--iv-r)"/><circle cx="13.6" cy="26.5" r="3" fill="var(--iv-3)"/><circle cx="33.4" cy="22" r="3" fill="var(--iv-5)"/></svg>
+      <span>Mapa do Braço</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Seções">
+      <a href="#trilha" data-nav="trilha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>Trilha</a>
+      <a href="#braco" data-nav="braco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 7h20M2 12h20M2 17h20M7 4v16M13 4v16M18 4v16"/></svg>Braço</a>
+      <a href="#licks" data-nav="licks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>Licks</a>
+      <a href="#treino" data-nav="treino"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l4 18H5z"/><path d="M12 16l5-9"/></svg>Treino</a>
+      <a href="#quiz" data-nav="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4"/><circle cx="12" cy="18" r=".6" fill="currentColor"/><circle cx="12" cy="12" r="10"/></svg>Quiz</a>
+      <a href="#progresso" data-nav="progresso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V12M10 20V6M16 20v-9M22 20H2"/></svg>Progresso</a>
+    </nav>
+    <div class="top-right">
+      <span id="sync" class="sync"></span>
+      <button type="button" id="btn-settings" class="icon-btn" aria-label="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+  </header>
+  <main id="view"></main>
+</div>
+<div id="settings" class="sheet-wrap" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="set-title">
+    <header><h2 id="set-title">Configurações</h2><button type="button" class="icon-btn" data-close aria-label="Fechar">×</button></header>
+    <div data-body></div>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
+<script>
+'use strict';
+/* ===== Teoria: notas, escalas, acordes e posições no braço ===== */
+const T = (() => {
+  const SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+  const LAT = { C:'Dó', D:'Ré', E:'Mi', F:'Fá', G:'Sol', A:'Lá', B:'Si' };
+  const ROOTS = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  // índice 0 = corda 6 (Mi grave) ... índice 5 = corda 1 (Mi agudo)
+  const TUNING = [40, 45, 50, 55, 59, 64];
+  const IV = ['R','b2','2','b3','3','4','b5','5','b6','6','b7','7'];
+  const IV_NAME = ['Tônica','2ª menor','2ª maior','3ª menor','3ª maior','4ª justa',
+    'Trítono (5ª diminuta)','5ª justa','6ª menor','6ª maior','7ª menor','7ª maior'];
+  // família de cor de cada intervalo (usado no CSS: .iv-r, .iv-3 ...)
+  const IV_ROLE = ['r','2','2','3','3','4','b5','5','6','6','7','7'];
+  const FLAT_PARENTS = new Set([5, 10, 3, 8, 1, 6]);
+
+  const SCALES = {
+    pent_menor: { name:'Pentatônica menor', iv:[0,3,5,7,10], parent:3, sys:'box' },
+    pent_maior: { name:'Pentatônica maior', iv:[0,2,4,7,9], parent:0, sys:'box' },
+    blues:      { name:'Escala blues', iv:[0,3,5,6,7,10], parent:3, sys:'box', base:[0,3,5,7,10] },
+    blues_maior:{ name:'Blues maior', iv:[0,2,3,4,7,9], parent:0, sys:'box', base:[0,2,4,7,9] },
+    maior:      { name:'Maior (jônio)', iv:[0,2,4,5,7,9,11], parent:0, sys:'3nps' },
+    menor:      { name:'Menor natural (eólio)', iv:[0,2,3,5,7,8,10], parent:3, sys:'3nps' },
+    dorico:     { name:'Dórico', iv:[0,2,3,5,7,9,10], parent:10, sys:'3nps' },
+    frigio:     { name:'Frígio', iv:[0,1,3,5,7,8,10], parent:8, sys:'3nps' },
+    lidio:      { name:'Lídio', iv:[0,2,4,6,7,9,11], parent:7, sys:'3nps' },
+    mixolidio:  { name:'Mixolídio', iv:[0,2,4,5,7,9,10], parent:5, sys:'3nps' },
+    menor_harm: { name:'Menor harmônica', iv:[0,2,3,5,7,8,11], parent:3, sys:'3nps' },
+    frigio_dom: { name:'Frígio dominante', iv:[0,1,4,5,7,8,10], parent:8, sys:'3nps' },
+  };
+
+  const CHORDS = {
+    maior: { name:'Maior', sym:'', iv:[0,4,7] },
+    menor: { name:'Menor', sym:'m', iv:[0,3,7] },
+    dim:   { name:'Diminuta', sym:'°', iv:[0,3,6] },
+    aum:   { name:'Aumentada', sym:'+', iv:[0,4,8] },
+    sus2:  { name:'Sus2', sym:'sus2', iv:[0,2,7] },
+    sus4:  { name:'Sus4', sym:'sus4', iv:[0,5,7] },
+    power: { name:'Power chord (5)', sym:'5', iv:[0,7] },
+    dom7:  { name:'Dominante (7)', sym:'7', iv:[0,4,7,10] },
+    maj7:  { name:'Maior com 7M', sym:'7M', iv:[0,4,7,11] },
+    m7:    { name:'Menor com 7', sym:'m7', iv:[0,3,7,10] },
+    m7b5:  { name:'Meio-diminuto', sym:'m7(b5)', iv:[0,3,6,10] },
+  };
+
+  // Formas CAGED: rs = corda da tônica (0 = corda 6); off = deslocamento em casas por corda
+  const CAGED = {
+    maior: [
+      { k:'C', rs:1, off:[null,0,-1,-3,-2,-3] },
+      { k:'A', rs:1, off:[null,0,2,2,2,0] },
+      { k:'G', rs:0, off:[0,-1,-3,-3,-3,0] },
+      { k:'E', rs:0, off:[0,2,2,1,0,0] },
+      { k:'D', rs:2, off:[null,null,0,2,3,2] },
+    ],
+    menor: [
+      { k:'C', rs:1, off:[null,0,-2,-3,-2,null] },
+      { k:'A', rs:1, off:[null,0,2,2,1,0] },
+      { k:'G', rs:0, off:[0,-2,-3,-3,0,0] },
+      { k:'E', rs:0, off:[0,2,2,0,0,0] },
+      { k:'D', rs:2, off:[null,null,0,2,3,1] },
+    ],
+  };
+
+  const STRING_SETS = [
+    { id:'123', label:'Cordas 1-2-3', s:[3,4,5] },
+    { id:'234', label:'Cordas 2-3-4', s:[2,3,4] },
+    { id:'345', label:'Cordas 3-4-5', s:[1,2,3] },
+    { id:'456', label:'Cordas 4-5-6', s:[0,1,2] },
+  ];
+  const INV_NAME = ['Fundamental', '1ª inversão', '2ª inversão'];
+
+  const mod = (n, m = 12) => ((n % m) + m) % m;
+  const pcOf = name => {
+    if (typeof name === 'number') return mod(name);
+    const i = ROOTS.indexOf(name); if (i >= 0) return i;
+    const j = SHARP.indexOf(name); return j >= 0 ? j : mod(FLAT.indexOf(name));
+  };
+  const pitch = (s, f) => TUNING[s] + f;
+
+  function useFlats(rootPc, parent = 0) { return FLAT_PARENTS.has(mod(rootPc + parent)); }
+
+  function noteName(pc, flats, latin) {
+    let n = (flats ? FLAT : SHARP)[mod(pc)];
+    if (latin) n = LAT[n[0]] + n.slice(1);
+    return n.replace('#', '♯').replace('b', '♭');
+  }
+  // nome da tônica escolhida, respeitando a grafia dos seletores
+  function rootName(pc, latin) {
+    let n = ROOTS[mod(pc)];
+    if (latin) n = LAT[n[0]] + n.slice(1);
+    return n.replace('#', '♯').replace('b', '♭');
+  }
+  const ivLabel = semis => IV[mod(semis)].replace('b', '♭');
+
+  function mark(s, f, rootPc, extra) {
+    const pc = mod(pitch(s, f));
+    const iv = mod(pc - rootPc);
+    return Object.assign({ s, f, pc, iv, role: IV_ROLE[iv] }, extra);
+  }
+
+  /** Todas as notas das classes de altura dadas, no braço inteiro. */
+  function allNotes(ivs, rootPc, maxFret, lo = 0) {
+    const set = new Set(ivs.map(i => mod(rootPc + i)));
+    const out = [];
+    for (let s = 0; s < 6; s++)
+      for (let f = lo; f <= maxFret; f++)
+        if (set.has(mod(pitch(s, f)))) out.push(mark(s, f, rootPc));
+    return out;
+  }
+
+  function nextPitch(p, pcs) { let q = p + 1; while (!pcs.has(mod(q))) q++; return q; }
+
+  function fitFrets(list, maxFret) {
+    let min = Math.min(...list.map(m => m.f)), max = Math.max(...list.map(m => m.f));
+    let shift = 0;
+    if (min < 0) shift = 12;
+    else if (max > maxFret && min >= 12) shift = -12;
+    if (shift) list.forEach(m => { m.f += shift; });
+    return list.filter(m => m.f >= 0 && m.f <= maxFret);
+  }
+
+  /** Posição com N notas por corda começando no grau `deg` na corda 6. */
+  function nps(ivs, rootPc, deg, perString, maxFret) {
+    const pcs = new Set(ivs.map(i => mod(rootPc + i)));
+    const startPc = mod(rootPc + ivs[deg]);
+    let p = TUNING[0] + mod(startPc - TUNING[0]);
+    const out = [];
+    for (let s = 0; s < 6; s++) {
+      for (let k = 0; k < perString; k++) {
+        if (s > 0 || k > 0) p = nextPitch(p, pcs);
+        out.push({ s, f: p - TUNING[s] });
+      }
+    }
+    return fitFrets(out, maxFret).map(m => mark(m.s, m.f, rootPc));
+  }
+
+  /** Caixas (2 notas por corda) com notas extras (ex.: blue note) dentro da janela da corda. */
+  function box(scaleKey, rootPc, idx, maxFret) {
+    const sc = SCALES[scaleKey];
+    const base = sc.base || sc.iv;
+    const marks = nps(base, rootPc, idx, 2, maxFret);
+    const extras = sc.iv.filter(i => !base.includes(i));
+    if (!extras.length) return marks;
+    const out = marks.slice();
+    for (let s = 0; s < 6; s++) {
+      const fs = marks.filter(m => m.s === s).map(m => m.f);
+      if (!fs.length) continue;
+      const lo = Math.min(...fs), hi = Math.max(...fs) + 1;
+      for (let f = lo; f <= Math.min(hi, maxFret); f++)
+        if (extras.includes(mod(pitch(s, f) - rootPc))) out.push(mark(s, f, rootPc));
+    }
+    return out;
+  }
+
+  function positionsCount(scaleKey) {
+    const sc = SCALES[scaleKey];
+    return (sc.base || sc.iv).length;
+  }
+
+  /** Notas de uma escala numa posição (ou braço inteiro quando pos < 0). */
+  function scaleMarks(scaleKey, rootPc, pos, maxFret) {
+    const sc = SCALES[scaleKey];
+    if (pos < 0) return allNotes(sc.iv, rootPc, maxFret);
+    const ms = sc.sys === 'box' ? box(scaleKey, rootPc, pos, maxFret) : nps(sc.iv, rootPc, pos, 3, maxFret);
+    // posições depois da 1ª continuam subindo o braço quando cabem (evita cair nas cordas soltas)
+    const lo = Math.min(...ms.map(m => m.f)), hi = Math.max(...ms.map(m => m.f));
+    if (pos > 0 && lo < 3 && hi + 12 <= maxFret) ms.forEach(m => { m.f += 12; });
+    return ms;
+  }
+
+  /** Forma CAGED posicionada no braço. */
+  function cagedShape(quality, k, rootPc, maxFret) {
+    const sh = CAGED[quality].find(x => x.k === k);
+    let f = mod(rootPc - TUNING[sh.rs]);
+    const offs = sh.off.filter(o => o != null);
+    if (f + Math.min(...offs) < 0) f += 12;
+    if (f + Math.max(...offs) > maxFret) f -= 12;
+    const notes = [];
+    sh.off.forEach((o, s) => { if (o != null) notes.push(mark(s, f + o, rootPc)); });
+    const fs = notes.map(n => n.f);
+    return { k, notes, lo: Math.min(...fs), hi: Math.max(...fs) };
+  }
+
+  function cagedAll(quality, rootPc, maxFret) {
+    return CAGED[quality].map(sh => cagedShape(quality, sh.k, rootPc, maxFret)).sort((a, b) => a.lo - b.lo);
+  }
+
+  /** Tríades fechadas num grupo de 3 cordas, todas as inversões no braço. */
+  function triads(rootPc, quality, strings, maxFret) {
+    const ivs = CHORDS[quality].iv.slice(0, 3);
+    const out = [];
+    for (let inv = 0; inv < 3; inv++) {
+      const order = ivs.slice(inv).concat(ivs.slice(0, inv));
+      const pcs = order.map(i => mod(rootPc + i));
+      const f0 = mod(pcs[0] - TUNING[strings[0]]);
+      for (let base = f0; base <= maxFret; base += 12) {
+        const p0 = TUNING[strings[0]] + base;
+        const p1 = nextPitch(p0, new Set([pcs[1]]));
+        const p2 = nextPitch(p1, new Set([pcs[2]]));
+        const frets = [base, p1 - TUNING[strings[1]], p2 - TUNING[strings[2]]];
+        if (frets.some(f => f < 0 || f > maxFret)) continue;
+        if (Math.max(...frets) - Math.min(...frets) > 5) continue;
+        out.push({ inv, notes: frets.map((f, i) => mark(strings[i], f, rootPc)), lo: Math.min(...frets) });
+      }
+    }
+    return out.sort((a, b) => a.lo - b.lo);
+  }
+
+  /** Posições de uma classe de altura em todo o braço. */
+  function pcPositions(pc, maxFret) {
+    const out = [];
+    for (let s = 0; s < 6; s++)
+      for (let f = 0; f <= maxFret; f++)
+        if (mod(pitch(s, f)) === mod(pc)) out.push({ s, f });
+    return out;
+  }
+
+  const chordName = (rootPc, q, latin) => rootName(rootPc, latin) + CHORDS[q].sym;
+  const stringLabel = s => 'Corda ' + (6 - s);
+
+  return { SHARP, FLAT, ROOTS, TUNING, IV, IV_NAME, IV_ROLE, SCALES, CHORDS, CAGED, STRING_SETS, INV_NAME,
+    mod, pcOf, pitch, useFlats, noteName, rootName, ivLabel, mark, allNotes, nps, box, positionsCount,
+    scaleMarks, cagedShape, cagedAll, triads, pcPositions, chordName, stringLabel };
+})();
+
+/* ===== Áudio: corda sintetizada (Karplus-Strong), timbres, cliques e relógio ===== */
+const A = (() => {
+  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus;
+  const cache = new Map();
+  const voices = {};
+  let live = [];
+  let tone = 'clean', volume = 0.8;
+
+  function init() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return ctx; }
+    // iPhone: toca mesmo com a chave de silencioso ligada (Safari 16.4+)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = volume;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14; comp.ratio.value = 4;
+    master.connect(comp); comp.connect(ctx.destination);
+
+    // reverb curto de sala
+    const conv = ctx.createConvolver();
+    const len = Math.floor(ctx.sampleRate * 1.3);
+    const ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    }
+    conv.buffer = ir;
+    revSend = ctx.createGain(); revSend.gain.value = 0.16;
+    revSend.connect(conv); conv.connect(master);
+
+    gtrIn = ctx.createGain();
+    // limpo
+    cleanG = ctx.createGain();
+    const cleanLP = ctx.createBiquadFilter(); cleanLP.type = 'lowpass'; cleanLP.frequency.value = 6500;
+    gtrIn.connect(cleanG); cleanG.connect(cleanLP); cleanLP.connect(master); cleanLP.connect(revSend);
+    // drive: ganho -> saturação -> falante
+    driveG = ctx.createGain();
+    const pre = ctx.createGain(); pre.gain.value = 9;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 110;
+    const sh = ctx.createWaveShaper();
+    const curve = new Float32Array(2048);
+    for (let i = 0; i < 2048; i++) { const x = i / 1023.5 - 1; curve[i] = Math.tanh(2.6 * x); }
+    sh.curve = curve; sh.oversample = '2x';
+    const mid = ctx.createBiquadFilter(); mid.type = 'peaking'; mid.frequency.value = 900; mid.gain.value = 4; mid.Q.value = 0.8;
+    const cab = ctx.createBiquadFilter(); cab.type = 'lowpass'; cab.frequency.value = 3600; cab.Q.value = 0.9;
+    const post = ctx.createGain(); post.gain.value = 0.22;
+    gtrIn.connect(driveG); driveG.connect(hp); hp.connect(pre); pre.connect(sh); sh.connect(mid); mid.connect(cab); cab.connect(post);
+    post.connect(master); post.connect(revSend);
+
+    clickBus = ctx.createGain(); clickBus.gain.value = 0.9; clickBus.connect(master);
+    // base do jam: sempre limpa, um pouco mais escura
+    backBus = ctx.createGain(); backBus.gain.value = 0.55;
+    const backLP = ctx.createBiquadFilter(); backLP.type = 'lowpass'; backLP.frequency.value = 3200;
+    backBus.connect(backLP); backLP.connect(master); backLP.connect(revSend);
+    setTone(tone);
+    return ctx;
+  }
+
+  function setTone(t) {
+    tone = t;
+    if (!ctx) return;
+    cleanG.gain.value = t === 'clean' ? 1 : 0;
+    driveG.gain.value = t === 'drive' ? 1 : 0;
+  }
+  function setVolume(v) { volume = v; if (master) master.gain.value = v; }
+
+  function buffer(midi) {
+    if (cache.has(midi)) return cache.get(midi);
+    const sr = ctx.sampleRate;
+    const f = 440 * Math.pow(2, (midi - 69) / 12);
+    const dur = midi < 45 ? 3.4 : midi < 60 ? 2.8 : 2.2;
+    const len = Math.floor(sr * dur);
+    const buf = ctx.createBuffer(1, len, sr);
+    const d = buf.getChannelData(0);
+    const S = midi < 52 ? 0.5 : midi < 66 ? 0.4 : 0.3;
+    const P = sr / f - S;
+    const Ni = Math.floor(P), fr = P - Ni;
+    const t60 = midi < 52 ? 5 : midi < 66 ? 4 : 3;
+    const rho = Math.pow(0.001, 1 / (f * t60));
+    // excitação: ruído suavizado (palheta média)
+    let prev = 0;
+    for (let i = 0; i < Ni + 2 && i < len; i++) { const r = Math.random() * 2 - 1; prev = prev * 0.45 + r * 0.55; d[i] = prev; }
+    let mean = 0; for (let i = 0; i < Ni + 2; i++) mean += d[i]; mean /= (Ni + 2);
+    for (let i = 0; i < Ni + 2; i++) d[i] -= mean;
+    let dPrev = 0;
+    for (let n = Ni + 2; n < len; n++) {
+      const del = (1 - fr) * d[n - Ni] + fr * d[n - Ni - 1];
+      d[n] = rho * ((1 - S) * del + S * dPrev);
+      dPrev = del;
+    }
+    const fade = Math.floor(sr * 0.08);
+    for (let i = 0; i < fade; i++) d[len - 1 - i] *= i / fade;
+    cache.set(midi, buf);
+    return buf;
+  }
+
+  /**
+   * Toca uma nota. o: { dur, vel, string, bend, release, prebend, slideFrom, vib, mute, dry }
+   */
+  function play(midi, when, o = {}) {
+    init();
+    const t = Math.max(when ?? ctx.currentTime, ctx.currentTime);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer(midi);
+    const g = ctx.createGain();
+    const vel = (o.vel ?? 0.8) * (o.mute ? 0.9 : 1);
+    g.gain.setValueAtTime(vel, t);
+    let out = g;
+    if (o.mute) {
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1300;
+      g.connect(lp); out = lp;
+      g.gain.setTargetAtTime(0, t + 0.06, 0.07);
+    }
+    src.connect(g);
+    out.connect(o.bus === 'back' ? backBus : (o.bus || gtrIn));
+    const pr = src.playbackRate;
+    const len = o.dur ?? 2.4;
+    if (o.slideFrom != null) {
+      pr.setValueAtTime(Math.pow(2, (o.slideFrom - midi) / 12), t);
+      pr.linearRampToValueAtTime(1, t + Math.min(0.09, len * 0.5));
+    }
+    if (o.bend) {
+      const r = Math.pow(2, o.bend / 12);
+      if (o.prebend) pr.setValueAtTime(r, t); else { pr.setValueAtTime(1, t); pr.setTargetAtTime(r, t + 0.03, 0.045); }
+      if (o.release) pr.setTargetAtTime(1, t + len * 0.55, 0.04);
+    }
+    if (o.vib) {
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 5.6;
+      const lg = ctx.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(0.018, t + 0.25);
+      lfo.connect(lg); lg.connect(pr); lfo.start(t); lfo.stop(t + len + 0.2);
+    }
+    src.start(t);
+    if (o.dur != null) {
+      g.gain.setValueAtTime(vel, t + len);
+      g.gain.linearRampToValueAtTime(0, t + len + 0.07);
+      src.stop(t + len + 0.1);
+    }
+    // abafa a nota anterior na mesma corda
+    if (o.string != null) {
+      const pv = voices[o.string];
+      if (pv && pv.t < t) { pv.g.gain.cancelScheduledValues(t); pv.g.gain.setTargetAtTime(0, t, 0.012); }
+      voices[o.string] = { g, t };
+    }
+    const v = { src, g, end: t + len + 0.1 };
+    live.push(v);
+    if (live.length > 80) live = live.filter(x => x.end > ctx.currentTime);
+    return v;
+  }
+
+  function stopAll() {
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    live.forEach(v => { try { v.g.gain.cancelScheduledValues(now); v.g.gain.setTargetAtTime(0, now, 0.02); v.src.stop(now + 0.15); } catch (e) {} });
+    live = [];
+    Object.keys(voices).forEach(k => delete voices[k]);
+  }
+
+  function click(t, accent) {
+    init();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'square'; o.frequency.value = accent ? 1750 : 1150;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(accent ? 0.35 : 0.2, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+    o.connect(g); g.connect(clickBus); o.start(t); o.stop(t + 0.06);
+  }
+
+  function tick(t) {
+    init();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = 900;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    o.connect(g); g.connect(clickBus); o.start(t); o.stop(t + 0.04);
+  }
+
+  let noiseBuf = null;
+  function noise() {
+    if (noiseBuf) return noiseBuf;
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return noiseBuf;
+  }
+  function drum(kind, t, vel = 1) {
+    init();
+    if (kind === 'kick') {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+      g.gain.setValueAtTime(0.9 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      o.connect(g); g.connect(clickBus); o.start(t); o.stop(t + 0.35);
+      return;
+    }
+    const s = ctx.createBufferSource(); s.buffer = noise();
+    const f = ctx.createBiquadFilter(), g = ctx.createGain();
+    if (kind === 'hat') { f.type = 'highpass'; f.frequency.value = 7000; g.gain.setValueAtTime(0.18 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05); }
+    else { f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 0.7; g.gain.setValueAtTime(0.5 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18); }
+    s.connect(f); f.connect(g); g.connect(clickBus); s.start(t); s.stop(t + 0.25);
+  }
+  function bass(midi, t, dur) {
+    init();
+    play(midi, t, { dur, vel: 1, bus: 'back', string: 'bass' });
+  }
+
+  // mantém a tela do celular acesa enquanto o metrônomo ou a base estiverem tocando
+  let lock = null, locks = 0;
+  async function wake(on) {
+    locks = Math.max(0, locks + (on ? 1 : -1));
+    try {
+      if (locks > 0 && !lock && navigator.wakeLock) { lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => { lock = null; }); }
+      else if (locks === 0 && lock) { await lock.release(); lock = null; }
+    } catch (e) { lock = null; }
+  }
+
+  /** Relógio com agendamento antecipado. onTick(tickIndex, time) por subdivisão. */
+  function Clock(getBpm, perBeat, onTick) {
+    let timer = null, next = 0, i = 0;
+    const self = {
+      running: false,
+      start() {
+        init();
+        if (self.running) return;
+        i = 0; next = ctx.currentTime + 0.12; self.running = true; wake(true);
+        timer = setInterval(() => {
+          while (next < ctx.currentTime + 0.12) {
+            onTick(i, next);
+            next += 60 / getBpm() / perBeat; i++;
+          }
+        }, 25);
+      },
+      stop() { if (self.running) wake(false); clearInterval(timer); timer = null; self.running = false; },
+    };
+    return self;
+  }
+
+  const now = () => (init(), ctx.currentTime);
+  return { init, play, stopAll, click, tick, drum, bass, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
+})();
+
+/* ===== Braço da guitarra em SVG ===== */
+const FB = (() => {
+  const NUT = 60, PAD_R = 14, TOP = 22, GAP = 28, K = 20;
+  const WIDTHS = [2.7, 2.2, 1.8, 1.45, 1.1, 0.9];
+  const INLAY = [3, 5, 7, 9, 15, 17, 19, 21];
+
+  function geometry(N) {
+    const W = NUT + N * 56 + PAD_R;
+    const span = W - NUT - PAD_R;
+    const norm = 1 - Math.pow(2, -N / K);
+    const xs = [];
+    for (let n = 0; n <= N; n++) xs.push(NUT + span * (1 - Math.pow(2, -n / K)) / norm);
+    const y = s => TOP + (5 - s) * GAP;
+    const H = TOP * 2 + 5 * GAP + 16;
+    const nx = f => f === 0 ? NUT - 22 : (xs[f - 1] + xs[f]) / 2;
+    return { W, H, xs, y, nx };
+  }
+
+  function create(host, opts = {}) {
+    const inst = { state: { marks: [], frets: 15, lefty: false, labels: 'note', flats: false, latin: false } };
+    host.classList.add('fb-wrap');
+    host.addEventListener('click', e => {
+      const hit = e.target.closest('[data-s]');
+      if (!hit || !inst.state.onPick) return;
+      inst.state.onPick(+hit.dataset.s, +hit.dataset.f, e);
+    });
+
+    inst.set = (patch) => { Object.assign(inst.state, patch); render(); return inst; };
+
+    inst.setActive = (keys) => {
+      const on = new Set(keys);
+      host.querySelectorAll('.fb-note').forEach(n => n.classList.toggle('is-on', on.has(n.dataset.k)));
+    };
+
+    function label(m, st) {
+      if (m.label != null) return m.label;
+      if (st.labels === 'iv') return T.ivLabel(m.iv);
+      if (st.labels === 'none') return '';
+      return T.noteName(m.pc, st.flats, st.latin);
+    }
+
+    function render() {
+      const st = inst.state, N = st.frets;
+      const g = geometry(N);
+      const X = x => st.lefty ? g.W - x : x;
+      const p = [];
+      const yTop = g.y(5) - 13, yBot = g.y(0) + 13;
+      p.push(`<rect class="fb-wood" x="${Math.min(X(g.xs[0]), X(g.xs[N]))}" y="${yTop}" width="${g.xs[N] - g.xs[0]}" height="${yBot - yTop}" rx="2"/>`);
+      const midY = (g.y(2) + g.y(3)) / 2;
+      for (let n = 1; n <= N; n++) {
+        const cx = X((g.xs[n - 1] + g.xs[n]) / 2);
+        if (INLAY.includes(n)) p.push(`<circle class="fb-inlay" cx="${cx}" cy="${midY}" r="6"/>`);
+        if (n === 12 || n === 24) {
+          p.push(`<circle class="fb-inlay" cx="${cx}" cy="${(g.y(4) + g.y(3)) / 2}" r="6"/>`);
+          p.push(`<circle class="fb-inlay" cx="${cx}" cy="${(g.y(2) + g.y(1)) / 2}" r="6"/>`);
+        }
+      }
+      for (let n = 1; n <= N; n++) p.push(`<rect class="fb-fret" x="${X(g.xs[n]) - 1.6}" y="${yTop}" width="3.2" height="${yBot - yTop}"/>`);
+      p.push(`<rect class="fb-nut" x="${X(g.xs[0]) - 3.5}" y="${yTop - 1}" width="7" height="${yBot - yTop + 2}" rx="1.5"/>`);
+      for (let s = 0; s < 6; s++) {
+        const y = g.y(s);
+        p.push(`<line class="fb-string ${s < 3 ? 'wound' : ''}" x1="${X(NUT - 40)}" x2="${X(g.xs[N])}" y1="${y}" y2="${y}" stroke-width="${WIDTHS[s]}"/>`);
+        p.push(`<text class="fb-sname" x="${X(12)}" y="${y + 4}">${6 - s}</text>`);
+      }
+      for (let n = 0; n <= N; n++) {
+        const strong = INLAY.includes(n) || n === 12 || n === 24;
+        p.push(`<text class="fb-num ${strong ? 'strong' : ''}" x="${X(g.nx(n))}" y="${g.H - 3}">${n}</text>`);
+      }
+      // áreas de clique
+      if (st.onPick) {
+        for (let s = 0; s < 6; s++) for (let f = 0; f <= N; f++) {
+          const x0 = f === 0 ? NUT - 40 : g.xs[f - 1], x1 = f === 0 ? g.xs[0] - 4 : g.xs[f];
+          const xa = Math.min(X(x0), X(x1));
+          p.push(`<rect class="fb-hit" data-s="${s}" data-f="${f}" x="${xa}" y="${g.y(s) - GAP / 2}" width="${Math.abs(x1 - x0)}" height="${GAP}"/>`);
+        }
+      }
+      // notas
+      const sorted = st.marks.slice().sort((a, b) => (a.dim ? 0 : 1) - (b.dim ? 0 : 1));
+      for (const m of sorted) {
+        if (m.f > N) continue;
+        const cx = X(g.nx(m.f)), cy = g.y(m.s);
+        const txt = label(m, st);
+        const fs = txt.length > 3 ? 8.5 : txt.length > 2 ? 9.5 : 11;
+        const cls = ['fb-note', 'iv-' + (m.role || 'n'), m.dim ? 'dim' : '', m.cls || ''].join(' ');
+        const r = m.small ? 8 : 12;
+        p.push(`<g class="${cls}" data-k="${m.s}:${m.f}" ${st.onPick ? `data-s="${m.s}" data-f="${m.f}"` : ''}>` +
+          `<circle cx="${cx}" cy="${cy}" r="${r}"/>` +
+          (txt ? `<text x="${cx}" y="${cy + fs * 0.36}" font-size="${fs}">${txt}</text>` : '') + `</g>`);
+      }
+      host.innerHTML = `<svg class="fb" viewBox="0 0 ${g.W} ${g.H}" style="min-width:${Math.round(g.W * 0.74)}px" role="img" aria-label="Braço da guitarra">${p.join('')}</svg>`;
+    }
+
+    if (opts.state) inst.set(opts.state); else render();
+    return inst;
+  }
+
+  return { create, geometry };
+})();
+
+/* ===== Tablatura: leitura, desenho e reprodução =====
+   Sintaxe: "|e 3:5 3:7h 2:8b2r -"  (|q |e |s |t |h |w e "." para pontuada)
+   Nota = corda:casa + técnica (h hammer, p pull-off, / slide, bN bend, r release,
+   BN pré-bend, ~ vibrato, m palm mute). Corda:x = nota abafada. "+" junta notas. */
+const TAB = (() => {
+  const DUR = { w: 4, h: 2, q: 1, e: 0.5, s: 0.25, t: 1 / 3, x: 1 / 6 };
+
+  function parse(src) {
+    const ev = [];
+    let d = 0.5, beat = 0;
+    for (const tok of src.trim().split(/\s+/)) {
+      if (!tok) continue;
+      if (tok[0] === '|') { d = DUR[tok[1]] * (tok[2] === '.' ? 1.5 : 1); continue; }
+      if (tok === '-') { ev.push({ rest: true, d, beat, notes: [] }); beat += d; continue; }
+      const notes = tok.split('+').map(nt => {
+        const m = nt.match(/^([1-6]):(\d+|x)(.*)$/);
+        if (!m) throw new Error('Token inválido: ' + nt);
+        const n = +m[1], tech = m[3];
+        const o = { n, s: 6 - n, f: m[2] === 'x' ? null : +m[2], dead: m[2] === 'x' };
+        if (tech.includes('h')) o.h = true;
+        if (tech.includes('p')) o.p = true;
+        if (tech.includes('/')) o.sl = true;
+        if (tech.includes('~')) o.vib = true;
+        if (tech.includes('m')) o.pm = true;
+        const b = tech.match(/b(\d)/); if (b) o.bend = +b[1];
+        const B = tech.match(/B(\d)/); if (B) { o.bend = +B[1]; o.pre = true; }
+        if (tech.includes('r')) o.rel = true;
+        return o;
+      });
+      ev.push({ notes, d, beat });
+      beat += d;
+    }
+    // casa anterior em cada corda (para rótulo e áudio de slide/legato)
+    const last = {};
+    ev.forEach(e => e.notes.forEach(o => {
+      if (o.dead) return;
+      o.prev = last[o.s];
+      last[o.s] = o.f;
+    }));
+    return { events: ev, beats: beat };
+  }
+
+  function noteLabel(o) {
+    if (o.dead) return 'x';
+    let t = String(o.f);
+    if (o.h) t = 'h' + t;
+    else if (o.p) t = 'p' + t;
+    else if (o.sl) t = (o.prev != null && o.prev > o.f ? '\\' : '/') + t;
+    if (o.bend) t = o.pre ? `${o.f}pb${o.f + o.bend}` : `${t}b${o.f + o.bend}`;
+    if (o.rel) t += 'r' + o.f;
+    if (o.vib) t += '~';
+    return t;
+  }
+
+  function countLabel(beat) {
+    const r = Math.round(beat * 6) / 6;
+    if (Math.abs(r - Math.round(r)) < 1e-6) return String((Math.round(r) % 4) + 1);
+    if (Math.abs(r - Math.floor(r) - 0.5) < 1e-6) return '&';
+    return '';
+  }
+
+  /** Desenha a tablatura dentro de `host`; retorna função para destacar evento. */
+  function render(host, parsed, beatsPerBar = 4) {
+    const cols = [];
+    const bar = () => cols.push(`<div class="tab-bar" aria-hidden="true"></div>`);
+    bar();
+    parsed.events.forEach((e, i) => {
+      if (i > 0 && Math.abs(e.beat / beatsPerBar - Math.round(e.beat / beatsPerBar)) < 1e-6) bar();
+      const rows = ['', '', '', '', '', ''];
+      e.notes.forEach(o => { rows[o.n - 1] = noteLabel(o); });
+      const maxLen = Math.max(1, ...rows.map(r => r.length));
+      const w = Math.max(maxLen + 1.4, Math.round(e.d * 6) + 1);
+      const pm = e.notes.some(o => o.pm) ? '<i>PM</i>' : '';
+      cols.push(`<div class="tab-col" data-i="${i}" style="--w:${w}"><span class="tab-top">${countLabel(e.beat)}${pm}</span>` +
+        rows.map(r => `<span class="tab-cell">${r ? `<b>${r.replace('\\', '&#92;')}</b>` : ''}</span>`).join('') + `</div>`);
+    });
+    bar();
+    host.innerHTML = `<div class="tab" role="img" aria-label="Tablatura"><div class="tab-names"><span class="tab-top"></span>${['e','B','G','D','A','E'].map(n => `<span class="tab-cell">${n}</span>`).join('')}</div>${cols.join('')}</div>`;
+    return (idx) => {
+      host.querySelectorAll('.tab-col.on').forEach(c => c.classList.remove('on'));
+      if (idx == null || idx < 0) return;
+      const c = host.querySelector(`.tab-col[data-i="${idx}"]`);
+      if (c) {
+        c.classList.add('on');
+        const box = host;
+        const left = c.offsetLeft - box.clientWidth / 3;
+        if (c.offsetLeft < box.scrollLeft || c.offsetLeft > box.scrollLeft + box.clientWidth - 40) box.scrollTo({ left, behavior: 'smooth' });
+      }
+    };
+  }
+
+  /** Marcas para o braço a partir dos eventos (todas as notas do lick). */
+  function marks(parsed, rootPc) {
+    const seen = new Map();
+    parsed.events.forEach(e => e.notes.forEach(o => {
+      if (o.dead) return;
+      const k = o.s + ':' + o.f;
+      if (!seen.has(k)) seen.set(k, T.mark(o.s, o.f, rootPc));
+      if (o.bend && !o.pre) {
+        // o alvo do bend aparece como fantasma uma ou duas casas acima
+        const kb = o.s + ':' + (o.f + o.bend);
+        if (!seen.has(kb)) seen.set(kb, T.mark(o.s, o.f + o.bend, rootPc, { dim: true, small: true }));
+      }
+    }));
+    return [...seen.values()];
+  }
+
+  /** Agenda as notas de uma tablatura a partir de t0. onEv(i, t) para cada evento. */
+  function scheduleNotes(parsed, t0, bpm, onEv) {
+    const spb = 60 / bpm;
+    parsed.events.forEach((e, i) => {
+      const t = t0 + e.beat * spb;
+      onEv && onEv(i, t);
+      const isLast = i === parsed.events.length - 1;
+      e.notes.forEach(o => {
+        if (o.dead) { A.play(T.TUNING[o.s] + 5, t, { dur: 0.05, vel: 0.5, mute: true, string: o.s }); return; }
+        const legato = o.h || o.p || o.sl;
+        const dur = isLast ? Math.max(e.d * spb, 1.6) : Math.max(e.d * spb * 1.05, 0.12) + (o.bend || o.vib ? 0.15 : 0.35);
+        A.play(T.TUNING[o.s] + o.f, t, {
+          dur, string: o.s, vel: legato ? 0.55 : (e.notes.length > 1 ? 0.6 : 0.85),
+          slideFrom: o.sl && o.prev != null ? T.TUNING[o.s] + o.prev : null,
+          bend: o.bend, release: o.rel, prebend: o.pre, vib: o.vib, mute: o.pm,
+        });
+      });
+    });
+  }
+
+  /** Reprodutor. cb.onEvent(i), cb.onEnd() */
+  function Player(cb = {}) {
+    let raf = null, sched = [], tEnd = 0, opt = {}, parsed = null, playing = false, lastIdx = -1;
+
+    function schedule(t0) {
+      scheduleNotes(parsed, t0, opt.bpm, (i, t) => sched.push({ i, t }));
+      if (opt.click) {
+        const spb = 60 / opt.bpm, beats = Math.ceil(parsed.beats);
+        for (let b = 0; b < beats; b++) A.click(t0 + b * spb, b % 4 === 0);
+      }
+      return t0 + parsed.beats * 60 / opt.bpm;
+    }
+
+    function loop() {
+      const now = A.ctx.currentTime;
+      let idx = -1;
+      for (const s of sched) { if (s.t <= now + 0.01) idx = s.i; else break; }
+      if (idx !== lastIdx && now >= (sched[0]?.t ?? Infinity) - 0.01) { lastIdx = idx; cb.onEvent?.(idx); }
+      if (now >= tEnd - 0.2 && opt.loop && playing) {
+        sched = sched.filter(s => s.t > now - 0.05);
+        const nextT0 = tEnd;
+        tEnd = schedule(nextT0);
+        sched.sort((a, b) => a.t - b.t);
+      } else if (now >= tEnd && playing) { stop(); cb.onEnd?.(); return; }
+      raf = requestAnimationFrame(loop);
+    }
+
+    function play(p, o) {
+      stop(true);
+      A.init();
+      parsed = p; opt = Object.assign({ bpm: 90, loop: false, click: false, countIn: true }, o);
+      const spb = 60 / opt.bpm;
+      let t0 = A.now() + 0.12;
+      if (opt.countIn) { for (let b = 0; b < 4; b++) A.click(t0 + b * spb, b === 0); t0 += 4 * spb; }
+      sched = []; lastIdx = -2; playing = true;
+      tEnd = schedule(t0);
+      raf = requestAnimationFrame(loop);
+    }
+
+    function stop(silent) {
+      playing = false;
+      cancelAnimationFrame(raf); raf = null;
+      sched = [];
+      A.stopAll();
+      if (!silent) cb.onEvent?.(-1);
+    }
+
+    return { play, stop, get playing() { return playing; } };
+  }
+
+  return { parse, render, marks, Player, noteLabel, scheduleNotes };
+})();
+
+/* ===== Trilha de aulas — módulos 1 a 4 ===== */
+const MODULES = [
+  { id:'m1', title:'O mapa do braço', tag:'Fundamentos', lessons:[
+    { id:'afinacao', title:'Casas, cordas e a casa 12', min:8,
+      body:`<p>A guitarra usa a mesma afinação padrão do violão: <b>Mi Lá Ré Sol Si Mi</b>, da corda 6 (mais grossa) para a corda 1. O que muda é o jeito de tocar: cordas mais finas, braço mais acessível até a casa 22 e muito mais solos acima da casa 5.</p>
+<p>Cada casa sobe <b>meio tom</b>. Entre as notas naturais existe um tom inteiro, com duas exceções que você precisa decorar: <b>Mi→Fá</b> e <b>Si→Dó</b> ficam lado a lado, sem casa no meio.</p>
+<p>Na <b>casa 12</b> tudo se repete uma oitava acima, com as mesmas notas das cordas soltas. Por isso ela tem a marcação dupla. Se você sabe as notas até a casa 11, sabe o braço inteiro.</p>`,
+      demo:{ kind:'natural', strings:[0,5], views:[{label:'Cordas 6 e 1', strings:[0,5]},{label:'Todas as naturais', strings:[0,1,2,3,4,5]}] },
+      tasks:['Toque a corda 6 casa por casa falando o nome da nota até a casa 12.','Ache os pares Mi–Fá e Si–Dó em cada corda.'],
+      links:[{ to:'quiz', id:'qual-nota', label:'Quiz: qual é a nota?' }] },
+    { id:'cordas65', title:'Notas nas cordas 6 e 5', min:10,
+      body:`<p>As cordas 6 e 5 são as <b>âncoras</b> do braço. Quase todo desenho de acorde, escala e power chord começa com a tônica numa delas.</p>
+<p>Use as marcações como referência: na corda 6, casa 3 = Sol, 5 = Lá, 7 = Si, 8 = Dó, 10 = Ré, 12 = Mi. Na corda 5, casa 3 = Dó, 5 = Ré, 7 = Mi, 8 = Fá, 10 = Sol, 12 = Lá.</p>
+<p>Uma meta prática: dizer a nota de qualquer casa dessas duas cordas em menos de 2 segundos.</p>`,
+      demo:{ kind:'natural', strings:[0,1] },
+      tasks:['Faça o quiz “Ache a nota” só nas cordas 6 e 5 até acertar 10 de 10.','Fale em voz alta: Sol-3, Lá-5, Si-7, Dó-8 na corda 6.'],
+      links:[{ to:'quiz', id:'ache-nota', label:'Quiz: ache a nota' }] },
+    { id:'oitavas', title:'Desenhos de oitava', min:10,
+      body:`<p>Uma oitava é a mesma nota, mais aguda. Na guitarra ela forma desenhos fixos que levam qualquer nota para o braço inteiro:</p>
+<ul><li>Corda 6 → corda 4: <b>duas cordas acima, duas casas à frente</b>.</li>
+<li>Corda 5 → corda 3: o mesmo desenho, duas casas à frente.</li>
+<li>Corda 4 → corda 2 e corda 3 → corda 1: <b>três casas à frente</b>, por causa da corda Si.</li>
+<li>Corda 6 → corda 1: mesma casa.</li></ul>
+<p>Escolha uma nota e veja todas as posições dela. Esse é o primeiro passo para tocar em qualquer região do braço.</p>`,
+      demo:{ kind:'note', root:'C', keySel:true },
+      tasks:['Escolha uma nota por dia e toque todas as posições dela, de grave para agudo.','Com metrônomo a 60 BPM, toque a nota em uma corda por clique.'],
+      links:[{ to:'quiz', id:'ache-nota', label:'Quiz: ache a nota' }] },
+    { id:'cordasi', title:'A corda Si e o deslocamento', min:6,
+      body:`<p>Todas as cordas vizinhas estão afinadas em <b>4ª justa</b> (5 casas), menos a dupla <b>Sol→Si</b>, que está em <b>3ª maior</b> (4 casas).</p>
+<p>Na prática: qualquer desenho que cruza da corda 3 para a corda 2 anda <b>uma casa para a frente</b>. É por isso que escalas e tríades “quebram” naquele ponto. Quando um desenho parecer torto, confira se ele passa pela corda Si.</p>`,
+      demo:{ kind:'interval', root:'G', s:2, f:5, ivs:[0,7,12,16,19], views:[{label:'Sem passar pela Si', s:1, f:5, root:'D'},{label:'Passando pela Si', s:2, f:5, root:'G'}] },
+      tasks:['Toque a mesma oitava saindo da corda 5 e depois da corda 4 e compare os desenhos.'] },
+  ]},
+  { id:'m2', title:'Intervalos e power chords', tag:'Base do rock', lessons:[
+    { id:'intervalos', title:'Intervalos como desenhos', min:12,
+      body:`<p>Intervalo é a distância entre duas notas. Na guitarra, cada intervalo vira um <b>desenho</b> que funciona em qualquer tom. A partir de uma tônica na corda 6 ou 5:</p>
+<ul><li><b>4ª justa</b>: mesma casa, corda de cima.</li>
+<li><b>5ª justa</b>: corda de cima, duas casas à frente.</li>
+<li><b>3ª maior</b>: corda de cima, uma casa para trás. <b>3ª menor</b>: duas casas para trás.</li>
+<li><b>7ª menor</b>: duas cordas acima, mesma casa.</li>
+<li><b>Oitava</b>: duas cordas acima, duas casas à frente.</li></ul>
+<p>As cores das notas neste app seguem a função: <span class="dot iv-r"></span> tônica, <span class="dot iv-3"></span> terças, <span class="dot iv-5"></span> quintas, <span class="dot iv-7"></span> sétimas.</p>`,
+      demo:{ kind:'interval', root:'A', s:0, f:5, ivs:[0,3,4,5,7,10,12], keySel:false, views:[{label:'Da corda 6', s:0, f:5, root:'A'},{label:'Da corda 5', s:1, f:3, root:'C'}] },
+      tasks:['Ache a 3ª maior e a 3ª menor de Lá (corda 6, casa 5).','Faça o quiz de intervalos.'],
+      links:[{ to:'quiz', id:'intervalo', label:'Quiz: intervalos' },{ to:'quiz', id:'ouvido', label:'Quiz: ouvido' }] },
+    { id:'power', title:'Power chords e palm mute', min:12,
+      body:`<p>O <b>power chord</b> tem só tônica e 5ª (às vezes a oitava). Sem a terça ele não é maior nem menor, por isso soa limpo mesmo com muita distorção. É a base do rock e do metal.</p>
+<p>Desenho: tônica na corda 6 ou 5, 5ª na corda de cima duas casas à frente, oitava na corda seguinte também duas casas à frente.</p>
+<p><b>Palm mute</b>: apoie a lateral da mão da palheta sobre as cordas, bem perto da ponte. O som fica curto e grave, o famoso “tchug”. Ative o timbre <b>Drive</b> nas configurações para ouvir o riff como numa guitarra distorcida.</p>`,
+      demo:{ kind:'power', root:'E', s:0, keySel:true, views:[{label:'Tônica na corda 6', s:0},{label:'Tônica na corda 5', s:1}] },
+      lick:'r3',
+      tasks:['Toque o riff com palm mute a 80 BPM; suba 5 BPM quando sair limpo.','Troque entre E5, G5 e A5 sem olhar para a mão.'],
+      links:[{ to:'treino', id:'r3', label:'Treinar o riff com metrônomo' }] },
+  ]},
+  { id:'m3', title:'Tríades', tag:'Gospel, funk, pop', lessons:[
+    { id:'triade', title:'O que é uma tríade', min:8,
+      body:`<p>Tríade é um acorde de 3 notas: <b>tônica, 3ª e 5ª</b>. A 3ª define o caráter:</p>
+<ul><li><b>Maior</b> = tônica + 3ª maior + 5ª justa (alegre, aberto).</li>
+<li><b>Menor</b> = tônica + 3ª menor + 5ª justa (melancólico).</li>
+<li><b>Diminuta</b> = 3ª menor + 5ª diminuta. <b>Aumentada</b> = 3ª maior + 5ª aumentada.</li></ul>
+<p>No violão você toca acordes de 5 ou 6 cordas. Na guitarra, principalmente em banda, as tríades em <b>três cordas vizinhas</b> soam mais definidas, não brigam com o baixo e o teclado e são a base de guitarra em louvor, funk e pop.</p>`,
+      demo:{ kind:'triad', root:'C', quality:'maior', set:'123', inv:0, keySel:true, views:[{label:'Maior', quality:'maior'},{label:'Menor', quality:'menor'},{label:'Diminuta', quality:'dim'},{label:'Aumentada', quality:'aum'}] },
+      tasks:['Toque as 4 tríades de Dó e escute a diferença.','Diga quais notas mudaram entre maior e menor (só a 3ª).'] },
+    { id:'triade-123', title:'Tríades nas cordas 1-2-3', min:15,
+      body:`<p>Toda tríade tem <b>3 inversões</b>, conforme a nota que fica embaixo:</p>
+<ul><li><b>Fundamental</b>: a tônica embaixo (R-3-5).</li>
+<li><b>1ª inversão</b>: a 3ª embaixo (3-5-R).</li>
+<li><b>2ª inversão</b>: a 5ª embaixo (5-R-3).</li></ul>
+<p>Nas cordas 1-2-3, as três inversões de um acorde maior cobrem o braço inteiro e depois se repetem a partir da casa 12. Decore os três desenhos e a posição da tônica em cada um. A tônica é a nota vermelha.</p>`,
+      demo:{ kind:'triad', root:'G', quality:'maior', set:'123', inv:-1, keySel:true, views:[{label:'Todas', inv:-1},{label:'Fundamental', inv:0},{label:'1ª inv.', inv:1},{label:'2ª inv.', inv:2},{label:'Menor', inv:-1, quality:'menor'}] },
+      tasks:['Toque as 3 inversões de Sol subindo e descendo o braço.','Repita em Ré e em Lá.','Faça o quiz de tríades.'],
+      links:[{ to:'quiz', id:'triade', label:'Quiz: tríade e inversão' }] },
+    { id:'triade-234', title:'Tríades nas cordas 2-3-4 e 3-4-5', min:15,
+      body:`<p>O mesmo raciocínio vale para os outros grupos de cordas. Os desenhos mudam porque cada grupo tem uma relação diferente com a corda Si:</p>
+<ul><li><b>Cordas 2-3-4</b>: a corda Si está em cima, então só o último salto anda uma casa.</li>
+<li><b>Cordas 3-4-5</b> e <b>4-5-6</b>: nenhuma corda Si no caminho, os desenhos são “retos”.</li></ul>
+<p>Dica de estudo: escolha uma região do braço (por exemplo, entre as casas 5 e 8) e ache a mesma tríade em todos os grupos de cordas sem sair dela.</p>`,
+      demo:{ kind:'triad', root:'D', quality:'maior', set:'234', inv:-1, keySel:true, views:[{label:'2-3-4', set:'234'},{label:'3-4-5', set:'345'},{label:'4-5-6', set:'456'}] },
+      tasks:['Ache Ré maior nas cordas 2-3-4 nas 3 inversões.','Fique entre as casas 5 e 8 e toque Ré maior em todos os grupos.'],
+      links:[{ to:'quiz', id:'triade', label:'Quiz: tríade e inversão' }] },
+    { id:'triade-prog', title:'Tríades numa progressão (I–V–vi–IV)', min:15,
+      body:`<p>A progressão <b>I–V–vi–IV</b> (em Sol: G–D–Em–C) aparece em muitas músicas de louvor e pop. Em vez de pular de pestana em pestana, a guitarra escolhe a inversão <b>mais próxima</b> de cada acorde. Isso se chama <b>condução de vozes</b>.</p>
+<p>No lick desta aula, os quatro acordes ficam entre as casas 5 e 9 nas cordas 1-2-3. Note como cada acorde muda poucas notas em relação ao anterior. Toque arpejado, com delay e reverb no pedal, e você tem uma base de guitarra de louvor.</p>`,
+      demo:{ kind:'lick', lick:'g1' }, lick:'g1',
+      tasks:['Toque o lick a 70 BPM e depois a 90 BPM.','Faça o mesmo caminho em Ré (D–A–Bm–G).'],
+      links:[{ to:'treino', id:'g1', label:'Treinar com metrônomo' },{ to:'jam', id:'pop', label:'Tocar sobre a base I–V–vi–IV' }] },
+  ]},
+  { id:'m4', title:'Sistema CAGED', tag:'Organizar o braço', lessons:[
+    { id:'caged', title:'As cinco formas', min:15,
+      body:`<p>Você já conhece cinco acordes abertos do violão: <b>C, A, G, E e D</b>. O sistema CAGED usa esses cinco desenhos como formas móveis. Qualquer acorde maior pode ser tocado com cada uma delas, e elas se encaixam uma na outra ao longo do braço, sempre na ordem C→A→G→E→D (e recomeça).</p>
+<p>Escolha uma tonalidade e passe pelas formas. Cada uma compartilha notas com a vizinha, e a tônica (vermelha) é o ponto de ligação. É isso que transforma o braço em um mapa contínuo em vez de pedaços soltos.</p>`,
+      demo:{ kind:'caged', root:'C', quality:'maior', shape:'all', layer:'chord', keySel:true, views:[{label:'Todas', shape:'all'},{label:'C', shape:'C'},{label:'A', shape:'A'},{label:'G', shape:'G'},{label:'E', shape:'E'},{label:'D', shape:'D'}] },
+      tasks:['Toque Dó maior nas 5 formas, uma após a outra, subindo o braço.','Repita em Sol e em Lá. Diga o nome da forma antes de tocar.'] },
+    { id:'caged-menor', title:'CAGED menor', min:12,
+      body:`<p>As mesmas cinco formas existem para acordes menores (Cm, Am, Gm, Em, Dm). A diferença está só na 3ª, que desce uma casa.</p>
+<p>As formas de <b>Am</b> e <b>Em</b> são as mais usadas como pestana. A forma de <b>Dm</b> é ótima nas cordas agudas. As formas de Cm e Gm são mais difíceis como acorde, mas muito úteis como <b>mapa para solar</b>.</p>`,
+      demo:{ kind:'caged', root:'A', quality:'menor', shape:'all', layer:'chord', keySel:true, views:[{label:'Todas', shape:'all'},{label:'C', shape:'C'},{label:'A', shape:'A'},{label:'G', shape:'G'},{label:'E', shape:'E'},{label:'D', shape:'D'}] },
+      tasks:['Compare a forma de E maior e E menor no mesmo tom: qual nota mudou?'] },
+    { id:'caged-arpejo', title:'Arpejos e pentatônica dentro do CAGED', min:15,
+      body:`<p>Arpejo é tocar as notas do acorde uma por vez. Dentro de cada forma CAGED, as notas do acorde aparecem em todas as cordas, e é aí que mora o segredo de um solo melódico: <b>terminar as frases nas notas do acorde</b>.</p>
+<p>Ligue a camada “Pentatônica”: a pentatônica maior aparece em volta de cada forma. Cada forma CAGED corresponde a uma das cinco caixas da pentatônica. Aprender um sistema ajuda o outro.</p>`,
+      demo:{ kind:'caged', root:'G', quality:'maior', shape:'E', layer:'arp', keySel:true, views:[{label:'Acorde', layer:'chord'},{label:'Arpejo', layer:'arp'},{label:'Pentatônica', layer:'pent'}] },
+      tasks:['Toque o arpejo da forma E de Sol, subindo e descendo.','Improvise na pentatônica e termine cada frase numa nota vermelha.'],
+      links:[{ to:'jam', id:'pop', label:'Improvisar sobre uma base' }] },
+  ]},
+];
+
+/* ===== Trilha de aulas — módulos 5 a 8 ===== */
+MODULES.push(
+  { id:'m5', title:'Pentatônica e blues', tag:'Rock e blues', lessons:[
+    { id:'pent1', title:'Pentatônica menor: caixa 1', min:15,
+      body:`<p>A pentatônica menor tem 5 notas: <b>R, ♭3, 4, 5, ♭7</b>. É a escala mais usada em solos de rock e blues, porque quase não tem nota “errada” sobre acordes menores e sobre o blues.</p>
+<p>A <b>caixa 1</b> é o desenho com a tônica na corda 6 sob o dedo 1. Em Lá, fica na casa 5: duas notas por corda, dedos 1 e 4 nas cordas 6, 2 e 1 e dedos 1 e 3 nas cordas 5, 4 e 3.</p>
+<p>Use <b>palhetada alternada</b> (baixo, cima, baixo, cima) desde o primeiro dia. Velocidade vem depois. Comece no metrônomo a 60 BPM em colcheias.</p>`,
+      demo:{ kind:'scale', scale:'pent_menor', root:'A', pos:0, keySel:true, views:[{label:'Intervalos', labels:'iv'},{label:'Notas', labels:'note'}] },
+      lick:'r1',
+      tasks:['Suba e desça a caixa 1 a 60 BPM, palhetada alternada.','Toque o lick de tercinas devagar e suba 5 BPM por dia.'],
+      links:[{ to:'treino', id:'ex-pent', label:'Treino de velocidade da caixa 1' }] },
+    { id:'pent5', title:'As cinco caixas', min:20,
+      body:`<p>A pentatônica tem <b>5 caixas</b>, uma começando em cada nota da escala na corda 6. A última nota de uma caixa é a primeira da seguinte, então elas se encaixam como peças e cobrem o braço todo.</p>
+<p>A forma mais rápida de ligar as caixas é pela <b>tônica</b>: ache a nota vermelha em cada desenho. As caixas 1 e 2 (casas 5 a 10 em Lá) são as mais usadas, e a caixa 4 aparece muito em solos clássicos na região da casa 12 e acima.</p>`,
+      demo:{ kind:'scale', scale:'pent_menor', root:'A', pos:0, keySel:true, views:[{label:'Caixa 1', pos:0},{label:'Caixa 2', pos:1},{label:'Caixa 3', pos:2},{label:'Caixa 4', pos:3},{label:'Caixa 5', pos:4},{label:'Braço inteiro', pos:-1}] },
+      tasks:['Aprenda uma caixa nova por semana.','Toque a caixa 1 e deslize para a caixa 2 sem parar.'],
+      links:[{ to:'jam', id:'rock', label:'Improvisar sobre Am–G–F–G' }] },
+    { id:'pentmaior', title:'Pentatônica maior e a relativa', min:12,
+      body:`<p>A pentatônica maior (<b>R, 2, 3, 5, 6</b>) usa exatamente os <b>mesmos desenhos</b> da menor. Só muda qual nota é a tônica.</p>
+<p>Regra prática: a pentatônica menor de Lá tem as mesmas notas da pentatônica maior de Dó. Para achar a maior de um tom, recue <b>3 casas</b> a partir da tônica menor. Sol maior = Mi menor, que fica 3 casas abaixo.</p>
+<p>A pentatônica maior soa mais alegre, aberta e “country/gospel”. Em louvor e soul, ela aparece misturada com tríades e sextas.</p>`,
+      demo:{ kind:'scale', scale:'pent_maior', root:'C', pos:4, keySel:true, views:[{label:'Dó maior', root:'C', scale:'pent_maior'},{label:'Lá menor', root:'A', scale:'pent_menor', pos:0}] },
+      lick:'g4',
+      tasks:['Toque a mesma caixa pensando em Lá menor e depois em Dó maior: termine as frases em notas diferentes.'] },
+    { id:'blues', title:'Escala blues e a blue note', min:12,
+      body:`<p>A escala blues é a pentatônica menor com uma nota a mais: a <b>♭5</b>, chamada de <b>blue note</b>. Ela é uma nota de passagem: soa tensa parada, e linda quando você passa por ela indo para a 4ª ou para a 5ª.</p>
+<p>Na caixa 1 em Lá, a blue note (Ré♯/Mi♭) aparece na corda 5, casa 6, e na corda 3, casa 8. Toque o lick desta aula e preste atenção no “gemido” do slide até ela.</p>`,
+      demo:{ kind:'scale', scale:'blues', root:'A', pos:0, keySel:true, views:[{label:'Caixa 1', pos:0},{label:'Caixa 2', pos:1},{label:'Braço inteiro', pos:-1}] },
+      lick:'b4',
+      tasks:['Toque a escala blues subindo e descendo.','Crie uma frase que passe pela blue note e termine na tônica.'],
+      links:[{ to:'jam', id:'blues', label:'Improvisar sobre um blues em Lá' }] },
+    { id:'tecnicas', title:'Bend, vibrato, slide e ligados', min:20,
+      body:`<p>É na técnica de mão esquerda que a guitarra mais se diferencia do violão:</p>
+<ul><li><b>Bend (b)</b>: empurre a corda para cima até a nota soar 1 tom (2 casas) ou ½ tom acima. Use 2 ou 3 dedos juntos e confira a afinação tocando a nota-alvo antes.</li>
+<li><b>Release (r)</b>: volte o bend até a nota original sem palhetar.</li>
+<li><b>Vibrato (~)</b>: pequenos bends repetidos e regulares. É a “assinatura” de cada guitarrista.</li>
+<li><b>Slide (/ e \\)</b>: deslize até a próxima casa mantendo pressão.</li>
+<li><b>Hammer-on (h) e pull-off (p)</b>: notas tocadas só com a mão esquerda, sem palhetar.</li></ul>`,
+      demo:{ kind:'lick', lick:'r2' }, lick:'r2',
+      tasks:['Bend de 1 tom na corda 3, casa 7: toque antes a casa 9 para ouvir o alvo.','Vibrato a 4 oscilações por segundo numa nota longa.'],
+      links:[{ to:'licks', id:'r4', label:'Lick com bend em double stop' }] },
+    { id:'blues12', title:'Blues de 12 compassos', min:20,
+      body:`<p>O blues tem uma forma fixa de 12 compassos com três acordes: <b>I, IV e V</b>. Em Lá: A7, D7 e E7.</p>
+<p class="mono-line">| A7 | D7 | A7 | A7 |<br>| D7 | D7 | A7 | A7 |<br>| E7 | D7 | A7 | E7 |</p>
+<p>O estudo desta aula é um solo completo sobre essa forma. Repare nos espaços: blues é pergunta e resposta. Toque uma frase, deixe respirar, responda. E repare nas notas que mudam com o acorde: Fá♯ sobre o D7, Sol♯ sobre o E7.</p>`,
+      demo:{ kind:'lick', lick:'s2' }, lick:'s2',
+      tasks:['Toque o solo a 60% da velocidade e vá subindo.','Toque sobre a base de blues em Lá e crie seu próprio solo usando só a caixa 1.'],
+      links:[{ to:'jam', id:'blues', label:'Base de blues em Lá' }] },
+  ]},
+  { id:'m6', title:'Escala maior e modos', tag:'Melodia', lessons:[
+    { id:'maior3nps', title:'Escala maior com 3 notas por corda', min:15,
+      body:`<p>Você já conhece a escala maior. No violão ela costuma ser tocada numa região só, com abertura de 4 dedos. Na guitarra, o sistema de <b>3 notas por corda</b> (3NPS) é muito popular: cada corda tem exatamente 3 notas, o que deixa a palhetada regular e facilita ligados e velocidade.</p>
+<p>São 7 posições, uma começando em cada grau da escala na corda 6. As posições se sobrepõem: as duas últimas notas de cada corda são as duas primeiras da posição seguinte.</p>`,
+      demo:{ kind:'scale', scale:'maior', root:'G', pos:0, keySel:true, views:[{label:'Pos. 1', pos:0},{label:'Pos. 2', pos:1},{label:'Pos. 3', pos:2},{label:'Pos. 4', pos:3},{label:'Pos. 5', pos:4},{label:'Pos. 6', pos:5},{label:'Pos. 7', pos:6},{label:'Braço', pos:-1}] },
+      tasks:['Toque a posição 1 de Sol maior em semicolcheias a 70 BPM.','Ligue a posição 1 à posição 2 subindo pela corda 1.'],
+      links:[{ to:'treino', id:'ex-3nps', label:'Treino de velocidade 3NPS' }] },
+    { id:'menor-relativa', title:'Menor natural e a relativa', min:12,
+      body:`<p>Toda escala maior tem uma <b>relativa menor</b> com as mesmas notas, começando no 6º grau. Dó maior e Lá menor são o mesmo conjunto de notas, com outro centro.</p>
+<p>A menor natural é a pentatônica menor com duas notas a mais: a <b>2</b> e a <b>♭6</b>. Elas dão um sabor mais melódico e dramático ao solo, muito usado no rock e no metal.</p>`,
+      demo:{ kind:'scale', scale:'menor', root:'A', pos:0, keySel:true, views:[{label:'Menor natural', scale:'menor'},{label:'Só a pentatônica', scale:'pent_menor'}] },
+      tasks:['Toque a pentatônica e depois a menor natural na mesma região: ache as 2 notas novas.'] },
+    { id:'modos', title:'Modos que o guitarrista usa', min:20,
+      body:`<p>Modo é uma escala maior tocada a partir de outro grau. Para o dia a dia, pense em cada modo como uma escala conhecida com <b>uma nota característica</b>:</p>
+<ul><li><b>Dórico</b> = menor natural com <b>6 maior</b>. Rock, funk, fusion (Santana).</li>
+<li><b>Mixolídio</b> = maior com <b>♭7</b>. Blues, rock clássico, sobre acordes com 7.</li>
+<li><b>Frígio</b> = menor com <b>♭2</b>. Metal, flamenco.</li>
+<li><b>Lídio</b> = maior com <b>♯4</b>. Sonoridade de trilha de filme, flutuante.</li></ul>
+<p>Para ouvir o modo, toque sobre uma base que fique num acorde só e destaque a nota característica.</p>`,
+      demo:{ kind:'scale', scale:'dorico', root:'A', pos:0, keySel:true, views:[{label:'Dórico', scale:'dorico'},{label:'Mixolídio', scale:'mixolidio'},{label:'Frígio', scale:'frigio'},{label:'Lídio', scale:'lidio'}] },
+      tasks:['Toque Lá dórico e Lá menor natural em sequência: só a 6ª muda.'] },
+  ]},
+  { id:'m7', title:'Metal e neoclássico', tag:'Velocidade', lessons:[
+    { id:'harmonica', title:'Menor harmônica e frígio dominante', min:15,
+      body:`<p>A <b>menor harmônica</b> é a menor natural com a <b>7ª maior</b>. Esse salto de 1 tom e meio entre a ♭6 e a 7 dá o sabor “clássico/oriental” do metal neoclássico.</p>
+<p>Tocada a partir do 5º grau ela vira o <b>frígio dominante</b> (Mi frígio dominante = Lá menor harmônica), muito usado sobre o acorde V maior em tons menores.</p>
+<p>O lick desta aula usa <b>pedal</b>: uma nota fixa (Mi, casa 12) alternando com a melodia na mesma corda, um recurso típico de Bach que os guitarristas neoclássicos adotaram.</p>`,
+      demo:{ kind:'scale', scale:'menor_harm', root:'E', pos:0, keySel:true, views:[{label:'Menor harmônica', scale:'menor_harm'},{label:'Frígio dominante', scale:'frigio_dom'}] },
+      lick:'m2',
+      tasks:['Toque o lick de pedal só com palhetada alternada, bem devagar.'] },
+    { id:'palhetada', title:'Palhetada alternada e sequências', min:20,
+      body:`<p>Velocidade limpa vem de três coisas: <b>palhetada alternada</b> rigorosa, <b>mão esquerda sincronizada</b> e <b>metrônomo</b>.</p>
+<ul><li>Movimento pequeno: a palheta passa só um pouco da corda.</li>
+<li>Aumente 4 a 5 BPM por vez só quando conseguir 4 repetições limpas.</li>
+<li>Sequências (grupos de 3, de 4) transformam escalas em frases. O exercício “aranha” (1-2-3-4) aquece e sincroniza as mãos.</li></ul>
+<p>Use o <b>Treino de velocidade</b>: ele sobe o BPM sozinho a cada ciclo e guarda o seu recorde.</p>`,
+      demo:{ kind:'lick', lick:'ex-aranha' }, lick:'ex-aranha',
+      tasks:['Aranha a 80 BPM em semicolcheias, 3 minutos por dia.','Registre seu recorde no Treino.'],
+      links:[{ to:'treino', id:'ex-aranha', label:'Treino de velocidade: aranha' },{ to:'treino', id:'ex-seq3', label:'Sequência em grupos de 3' }] },
+    { id:'sweep', title:'Arpejos com sweep', min:20,
+      body:`<p>No <b>sweep</b> a palheta “varre” as cordas num movimento só: para baixo na subida e para cima na descida. A mão esquerda solta cada nota assim que a próxima soar, para as notas não embolarem.</p>
+<p>O lick desta aula tem um arpejo de Lá menor e outro de Mi maior (o V de Lá menor harmônica) em 5 cordas. Comece muito devagar e foque no abafamento, não na velocidade.</p>`,
+      demo:{ kind:'lick', lick:'m3' }, lick:'m3',
+      tasks:['Toque cada nota separada até ficar limpo, depois junte o movimento.'] },
+  ]},
+  { id:'m8', title:'Construindo solos', tag:'Musicalidade', lessons:[
+    { id:'frases', title:'Pergunta, resposta e notas-alvo', min:15,
+      body:`<p>Um solo marcante é feito de <b>frases</b>, como uma conversa. Três ideias para usar já:</p>
+<ul><li><b>Pergunta e resposta</b>: frase 1 termina “em aberto” (na 5ª ou na 2ª), frase 2 resolve na tônica.</li>
+<li><b>Notas-alvo</b>: quando o acorde muda, caia numa nota dele. No Jam deste app, as notas do acorde atual aparecem acesas no braço.</li>
+<li><b>Repetição e variação</b>: repita um lick e mude só o final. O ouvinte reconhece e se envolve.</li></ul>
+<p>E não esqueça do silêncio: pausas fazem parte da frase.</p>`,
+      demo:{ kind:'lick', lick:'b2' }, lick:'b2',
+      tasks:['No Jam, toque só 2 notas por acorde, sempre notas acesas.','Crie uma pergunta e três respostas diferentes.'],
+      links:[{ to:'jam', id:'rock', label:'Jam: Am–G–F–G' }] },
+    { id:'solo-rock', title:'Solo de rock em Lá menor', min:25,
+      body:`<p>Este estudo de 8 compassos passa pelos acordes <b>Am – G – F – G – Am – G – F – E</b> e junta tudo: caixas 1 e 2 da pentatônica, a nota Fá da menor natural, bends e o Sol♯ da menor harmônica no último compasso.</p>
+<p>Aprenda de 2 em 2 compassos. Quando estiver confortável, toque sobre o Jam “Rock menor” e depois troque algumas frases pelas suas.</p>`,
+      demo:{ kind:'lick', lick:'s1' }, lick:'s1',
+      tasks:['Compassos 1-2, depois 3-4, depois tudo.','Toque a 70% e suba até 100%.'],
+      links:[{ to:'jam', id:'rock', label:'Jam: Am–G–F–G' }] },
+  ]},
+);
+
+/* ===== Licks, solos e exercícios ===== */
+const STYLES = { rock:'Rock', blues:'Blues', gospel:'Gospel / Louvor', metal:'Metal / Neoclássico', solo:'Solos completos', exercicio:'Exercícios' };
+
+const LICKS = [
+  { id:'r1', style:'rock', title:'Tercinas descendentes', key:'A', scale:'pent_menor', bpm:90, level:2, tech:'Palhetada alternada',
+    src:'|t 1:8 1:5 2:8 1:5 2:8 2:5 2:8 2:5 3:7 2:5 3:7 3:5 3:7 3:5 4:7 3:5 4:7 4:5 |h 4:7~',
+    tip:'Grupos de 3 notas que descem a caixa 1 de Lá menor. Acentue a primeira nota de cada tercina para sentir o pulso.' },
+  { id:'r2', style:'rock', title:'Bend na corda Sol e resposta', key:'A', scale:'pent_menor', bpm:80, level:2, tech:'Bend, release, vibrato',
+    src:'|e 4:7 3:5 |q 3:7b2 |e 2:5 1:5 |q. 2:8b2r |e 2:5 3:7 3:5 |q 4:7~ -',
+    tip:'Dois bends de 1 tom: confira a afinação do primeiro tocando a casa 9 da corda 3 antes. No segundo, volte o bend devagar.' },
+  { id:'r3', style:'rock', title:'Riff de power chords em Mi', key:'E', scale:'pent_menor', bpm:100, level:1, tech:'Palm mute, power chords',
+    src:'|e 6:0m 6:0m 6:3+5:5 6:0m 6:0m 6:5+5:7 6:0m 6:3+5:5 6:0m 6:0m 6:3+5:5 6:0m |q 5:5+4:7 |e 5:5+4:7 6:3+5:5',
+    tip:'Corda solta abafada (PM) entre os acordes, que soam abertos. Use só palhetadas para baixo para o som ficar mais pesado.' },
+  { id:'r4', style:'rock', title:'Double stops de rock’n’roll', key:'A', scale:'pent_menor', bpm:110, level:3, tech:'Double stop, bend oblíquo',
+    src:'|e 2:5+1:5 2:5+1:5 2:5+1:5 2:5+1:5 |q 3:7b2+2:5 |e 3:5 4:7 |e 2:8+1:8 2:8+1:8 |q 2:5+1:5 |h 3:7~',
+    tip:'Pestana com o dedo 1 nas cordas 1 e 2 na casa 5. No bend oblíquo, a corda 3 sobe até soar igual à corda 2.' },
+  { id:'b1', style:'blues', title:'Frase de abertura com blue note', key:'A', scale:'blues', bpm:75, level:2, tech:'Tercinas, vibrato',
+    src:'|t 3:5 3:7 3:8 |q 3:7~ |e 2:5 1:5 |t 2:8 2:5 3:7 |q 3:5 |e 4:5 5:7 |h 4:7~',
+    tip:'A blue note (casa 8, corda 3) é só passagem: vá direto para a casa 7 com vibrato.' },
+  { id:'b2', style:'blues', title:'Box alto na casa 10', key:'A', scale:'blues', bpm:70, level:3, tech:'Bend com release',
+    src:'|e 2:10 2:13 |q 1:10b2r |e 2:13 2:10 |q. 3:12b2 |e 2:10 |q 2:13 2:10~ -',
+    tip:'Região muito usada no blues elétrico, acima da caixa 1. A tônica Lá fica na corda 2, casa 10.' },
+  { id:'b3', style:'blues', title:'Turnaround clássico em Lá', key:'A', scale:'blues', bpm:80, level:2, tech:'Linha cromática',
+    src:'|e 1:5+3:8 1:5+3:7 1:5+3:6 1:5+3:5 |q 5:0 |e 6:2 6:1 |h 6:0+4:6+3:7+2:5 -',
+    tip:'A corda 1 fica parada na casa 5 enquanto a corda 3 desce casa por casa. Termina no E7, que chama de volta o começo do blues.' },
+  { id:'b4', style:'blues', title:'Descida pelas blue notes', key:'A', scale:'blues', bpm:80, level:2, tech:'Slide, blue note',
+    src:'|e 3:5 3:7/ 3:8 3:7 |q 3:5 |e 4:7 4:5 |e 5:7 5:6 5:5 6:8 |h 6:5~',
+    tip:'Duas blue notes: casa 8 na corda 3 e casa 6 na corda 5. Deixe o slide bem audível.' },
+  { id:'g1', style:'gospel', title:'Tríades em G–D–Em–C', key:'G', scale:'maior', bpm:80, level:2, tech:'Tríades arpejadas',
+    src:'|e 3:7 2:8 1:7 2:8 3:7 2:7 1:5 2:7 3:9 2:8 1:7 2:8 3:9 2:8 1:8 2:8',
+    tip:'Sol (2ª inv.), Ré (fundamental), Mi menor (fundamental) e Dó (1ª inv.). Só uma ou duas notas mudam de um acorde para o outro.' },
+  { id:'g2', style:'gospel', title:'Sextas de soul', key:'G', scale:'maior', bpm:72, level:3, tech:'Intervalos de 6ª, slide',
+    src:'|e 3:4+1:3 3:5+1:5 |q 3:7+1:7 |e 3:9/+1:8/ 3:7+1:7 |q 3:5+1:5 |e 3:4+1:3 3:2+1:2 |q 3:5+1:5 |h 3:4+1:3~',
+    tip:'Toque as cordas 3 e 1 juntas e abafe a corda 2 com a polpa do dedo. As sextas são a marca da guitarra soul e gospel.' },
+  { id:'g3', style:'gospel', title:'Hammer de sus para a terça', key:'G', scale:'maior', bpm:66, level:1, tech:'Hammer-on, tríades',
+    src:'|e 3:7 2:8 1:5 1:7h |q 2:8 3:7 |e 3:7 3:9h 2:8 1:8 |q 2:8 1:7~',
+    tip:'Sobre G e C. O hammer sai da 2ª e cai na 3ª do acorde. Com delay e reverb vira a textura clássica de louvor.' },
+  { id:'g4', style:'gospel', title:'Corrida na pentatônica maior', key:'G', scale:'pent_maior', bpm:76, level:2, tech:'Semicolcheias, slide',
+    src:'|s 3:7 3:9 2:8 2:10 1:7 1:10 1:12/ 1:10 |e 1:7 2:10 2:8 3:9 |q 3:7 3:9/ |h 2:8~',
+    tip:'Pentatônica maior de Sol entre as casas 7 e 12. Termina na tônica com vibrato largo.' },
+  { id:'m1', style:'metal', title:'Galope em Mi', key:'E', scale:'menor', bpm:120, level:2, tech:'Galope, palm mute',
+    src:'|e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:3+5:5 |s 6:3+5:5 6:3+5:5 |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:5+5:7 |s 6:5+5:7 6:5+5:7 |e 6:6+5:8 |s 6:6+5:8 6:6+5:8',
+    tip:'Ritmo de galope: uma colcheia e duas semicolcheias (baixo, baixo-cima). O último acorde, B♭5, forma o trítono com o Mi.' },
+  { id:'m2', style:'metal', title:'Pedal neoclássico', key:'E', scale:'menor_harm', bpm:90, level:4, tech:'Pedal, palhetada alternada',
+    src:'|s 1:17 1:12 1:15 1:12 1:14 1:12 1:15 1:12 1:14 1:12 1:11 1:12 1:17 1:12 1:19 1:12 1:20 1:12 1:19 1:12 1:17 1:12 1:15 1:12 |q 1:11 1:12~',
+    tip:'A casa 12 (Mi) volta a cada duas notas enquanto a melodia anda pela menor harmônica. Tudo numa corda só: foco na palhetada.' },
+  { id:'m3', style:'metal', title:'Sweep Am – E', key:'A', scale:'menor_harm', bpm:70, level:5, tech:'Sweep picking',
+    src:'|s 5:12 4:14 3:14 2:13 1:12 1:17/ 1:12p 2:13 3:14 4:14 5:12 - 5:7 4:6 3:4 2:5 1:4 1:7/ 1:4p 2:5 3:4 4:6 5:7 - |h 5:12~',
+    tip:'Arpejos de Lá menor e Mi maior em 5 cordas. Palheta para baixo na subida, para cima na descida, e solte cada nota logo depois de tocar.' },
+  { id:'m4', style:'metal', title:'Legato em 3 notas por corda', key:'E', scale:'menor', bpm:80, level:4, tech:'Hammer-on, pull-off',
+    src:'|s 4:12 4:14h 4:16h 3:12 3:14h 3:16h 2:13 2:15h 2:17h 1:14 1:15h 1:17h 1:15p 1:14p 2:17 2:15p 2:13p 3:16 3:14p 3:12p 4:16 4:14p 4:12p 5:14 |h 6:12~',
+    tip:'Palhete só a primeira nota de cada corda; as outras saem com hammer-on e pull-off. O volume das notas ligadas deve igualar o das palhetadas.' },
+  { id:'s1', style:'solo', title:'Solo de rock em Lá menor (8 compassos)', key:'A', scale:'menor', bpm:84, level:3, tech:'Caixas 1 e 2, bends, menor harmônica',
+    chords:['Am','G','F','G','Am','G','F','E'],
+    src:'|q 1:5~ |e 1:8 1:5 2:8 1:5 |q 2:5~ |e 3:7 3:5 4:7 3:5 |q. 3:7b2r |e 3:5 |e 2:6 2:5 3:7 3:5 |q 2:6~ 1:5 |t 2:8 2:5 3:7 2:5 3:7 3:5 |h 2:8~ |q 1:8b2 |e 1:10 1:8 2:10 2:8 |q 2:10~ |s 2:10 2:8 3:9 2:8 3:9 3:7 4:9 3:7 |q 3:7b2r 4:9~ |q 3:10 |e 3:9 3:7 4:10 3:7 |q 3:10~ |e 2:9 1:7 2:9 2:10 |e 3:9 2:9 |q 3:9~',
+    tip:'Repare nas notas que caem no começo de cada compasso: elas são do acorde da vez (Fá sobre F, Si sobre G, Sol♯ sobre E).' },
+  { id:'s2', style:'solo', title:'Solo de blues em Lá (12 compassos)', key:'A', scale:'blues', bpm:76, level:3, tech:'Pergunta e resposta, bends de ½ tom',
+    chords:['A7','D7','A7','A7','D7','D7','A7','A7','E7','D7','A7','E7'],
+    src:'|q 3:5b1 |e 3:7 3:5 |q 4:7~ - |q 2:7 |e 2:5 3:7 |q 3:5 - |t 1:8 1:5 2:8 2:5 3:7 2:5 |q 3:7b2 2:5~ |h - |q - |e 3:6 3:7 |q 3:7~ |e 2:7 2:5 |q 3:7 |e 3:5 4:7 |q 4:7b2r |e 4:5 5:7 |h 5:5~ |e 5:7 4:5 4:7 3:5 |q 3:6 4:7~ |h - |e 1:8 1:5 2:8 2:5 |q 2:5~ |e 3:7 3:4 |q 4:6 - |e 3:5 3:7 |q 2:7~ |e 2:5 3:7 |q 3:5 |q 3:5b1 |e 4:7 5:7 |h 4:7~ |h 6:0+4:6+3:7+2:5 -',
+    tip:'O bend de ½ tom na casa 5 da corda 3 transforma a ♭3 (Dó) na 3ª maior (Dó♯) do A7. É o “choro” típico do blues.' },
+];
+
+/* Exercícios gerados a partir da teoria */
+(() => {
+  const tok = (s, f) => `${6 - s}:${f}`;
+  const upDown = list => list.concat(list.slice(0, -1).reverse());
+  const byPitch = ms => ms.slice().sort((a, b) => a.s - b.s || a.f - b.f);
+
+  const spider = [];
+  for (let s = 0; s < 6; s++) for (let f = 5; f <= 8; f++) spider.push(tok(s, f));
+  for (let s = 5; s >= 0; s--) for (let f = 8; f >= 5; f--) spider.push(tok(s, f));
+
+  const pent = byPitch(T.box('pent_menor', 9, 0, 22)).map(m => tok(m.s, m.f));
+  const g3 = byPitch(T.nps(T.SCALES.maior.iv, 7, 0, 3, 22)).map(m => tok(m.s, m.f));
+  const seq = [];
+  for (let i = 0; i + 2 < pent.length; i++) seq.push(pent[i], pent[i + 1], pent[i + 2]);
+
+  LICKS.push(
+    { id:'ex-aranha', style:'exercicio', title:'Aranha cromática 1-2-3-4', key:'A', scale:'pent_menor', bpm:70, level:1, tech:'Sincronia das mãos',
+      src:'|s ' + spider.join(' '), tip:'Um dedo por casa (5, 6, 7, 8). Mantenha os dedos perto das cordas e palhete alternado sem parar.' },
+    { id:'ex-pent', style:'exercicio', title:'Caixa 1 de Lá menor, sobe e desce', key:'A', scale:'pent_menor', bpm:70, level:1, tech:'Palhetada alternada',
+      src:'|e ' + upDown(pent).join(' ') + ' -', tip:'Colcheias regulares. Quando estiver fácil, use o treino de velocidade.' },
+    { id:'ex-3nps', style:'exercicio', title:'Sol maior em 3 notas por corda', key:'G', scale:'maior', bpm:60, level:2, tech:'Palhetada alternada',
+      src:'|s ' + upDown(g3).join(' ') + ' -', tip:'Posição 1 de Sol maior (casas 3 a 8). Seis palhetadas por corda, ida e volta.' },
+    { id:'ex-seq3', style:'exercicio', title:'Sequência em grupos de 3', key:'A', scale:'pent_menor', bpm:70, level:2, tech:'Sequências',
+      src:'|t ' + seq.join(' '), tip:'1-2-3, 2-3-4, 3-4-5... Uma tercina por tempo. Transforma a escala em frase.' },
+  );
+})();
+
+const lickById = id => LICKS.find(l => l.id === id);
+
+/* ===== Progresso: conta (db) com cópia local ===== */
+const S = (() => {
+  const KEY = 'mapa-do-braco-v1';
+  const DEF = () => ({ v:1, done:{}, bpm:{}, quiz:{}, days:[],
+    settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8 } });
+  let state = DEF(), ref = null, mode = 'local', timer = null, writing = Promise.resolve();
+  const subs = new Set();
+
+  try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(DEF(), JSON.parse(raw)); } catch (e) {}
+  state.settings = Object.assign(DEF().settings, state.settings);
+
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+  function merge(a, b) {
+    const out = DEF();
+    out.done = Object.assign({}, b.done, a.done);
+    for (const src of [a.bpm || {}, b.bpm || {}]) for (const k in src) out.bpm[k] = Math.max(out.bpm[k] || 0, src[k]);
+    for (const src of [a.quiz || {}, b.quiz || {}]) for (const k in src) {
+      const cur = out.quiz[k];
+      if (!cur || src[k].best > cur.best) out.quiz[k] = src[k];
+    }
+    out.days = [...new Set([...(a.days || []), ...(b.days || [])])].sort().slice(-400);
+    out.settings = Object.assign(DEF().settings, b.settings, a.settings);
+    return out;
+  }
+
+  function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function scheduleRemote() {
+    if (!ref) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const body = JSON.parse(JSON.stringify(state));
+      writing = writing.then(() => ref.set(body)).then(() => { if (mode !== 'conta') { mode = 'conta'; emit(); } })
+        .catch(e => { if (e && (e.code === 'invalid_argument' || e.code === 'revoked' || e.code === 'not_granted')) { ref = null; mode = 'local'; emit(); } });
+    }, 1200);
+  }
+
+  function emit() { subs.forEach(fn => { try { fn(state, mode); } catch (e) { console.error(e); } }); }
+
+  function update(fn) {
+    fn(state);
+    saveLocal();
+    scheduleRemote();
+    emit();
+  }
+
+  async function connect() {
+    try {
+      if (!window.claude || typeof window.claude.use !== 'function') return;
+      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      if (!db || !user) return;
+      const id = await user.id();
+      if (!id) return;
+      const r = db.doc('data/users/' + id + '/progress');
+      const snap = await r.get();
+      ref = r; mode = 'conta';
+      const remote = snap.exists ? snap.data() : null;
+      if (remote) { state = merge(remote, state); saveLocal(); }
+      const hasLocal = Object.keys(state.done).length || state.days.length || Object.keys(state.bpm).length;
+      const differs = remote ? JSON.stringify(merge(remote, {})) !== JSON.stringify(state) : hasLocal;
+      if (differs) scheduleRemote();
+      emit();
+    } catch (e) { mode = 'local'; emit(); }
+  }
+
+  function practiced() {
+    const d = today();
+    if (!state.days.includes(d)) update(s => { s.days.push(d); });
+  }
+
+  function streak() {
+    const set = new Set(state.days);
+    let n = 0; const d = new Date();
+    if (!set.has(today())) d.setDate(d.getDate() - 1);
+    for (;;) {
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!set.has(k)) break;
+      n++; d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+
+  // fora do Claude (arquivo local, GitHub Pages, app instalado) não existe window.claude
+  const standalone = !(window.claude && typeof window.claude.use === 'function');
+
+  function importData(obj) {
+    if (!obj || typeof obj !== 'object' || !obj.done || !obj.settings) throw new Error('Arquivo de backup inválido');
+    state = merge(obj, state);
+    saveLocal(); scheduleRemote(); emit();
+  }
+  const exportData = () => JSON.stringify(Object.assign({ app: 'mapa-do-braco', exportedAt: new Date().toISOString() }, state), null, 1);
+
+  return {
+    get: () => state, get mode() { return mode; }, standalone, importData, exportData,
+    update, connect, practiced, streak, today,
+    on(fn) { subs.add(fn); return () => subs.delete(fn); },
+    reset() { const keep = state.settings; state = DEF(); state.settings = keep; saveLocal(); scheduleRemote(); emit(); },
+  };
+})();
+
+/* ===== Componentes compartilhados ===== */
+const U = (() => {
+  const $ = (sel, el = document) => el.querySelector(sel);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const set = () => S.get().settings;
+
+  function rootOptions(selPc) {
+    return T.ROOTS.map((r, i) => `<option value="${i}" ${i === selPc ? 'selected' : ''}>${T.rootName(i, set().latin)}</option>`).join('');
+  }
+  function chips(name, items, value) {
+    return `<div class="chips" role="group" data-chips="${name}">${items.map(it =>
+      `<button type="button" class="chip ${String(it.v) === String(value) ? 'on' : ''}" data-v="${esc(it.v)}" aria-pressed="${String(it.v) === String(value)}">${esc(it.label)}</button>`).join('')}</div>`;
+  }
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2200);
+  }
+
+  function fbState(extra = {}) {
+    const st = set();
+    return Object.assign({ frets: st.frets, lefty: st.lefty, latin: st.latin }, extra);
+  }
+
+  /** Monta marcas para uma demonstração de aula/explorador. */
+  function buildDemo(cfg) {
+    const st = set(), N = Math.max(st.frets, cfg.minFrets || 0);
+    const root = typeof cfg.root === 'number' ? cfg.root : T.pcOf(cfg.root || 'C');
+    let marks = [], caption = '', labels = cfg.labels || 'iv', flats = T.useFlats(root, 0), seq = null, frets = N;
+    switch (cfg.kind) {
+      case 'natural': {
+        const nat = [0, 2, 4, 5, 7, 9, 11];
+        (cfg.strings || [0]).forEach(s => { for (let f = 0; f <= 12; f++) {
+          const pc = T.mod(T.pitch(s, f));
+          if (nat.includes(pc)) marks.push(Object.assign(T.mark(s, f, 0), { role: (pc === 4 || pc === 5 || pc === 11 || pc === 0) ? 'pair' : 'n' }));
+        } });
+        labels = 'note'; flats = false;
+        caption = 'Notas naturais. Em destaque os pares sem casa no meio: Mi–Fá e Si–Dó.';
+        seq = 'run'; break;
+      }
+      case 'note': {
+        marks = T.pcPositions(root, N).map(p => T.mark(p.s, p.f, root));
+        labels = 'note';
+        caption = `Todas as posições de ${T.rootName(root, st.latin)} até a casa ${N}.`;
+        seq = 'run'; break;
+      }
+      case 'interval': {
+        const rp = T.pitch(cfg.s, cfg.f);
+        for (const iv of cfg.ivs) for (let s = cfg.s; s <= Math.min(5, cfg.s + 3); s++)
+          for (let f = Math.max(0, cfg.f - 3); f <= cfg.f + 4; f++)
+            if (T.pitch(s, f) === rp + iv && !(iv && s === cfg.s && f === cfg.f))
+              marks.push(T.mark(s, f, root, iv === 12 ? { label: '8' } : {}));
+        marks.push(T.mark(cfg.s, cfg.f, root));
+        caption = `Tônica ${T.rootName(root, st.latin)} na ${T.stringLabel(cfg.s).toLowerCase()}, casa ${cfg.f}.`;
+        seq = 'run'; break;
+      }
+      case 'power': {
+        const s = cfg.s || 0;
+        for (let f = T.mod(root - T.TUNING[s]); f + 2 <= N; f += 12)
+          marks.push(T.mark(s, f, root), T.mark(s + 1, f + 2, root), T.mark(s + 2, f + 2, root, { label: '8' }));
+        caption = `${T.rootName(root, st.latin)}5: tônica, 5ª e oitava.`;
+        seq = 'strum'; break;
+      }
+      case 'scale': {
+        const sc = T.SCALES[cfg.scale];
+        flats = T.useFlats(root, sc.parent);
+        const pos = cfg.pos ?? 0;
+        marks = T.scaleMarks(cfg.scale, root, pos, N);
+        const posName = pos < 0 ? 'braço inteiro' : (sc.sys === 'box' ? `caixa ${pos + 1}` : `posição ${pos + 1}`);
+        caption = `${sc.name} de ${T.rootName(root, st.latin)}, ${posName}.`;
+        seq = 'run'; break;
+      }
+      case 'triad': {
+        const set3 = T.STRING_SETS.find(x => x.id === (cfg.set || '123'));
+        const q = cfg.quality || 'maior';
+        flats = T.useFlats(root, q === 'menor' ? 3 : 0);
+        let vs = T.triads(root, q, set3.s, N);
+        if (cfg.inv != null && cfg.inv >= 0) vs = vs.filter(v => v.inv === cfg.inv);
+        vs.forEach(v => v.notes.forEach(n => marks.push(n)));
+        seq = { groups: vs.map(v => v.notes) };
+        caption = `${T.chordName(root, q, st.latin)} nas ${set3.label.toLowerCase()}` + (cfg.inv >= 0 ? `, ${T.INV_NAME[cfg.inv].toLowerCase()}.` : ', três inversões.');
+        break;
+      }
+      case 'caged': {
+        const q = cfg.quality || 'maior';
+        flats = T.useFlats(root, q === 'menor' ? 3 : 0);
+        const shapes = T.cagedAll(q, root, N);
+        const chordIv = T.CHORDS[q].iv;
+        if (cfg.shape === 'all' || !cfg.shape) {
+          const seen = new Set();
+          shapes.forEach(sh => sh.notes.forEach(n => { const k = n.s + ':' + n.f; if (!seen.has(k)) { seen.add(k); marks.push(n); } }));
+          seq = { groups: shapes.map(sh => sh.notes) };
+          caption = `${T.chordName(root, q, st.latin)} nas 5 formas: ` + shapes.map(sh => `${sh.k} (casa ${sh.lo})`).join(' → ');
+        } else {
+          const sh = shapes.find(x => x.k === cfg.shape);
+          const layer = cfg.layer || 'chord';
+          if (layer === 'chord') { marks = sh.notes; seq = { groups: [sh.notes] }; }
+          else {
+            const lo = Math.max(0, sh.lo - (layer === 'pent' ? 1 : 0)), hi = sh.hi + 1;
+            const ivs = layer === 'arp' ? chordIv : (q === 'menor' ? T.SCALES.pent_menor.iv : T.SCALES.pent_maior.iv);
+            const shapeKeys = new Set(sh.notes.map(n => n.s + ':' + n.f));
+            marks = T.allNotes(ivs, root, hi, lo).map(m => (layer === 'pent' && !chordIv.includes(m.iv)) ? Object.assign(m, { small: true }) : m);
+            sh.notes.forEach(n => { if (!marks.some(m => m.s === n.s && m.f === n.f)) marks.push(n); });
+            marks.forEach(m => { if (layer !== 'chord' && !shapeKeys.has(m.s + ':' + m.f) && chordIv.includes(m.iv)) m.cls = 'ring'; });
+            seq = 'run';
+          }
+          caption = `Forma ${sh.k} de ${T.chordName(root, q, st.latin)}, casas ${sh.lo} a ${sh.hi}.`;
+        }
+        break;
+      }
+      case 'lick': {
+        const lk = lickById(cfg.lick);
+        const p = TAB.parse(lk.src);
+        const r = T.pcOf(lk.key);
+        marks = TAB.marks(p, r);
+        flats = T.useFlats(r, T.SCALES[lk.scale]?.parent || 0);
+        const mx = Math.max(...marks.map(m => m.f));
+        frets = Math.min(22, Math.max(N, mx + 1));
+        caption = `Notas do lick “${lk.title}”. Use o player abaixo.`;
+        break;
+      }
+    }
+    return { marks, caption, labels, flats, seq, frets, root };
+  }
+
+  /** Toca o conteúdo de uma demonstração. */
+  function playDemo(demo) {
+    A.init(); S.practiced();
+    const t0 = A.now() + 0.08;
+    if (demo.seq && demo.seq.groups) {
+      demo.seq.groups.forEach((g, i) => {
+        const notes = g.slice().sort((a, b) => T.pitch(a.s, a.f) - T.pitch(b.s, b.f));
+        notes.forEach((n, j) => A.play(T.pitch(n.s, n.f), t0 + i * 0.9 + j * 0.03, { dur: 0.85, vel: 0.6, string: n.s }));
+      });
+      return;
+    }
+    const uniq = new Map();
+    demo.marks.filter(m => !m.dim).forEach(m => { const p = T.pitch(m.s, m.f); if (!uniq.has(p)) uniq.set(p, m); });
+    const ps = [...uniq.keys()].sort((a, b) => a - b);
+    if (demo.seq === 'strum') { ps.forEach((p, j) => A.play(p, t0 + j * 0.03, { dur: 1.4, vel: 0.65 })); return; }
+    const run = ps.length > 1 ? ps.concat(ps.slice(0, -1).reverse()) : ps;
+    run.slice(0, 64).forEach((p, i) => A.play(p, t0 + i * 0.2, { dur: 0.3, vel: 0.7, string: uniq.get(p).s }));
+  }
+
+  function legend(kind) {
+    const items = [['r','Tônica'],['3','Terça'],['5','Quinta'],['7','Sétima'],['2','2ª / 9ª'],['4','4ª / 11ª'],['6','6ª / 13ª'],['b5','♭5 (blue note)']];
+    const list = kind === 'natural' ? [['n','Nota natural'],['pair','Mi–Fá / Si–Dó']] : items;
+    return `<div class="legend">${list.map(([r, l]) => `<span><i class="dot iv-${r}"></i>${l}</span>`).join('')}</div>`;
+  }
+
+  /** Painel de lick: tablatura + controles. Usa o braço `fb` informado. */
+  function lickPanel(host, lick, fb, opts = {}) {
+    const parsed = TAB.parse(lick.src);
+    const root = T.pcOf(lick.key);
+    const sc = T.SCALES[lick.scale];
+    const level = '●'.repeat(lick.level) + '○'.repeat(5 - lick.level);
+    host.innerHTML = `
+      <div class="lick-head">
+        <div><h3>${esc(lick.title)}</h3>
+          <p class="meta"><span>${STYLES[lick.style]}</span><span>Tom: ${T.rootName(root, set().latin)}</span><span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
+      </div>
+      ${lick.chords ? `<p class="chords">${lick.chords.map((c, i) => `<span>${i + 1}</span>${esc(c)}`).join('')}</p>` : ''}
+      <div class="tab-scroll" data-tab></div>
+      <div class="ctrl-row">
+        <button type="button" class="btn primary" data-act="play">▶ Tocar</button>
+        <label class="field">Velocidade <select data-speed id="spd-${lick.id}${opts.idSuffix || ''}">
+          ${[50, 60, 70, 80, 90, 100, 110, 120].map(p => `<option value="${p}" ${p === (opts.speed || 100) ? 'selected' : ''}>${p}% · ${Math.round(lick.bpm * p / 100)} BPM</option>`).join('')}
+        </select></label>
+        <label class="check"><input type="checkbox" data-loop id="loop-${lick.id}${opts.idSuffix || ''}"> Repetir</label>
+        <label class="check"><input type="checkbox" data-click id="clk-${lick.id}${opts.idSuffix || ''}" ${opts.click ? 'checked' : ''}> Metrônomo</label>
+      </div>
+      <p class="tip"><b>${esc(lick.tech)}.</b> ${esc(lick.tip)}</p>`;
+    const highlight = TAB.render(host.querySelector('[data-tab]'), parsed);
+    const btn = host.querySelector('[data-act="play"]');
+    const player = TAB.Player({
+      onEvent(i) {
+        highlight(i);
+        const ev = parsed.events[i];
+        fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
+      },
+      onEnd() { btn.textContent = '▶ Tocar'; btn.classList.remove('on'); fb && fb.setActive([]); },
+    });
+    btn.addEventListener('click', () => {
+      if (player.playing) { player.stop(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); return; }
+      opts.onPlay && opts.onPlay();
+      const pct = +host.querySelector('[data-speed]').value;
+      player.play(parsed, { bpm: lick.bpm * pct / 100, loop: host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked });
+      btn.textContent = '■ Parar'; btn.classList.add('on');
+      S.practiced();
+    });
+    return { player, parsed, root, stop: () => { player.stop(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); } };
+  }
+
+  return { $, esc, set, rootOptions, chips, toast, fbState, buildDemo, playDemo, legend, lickPanel };
+})();
+
+/* ===== Trilha e aula ===== */
+const V = {};
+const ALL_LESSONS = () => MODULES.flatMap((m, mi) => m.lessons.map((l, li) => Object.assign({ mod: m, num: `${mi + 1}.${li + 1}` }, l)));
+
+function linkHref(l) {
+  if (l.to === 'quiz') return '#quiz-' + l.id;
+  if (l.to === 'treino') return '#treino-' + l.id;
+  if (l.to === 'jam') return '#jam-' + l.id;
+  if (l.to === 'licks') return '#lick-' + l.id;
+  return '#' + l.to;
+}
+
+V.trilha = (el) => {
+  const st = S.get(), all = ALL_LESSONS();
+  const doneN = all.filter(l => st.done[l.id]).length;
+  const next = all.find(l => !st.done[l.id]);
+  el.innerHTML = `
+    <section class="hero-strip">
+      <div>
+        <p class="eyebrow">Sua trilha</p>
+        <h1>Do mapa do braço ao primeiro solo</h1>
+        <p class="lede">${all.length} aulas em ${MODULES.length} módulos. Cada aula tem o braço interativo, som, e um exercício para fazer com a guitarra na mão.</p>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><b>${doneN}<small>/${all.length}</small></b><span>aulas concluídas</span></div>
+        <div class="stat"><b>${S.streak()}</b><span>${S.streak() === 1 ? 'dia seguido' : 'dias seguidos'}</span></div>
+        ${next ? `<a class="btn primary big" href="#aula-${next.id}">${doneN ? 'Continuar' : 'Começar'}: ${U.esc(next.title)} →</a>` : `<span class="pill ok">Trilha completa</span>`}
+      </div>
+    </section>
+    <div class="modules">
+      ${MODULES.map((m, mi) => {
+        const d = m.lessons.filter(l => st.done[l.id]).length;
+        return `<section class="module">
+          <header><span class="mod-n">Módulo ${mi + 1}</span><span class="tag">${m.tag}</span></header>
+          <h2>${m.title}</h2>
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${m.lessons.length}" aria-valuenow="${d}"><i style="width:${d / m.lessons.length * 100}%"></i></div>
+          <ol class="lessons">
+            ${m.lessons.map((l, li) => `<li><a href="#aula-${l.id}" class="${st.done[l.id] ? 'done' : ''}">
+              <span class="ln">${mi + 1}.${li + 1}</span><span class="lt">${l.title}</span><span class="lm">${l.min} min</span><span class="ck" aria-label="${st.done[l.id] ? 'concluída' : 'pendente'}"></span></a></li>`).join('')}
+          </ol>
+        </section>`;
+      }).join('')}
+    </div>`;
+};
+
+V.lesson = (el, id) => {
+  const all = ALL_LESSONS();
+  const idx = all.findIndex(l => l.id === id);
+  if (idx < 0) { location.hash = '#trilha'; return; }
+  const L = all[idx], prev = all[idx - 1], next = all[idx + 1];
+  const demo0 = L.demo;
+  let view = 0, root = demo0.root != null ? T.pcOf(demo0.root) : null;
+  let labelsMode = demo0.labels || (['natural', 'note'].includes(demo0.kind) ? 'note' : 'iv');
+
+  el.innerHTML = `
+    <nav class="crumbs"><a href="#trilha">Trilha</a><span>›</span><span>Módulo ${MODULES.indexOf(L.mod) + 1} · ${L.mod.title}</span></nav>
+    <article class="lesson">
+      <header class="lesson-head">
+        <p class="eyebrow">Aula ${L.num} · ${L.min} min</p>
+        <h1>${L.title}</h1>
+      </header>
+      <div class="prose">${L.body}</div>
+    </article>
+    <section class="panel demo">
+      <div class="ctrl-row" data-demo-ctrl></div>
+      <div data-fb></div>
+      <p class="caption" data-caption></p>
+      <div data-legend></div>
+    </section>
+    ${L.lick && demo0.kind !== 'lick' ? `<section class="panel"><p class="eyebrow">Lick da aula</p><div data-lick></div></section>` : ''}
+    ${demo0.kind === 'lick' ? `<section class="panel"><div data-lick></div></section>` : ''}
+    <section class="practice">
+      <h2>Pratique</h2>
+      <ul class="tasks">${(L.tasks || []).map(t => `<li>${t}</li>`).join('')}</ul>
+      ${L.links ? `<div class="links">${L.links.map(l => `<a class="btn" href="${linkHref(l)}">${l.label} →</a>`).join('')}</div>` : ''}
+    </section>
+    <footer class="lesson-foot">
+      ${prev ? `<a class="btn ghost" href="#aula-${prev.id}">← ${U.esc(prev.title)}</a>` : '<span></span>'}
+      <button type="button" class="btn ${S.get().done[L.id] ? 'ok' : 'primary'}" data-act="done">${S.get().done[L.id] ? '✓ Concluída' : 'Marcar como concluída'}</button>
+      ${next ? `<a class="btn ghost" href="#aula-${next.id}">${U.esc(next.title)} →</a>` : '<span></span>'}
+    </footer>`;
+
+  const fb = FB.create(el.querySelector('[data-fb]'));
+  let lp = null;
+  const lickHost = el.querySelector('[data-lick]');
+
+  function cfg() {
+    const v = (demo0.views || [])[view] || {};
+    const c = Object.assign({}, demo0, v);
+    if (root != null && demo0.keySel) c.root = root;
+    if (v.labels) labelsMode = v.labels;
+    return c;
+  }
+
+  function draw() {
+    const c = cfg();
+    const d = U.buildDemo(c);
+    const ctrl = el.querySelector('[data-demo-ctrl]');
+    const views = demo0.views ? U.chips('view', demo0.views.map((v, i) => ({ v: i, label: v.label })), view) : '';
+    const keySel = demo0.keySel ? `<label class="field">Tom <select data-root id="lesson-root">${U.rootOptions(T.pcOf(c.root))}</select></label>` : '';
+    const lab = demo0.kind !== 'natural' && demo0.kind !== 'lick' ? U.chips('labels', [{ v: 'iv', label: 'Intervalos' }, { v: 'note', label: 'Notas' }], labelsMode) : '';
+    ctrl.innerHTML = `${views}<div class="ctrl-right">${keySel}${lab}${demo0.kind !== 'lick' ? '<button type="button" class="btn" data-act="hear">♪ Ouvir</button>' : ''}</div>`;
+    fb.set(U.fbState({ marks: d.marks, labels: demo0.kind === 'natural' ? 'note' : labelsMode, flats: d.flats, frets: d.frets,
+      onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
+    el.querySelector('[data-caption]').textContent = d.caption;
+    el.querySelector('[data-legend]').innerHTML = U.legend(demo0.kind);
+    draw.demo = d;
+  }
+  draw();
+
+  if (lickHost) {
+    const lk = lickById(L.lick || demo0.lick);
+    lp = U.lickPanel(lickHost, lk, fb, {
+      idSuffix: '-aula',
+      onPlay() {
+        if (demo0.kind !== 'lick') {
+          const d = U.buildDemo({ kind: 'lick', lick: lk.id });
+          fb.set({ marks: d.marks, labels: labelsMode, flats: d.flats, frets: d.frets });
+        }
+      },
+    });
+  }
+
+  el.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips] .chip');
+    if (chip) {
+      const g = chip.parentElement.dataset.chips;
+      if (g === 'view') view = +chip.dataset.v;
+      if (g === 'labels') labelsMode = chip.dataset.v;
+      draw(); return;
+    }
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'hear') U.playDemo(draw.demo);
+    if (act === 'done') {
+      const was = !!S.get().done[L.id];
+      S.update(s => { if (was) delete s.done[L.id]; else s.done[L.id] = S.today(); });
+      S.practiced();
+      const b = e.target.closest('[data-act]');
+      b.className = 'btn ' + (was ? 'primary' : 'ok');
+      b.textContent = was ? 'Marcar como concluída' : '✓ Concluída';
+      if (!was) U.toast(next ? `Aula concluída. Próxima: ${next.title}` : 'Trilha completa!');
+    }
+  });
+  el.addEventListener('change', e => {
+    if (e.target.matches('[data-root]')) { root = +e.target.value; draw(); }
+  });
+  return () => { lp && lp.stop(); A.stopAll(); };
+};
+
+/* ===== Explorador do braço ===== */
+const EXP = { type:'scale', root:9, scale:'pent_menor', pos:0, quality:'maior', set:'123', inv:-1, shape:'all', layer:'chord', chord:'maior', labels:'iv' };
+
+V.braco = (el) => {
+  el.innerHTML = `
+    <header class="page-head"><p class="eyebrow">Explorador</p><h1>O braço inteiro, em qualquer tom</h1></header>
+    <section class="panel">
+      <div class="explorer-ctrl" data-ctrl></div>
+      <div data-fb></div>
+      <p class="caption" data-caption></p>
+      <div data-legend></div>
+    </section>
+    <section class="info-grid" data-info></section>`;
+  const fb = FB.create(el.querySelector('[data-fb]'));
+
+  function cfg() {
+    const e = EXP;
+    if (e.type === 'scale') return { kind:'scale', root:e.root, scale:e.scale, pos:e.pos };
+    if (e.type === 'triad') return { kind:'triad', root:e.root, quality:e.quality, set:e.set, inv:e.inv };
+    if (e.type === 'caged') return { kind:'caged', root:e.root, quality:e.quality === 'menor' ? 'menor' : 'maior', shape:e.shape, layer:e.layer };
+    if (e.type === 'note') return { kind:'note', root:e.root };
+    return { kind:'chord', root:e.root, chord:e.chord };
+  }
+
+  function controls() {
+    const e = EXP, sc = T.SCALES[e.scale];
+    const rows = [];
+    rows.push(`<div class="ctrl-row"><label class="field">Tom <select data-k="root" id="exp-root">${U.rootOptions(e.root)}</select></label>
+      ${U.chips('type', [{ v:'scale', label:'Escalas' }, { v:'triad', label:'Tríades' }, { v:'caged', label:'CAGED' }, { v:'chord', label:'Arpejos' }, { v:'note', label:'Uma nota' }], e.type)}</div>`);
+    if (e.type === 'scale') {
+      const n = T.positionsCount(e.scale);
+      rows.push(`<div class="ctrl-row"><label class="field">Escala <select data-k="scale" id="exp-scale">${Object.entries(T.SCALES).map(([k, s]) => `<option value="${k}" ${k === e.scale ? 'selected' : ''}>${s.name}</option>`).join('')}</select></label>
+        ${U.chips('pos', [{ v:-1, label:'Braço' }].concat(Array.from({ length:n }, (_, i) => ({ v:i, label:(sc.sys === 'box' ? 'Caixa ' : 'Pos. ') + (i + 1) }))), e.pos)}</div>`);
+    }
+    if (e.type === 'triad') {
+      rows.push(`<div class="ctrl-row">${U.chips('quality', ['maior', 'menor', 'dim', 'aum'].map(q => ({ v:q, label:T.CHORDS[q].name })), e.quality)}
+        ${U.chips('set', T.STRING_SETS.map(s => ({ v:s.id, label:s.label })), e.set)}
+        ${U.chips('inv', [{ v:-1, label:'Todas' }, { v:0, label:'Fundamental' }, { v:1, label:'1ª inv.' }, { v:2, label:'2ª inv.' }], e.inv)}</div>`);
+    }
+    if (e.type === 'caged') {
+      rows.push(`<div class="ctrl-row">${U.chips('quality', [{ v:'maior', label:'Maior' }, { v:'menor', label:'Menor' }], e.quality === 'menor' ? 'menor' : 'maior')}
+        ${U.chips('shape', [{ v:'all', label:'Todas' }, ...['C', 'A', 'G', 'E', 'D'].map(k => ({ v:k, label:'Forma ' + k }))], e.shape)}
+        ${e.shape !== 'all' ? U.chips('layer', [{ v:'chord', label:'Acorde' }, { v:'arp', label:'Arpejo' }, { v:'pent', label:'Pentatônica' }], e.layer) : ''}</div>`);
+    }
+    if (e.type === 'chord') {
+      rows.push(`<div class="ctrl-row"><label class="field">Acorde <select data-k="chord" id="exp-chord">${Object.entries(T.CHORDS).map(([k, c]) => `<option value="${k}" ${k === e.chord ? 'selected' : ''}>${c.name}</option>`).join('')}</select></label></div>`);
+    }
+    rows.push(`<div class="ctrl-row">${U.chips('labels', [{ v:'iv', label:'Intervalos' }, { v:'note', label:'Notas' }, { v:'none', label:'Sem rótulo' }], e.labels)}
+      <button type="button" class="btn" data-act="hear">♪ Ouvir</button></div>`);
+    el.querySelector('[data-ctrl]').innerHTML = rows.join('');
+  }
+
+  function info(c, d) {
+    const st = U.set();
+    let ivs = [], title = '';
+    if (c.kind === 'scale') { ivs = T.SCALES[c.scale].iv; title = T.SCALES[c.scale].name; }
+    else if (c.kind === 'triad' || c.kind === 'caged') { ivs = T.CHORDS[c.quality].iv; title = 'Tríade ' + T.CHORDS[c.quality].name.toLowerCase(); }
+    else if (c.kind === 'chord') { ivs = T.CHORDS[c.chord].iv; title = 'Arpejo ' + T.CHORDS[c.chord].name.toLowerCase(); }
+    else { ivs = [0]; title = 'Nota'; }
+    const cells = ivs.map(iv => `<div class="deg iv-${T.IV_ROLE[iv]}"><b>${T.noteName(c.root + iv, d.flats, st.latin)}</b><span>${T.ivLabel(iv)}</span></div>`).join('');
+    el.querySelector('[data-info]').innerHTML = `
+      <div class="panel"><p class="eyebrow">${title} de ${T.rootName(c.root, st.latin)}</p><div class="degrees">${cells}</div>
+      <p class="small">Fórmula: ${ivs.map(T.ivLabel).join(' – ')}</p></div>
+      <div class="panel"><p class="eyebrow">Como estudar</p><p class="small">${tip(c)}</p></div>`;
+  }
+
+  function tip(c) {
+    if (c.kind === 'scale' && c.pos < 0) return 'Com o braço inteiro aceso, escolha uma corda e toque a escala só nela, de uma ponta à outra. Depois volte para as posições.';
+    if (c.kind === 'scale') return 'Toque a posição subindo e descendo com metrônomo. Depois esconda os rótulos e tente tocar só as tônicas.';
+    if (c.kind === 'triad') return 'Escolha “Todas” e toque as inversões em sequência pelo braço. Depois troque só a qualidade (maior/menor) e veja qual nota anda.';
+    if (c.kind === 'caged') return 'Passe pelas formas na ordem em que aparecem no braço. Em cada forma, ache a tônica nas cordas 6, 5 e 4.';
+    if (c.kind === 'chord') return 'Arpejos de 4 notas (7, 7M, m7) são o próximo passo depois das tríades: eles soam “jazz” e “soul” no solo.';
+    return 'Use os desenhos de oitava para ligar as posições da nota. Esconda os rótulos e tente prever onde está a próxima.';
+  }
+
+  function draw() {
+    controls();
+    const c = cfg();
+    let d;
+    if (c.kind === 'chord') {
+      const ch = T.CHORDS[c.chord];
+      d = { marks: T.allNotes(ch.iv, c.root, U.set().frets), flats: T.useFlats(c.root, ch.iv.includes(3) ? 3 : 0), caption: `Arpejo de ${T.chordName(c.root, c.chord, U.set().latin)} no braço inteiro.`, seq: 'run' };
+    } else d = U.buildDemo(c);
+    fb.set(U.fbState({ marks: d.marks, labels: EXP.labels, flats: d.flats,
+      onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
+    el.querySelector('[data-caption]').textContent = d.caption;
+    el.querySelector('[data-legend]').innerHTML = U.legend(c.kind);
+    info(c, d);
+    draw.d = d;
+  }
+  draw();
+
+  el.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips] .chip');
+    if (chip) {
+      const g = chip.parentElement.dataset.chips, v = chip.dataset.v;
+      if (['pos', 'inv'].includes(g)) EXP[g] = +v; else EXP[g] = v;
+      if (g === 'type' && v === 'caged' && !['maior', 'menor'].includes(EXP.quality)) EXP.quality = 'maior';
+      draw(); return;
+    }
+    if (e.target.closest('[data-act="hear"]')) U.playDemo(draw.d);
+  });
+  el.addEventListener('change', e => {
+    const k = e.target.dataset.k;
+    if (!k) return;
+    EXP[k] = k === 'root' ? +e.target.value : e.target.value;
+    if (k === 'scale') EXP.pos = Math.min(EXP.pos, T.positionsCount(EXP.scale) - 1);
+    draw();
+  });
+  return () => A.stopAll();
+};
+
+/* ===== Biblioteca de licks ===== */
+let LICK_FILTER = 'all';
+
+V.licks = (el, id) => {
+  let cur = lickById(id) || LICKS[0];
+  if (id && LICK_FILTER !== 'all' && cur.style !== LICK_FILTER) LICK_FILTER = 'all';
+  el.innerHTML = `
+    <header class="page-head"><p class="eyebrow">Licks e solos</p><h1>Frases para tocar, ouvir e roubar</h1>
+      <p class="lede">Cada frase tem tablatura, som e as notas no braço. Toque devagar primeiro: a velocidade fica no seletor.</p></header>
+    <div class="licks-layout">
+      <aside class="lick-list">
+        <div data-filter></div>
+        <ul data-list></ul>
+      </aside>
+      <section class="panel lick-main">
+        <div data-fb></div>
+        <div data-legend></div>
+        <div data-panel></div>
+      </section>
+    </div>`;
+  const fb = FB.create(el.querySelector('[data-fb]'));
+  let panel = null;
+
+  function list() {
+    el.querySelector('[data-filter]').innerHTML = U.chips('style', [{ v:'all', label:'Todos' }].concat(Object.entries(STYLES).map(([v, label]) => ({ v, label }))), LICK_FILTER);
+    const items = LICKS.filter(l => LICK_FILTER === 'all' || l.style === LICK_FILTER);
+    const best = S.get().bpm;
+    el.querySelector('[data-list]').innerHTML = items.map(l => `<li><a href="#lick-${l.id}" class="${l.id === cur.id ? 'on' : ''}">
+      <span class="lt">${U.esc(l.title)}</span><span class="lm">${STYLES[l.style]} · ${'●'.repeat(l.level)}${best[l.id] ? ` · recorde ${best[l.id]} BPM` : ''}</span></a></li>`).join('');
+  }
+
+  function show() {
+    panel && panel.stop();
+    const d = U.buildDemo({ kind:'lick', lick: cur.id });
+    fb.set(U.fbState({ marks: d.marks, labels: 'iv', flats: d.flats, frets: d.frets,
+      onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
+    el.querySelector('[data-legend]').innerHTML = U.legend('lick');
+    const host = el.querySelector('[data-panel]');
+    panel = U.lickPanel(host, cur, fb);
+    const extra = document.createElement('div');
+    extra.className = 'ctrl-row';
+    extra.innerHTML = `<a class="btn" href="#treino-${cur.id}">Treinar com velocidade progressiva →</a>`;
+    host.appendChild(extra);
+  }
+  list(); show();
+
+  el.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips="style"] .chip');
+    if (chip) { LICK_FILTER = chip.dataset.v; list(); }
+  });
+  return () => { panel && panel.stop(); };
+};
+
+/* ===== Treino: metrônomo e velocidade progressiva ===== */
+const MET = { bpm: 80, beats: 4, sub: 1 };
+const SPEED = { id: 'ex-pent', start: 60, target: 100, step: 5, reps: 2, listen: true };
+
+function treinoTabs(active) {
+  return `<header class="page-head"><p class="eyebrow">Treino</p><h1>Tempo, velocidade e improviso</h1></header>
+    <nav class="subtabs">${[['treino', 'Metrônomo'], ['treino-' + SPEED.id, 'Velocidade progressiva'], ['jam', 'Jam (bases)']].map(([h, l], i) =>
+      `<a href="#${h}" class="${['met', 'speed', 'jam'][i] === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
+}
+
+V.metronomo = (el) => {
+  el.innerHTML = treinoTabs('met') + `
+    <section class="panel met">
+      <div class="met-bpm">
+        <button type="button" class="btn round" data-d="-5" aria-label="Menos 5 BPM">−5</button>
+        <button type="button" class="btn round" data-d="-1" aria-label="Menos 1 BPM">−1</button>
+        <div class="bpm-read"><b data-bpm>${MET.bpm}</b><span>BPM</span></div>
+        <button type="button" class="btn round" data-d="1" aria-label="Mais 1 BPM">+1</button>
+        <button type="button" class="btn round" data-d="5" aria-label="Mais 5 BPM">+5</button>
+      </div>
+      <input type="range" min="30" max="240" value="${MET.bpm}" data-range id="met-range" aria-label="Andamento">
+      <div class="beats" data-beats></div>
+      <div class="ctrl-row center">
+        ${U.chips('beats', [2, 3, 4, 6].map(b => ({ v: b, label: b + ' tempos' })), MET.beats)}
+        ${U.chips('sub', [{ v: 1, label: '♩' }, { v: 2, label: '♫ colcheia' }, { v: 3, label: 'tercina' }, { v: 4, label: 'semicolcheia' }], MET.sub)}
+      </div>
+      <div class="ctrl-row center">
+        <button type="button" class="btn primary big" data-act="go">▶ Iniciar</button>
+        <button type="button" class="btn" data-act="tap">Bater o tempo</button>
+      </div>
+    </section>`;
+  const beatsEl = el.querySelector('[data-beats]');
+  const drawBeats = () => { beatsEl.innerHTML = Array.from({ length: MET.beats }, (_, i) => `<i class="${i === 0 ? 'acc' : ''}"></i>`).join(''); };
+  drawBeats();
+  const setBpm = b => { MET.bpm = Math.max(30, Math.min(240, b)); el.querySelector('[data-bpm]').textContent = MET.bpm; el.querySelector('[data-range]').value = MET.bpm; };
+  // 12 pulsos por tempo cobrem colcheia, tercina e semicolcheia sem reiniciar o relógio
+  const clock = A.Clock(() => MET.bpm, 12, (i, t) => {
+    const sub = i % 12, beat = Math.floor(i / 12) % MET.beats;
+    if (sub === 0) {
+      A.click(t, beat === 0);
+      setTimeout(() => { [...beatsEl.children].forEach((c, k) => c.classList.toggle('on', k === beat)); }, Math.max(0, (t - A.ctx.currentTime) * 1000));
+    } else if (MET.sub > 1 && sub % (12 / MET.sub) === 0) A.tick(t);
+  });
+  let taps = [];
+  el.addEventListener('click', e => {
+    const d = e.target.closest('[data-d]'); if (d) { setBpm(MET.bpm + +d.dataset.d); return; }
+    const chip = e.target.closest('[data-chips] .chip');
+    if (chip) {
+      MET[chip.parentElement.dataset.chips] = +chip.dataset.v;
+      chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === chip));
+      drawBeats();
+      return;
+    }
+    const btn = e.target.closest('[data-act]'), act = btn?.dataset.act;
+    if (act === 'go') {
+      if (clock.running) { clock.stop(); btn.textContent = '▶ Iniciar'; beatsEl.querySelectorAll('.on').forEach(c => c.classList.remove('on')); }
+      else { clock.start(); btn.textContent = '■ Parar'; S.practiced(); }
+    }
+    if (act === 'tap') {
+      const n = performance.now(); taps = taps.filter(x => n - x < 2500); taps.push(n);
+      if (taps.length > 1) setBpm(Math.round(60000 / ((taps[taps.length - 1] - taps[0]) / (taps.length - 1))));
+    }
+  });
+  el.addEventListener('input', e => { if (e.target.matches('[data-range]')) setBpm(+e.target.value); });
+  return () => clock.stop();
+};
+
+V.speed = (el, id) => {
+  if (id && lickById(id)) SPEED.id = id;
+  const lick = lickById(SPEED.id);
+  const rec = S.get().bpm[lick.id];
+  if (SPEED.lastId !== lick.id) { SPEED.start = Math.round(lick.bpm * 0.7); SPEED.target = rec ? rec + 10 : lick.bpm; SPEED.lastId = lick.id; }
+  const groups = Object.entries(STYLES).map(([k, n]) => `<optgroup label="${n}">${LICKS.filter(l => l.style === k).map(l => `<option value="${l.id}" ${l.id === lick.id ? 'selected' : ''}>${U.esc(l.title)}</option>`).join('')}</optgroup>`).join('');
+  el.innerHTML = treinoTabs('speed') + `
+    <section class="panel">
+      <div class="ctrl-row"><label class="field grow">Exercício <select data-k="id" id="spd-ex">${groups}</select></label>
+        <span class="pill">${rec ? `Recorde: ${rec} BPM` : 'Sem recorde ainda'}</span></div>
+      <div class="ctrl-row">
+        <label class="field">Começar em <input type="number" min="30" max="260" value="${SPEED.start}" data-k="start" id="spd-start"> BPM</label>
+        <label class="field">Meta <input type="number" min="30" max="300" value="${SPEED.target}" data-k="target" id="spd-target"> BPM</label>
+        <label class="field">Subir <input type="number" min="1" max="20" value="${SPEED.step}" data-k="step" id="spd-step"> BPM</label>
+        <label class="field">a cada <input type="number" min="1" max="8" value="${SPEED.reps}" data-k="reps" id="spd-reps"> repetições</label>
+        <label class="check"><input type="checkbox" data-k="listen" id="spd-listen" ${SPEED.listen ? 'checked' : ''}> Tocar junto</label>
+      </div>
+      <div class="speed-read"><div><b data-cur>${SPEED.start}</b><span>BPM agora</span></div><div><b data-rep>0</b><span>repetição</span></div>
+        <div class="bar wide"><i data-prog style="width:0%"></i></div></div>
+      <div class="tab-scroll" data-tab></div>
+      <div class="ctrl-row">
+        <button type="button" class="btn primary big" data-act="go">▶ Iniciar treino</button>
+        <button type="button" class="btn ok" data-act="save">✓ Consegui limpo neste BPM</button>
+      </div>
+      <p class="tip">${U.esc(lick.tip)} Regra de ouro: só suba quando tocar 4 vezes seguidas sem erro. Se travar, volte 10 BPM.</p>
+    </section>`;
+  const parsed = TAB.parse(lick.src);
+  const hl = TAB.render(el.querySelector('[data-tab]'), parsed);
+  const beats = Math.ceil(parsed.beats);
+  let bpm = SPEED.start, rep = 0, beatInRep = 0, repStart = 0, repBpm = bpm, raf = null;
+  const curEl = el.querySelector('[data-cur]'), repEl = el.querySelector('[data-rep]'), progEl = el.querySelector('[data-prog]');
+  const clock = A.Clock(() => bpm, 1, (i, t) => {
+    if (beatInRep === 0) {
+      repStart = t; repBpm = bpm;
+      if (SPEED.listen) TAB.scheduleNotes(parsed, t, bpm);
+      const shown = bpm, r = rep + 1;
+      setTimeout(() => { curEl.textContent = shown; repEl.textContent = r; progEl.style.width = Math.min(100, (shown - SPEED.start) / Math.max(1, SPEED.target - SPEED.start) * 100) + '%'; }, Math.max(0, (t - A.ctx.currentTime) * 1000));
+    }
+    A.click(t, beatInRep % 4 === 0);
+    beatInRep++;
+    if (beatInRep >= beats) {
+      beatInRep = 0; rep++;
+      if (rep % SPEED.reps === 0) bpm = Math.min(SPEED.target, bpm + SPEED.step);
+    }
+  });
+  function anim() {
+    const now = A.ctx.currentTime;
+    if (now >= repStart) {
+      const b = (now - repStart) * repBpm / 60;
+      let idx = -1; parsed.events.forEach((e, i) => { if (e.beat <= b + 1e-6) idx = i; });
+      hl(idx);
+    }
+    raf = requestAnimationFrame(anim);
+  }
+  function stop() { clock.stop(); cancelAnimationFrame(raf); A.stopAll(); hl(-1); const b = el.querySelector('[data-act="go"]'); if (b) b.textContent = '▶ Iniciar treino'; }
+
+  el.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'go') {
+      if (clock.running) { stop(); return; }
+      bpm = SPEED.start; rep = 0; beatInRep = 0;
+      A.init(); repStart = Infinity; clock.start(); raf = requestAnimationFrame(anim);
+      e.target.textContent = '■ Parar'; S.practiced();
+    }
+    if (act === 'save') {
+      const val = clock.running ? repBpm : +curEl.textContent;
+      S.update(s => { s.bpm[lick.id] = Math.max(s.bpm[lick.id] || 0, val); });
+      S.practiced();
+      U.toast(`Recorde salvo: ${Math.max(val, rec || 0)} BPM`);
+      el.querySelector('.pill').textContent = `Recorde: ${S.get().bpm[lick.id]} BPM`;
+    }
+  });
+  el.addEventListener('change', e => {
+    const k = e.target.dataset.k; if (!k) return;
+    if (k === 'id') { stop(); location.hash = '#treino-' + e.target.value; return; }
+    if (k === 'listen') SPEED.listen = e.target.checked;
+    else SPEED[k] = Math.max(1, +e.target.value || 1);
+    if (k === 'start' && !clock.running) curEl.textContent = SPEED.start;
+  });
+  return stop;
+};
+
+/* ===== Jam: bases para improvisar ===== */
+const JAMS = [
+  { id:'blues', title:'Blues em Lá (12 compassos)', key:'A', bpm:88, feel:'shuffle', bass:'boogie',
+    chords:['A7','D7','A7','A7','D7','D7','A7','A7','E7','D7','A7','E7'], scales:['blues','pent_menor','mixolidio'] },
+  { id:'pop', title:'Louvor / pop: G–D–Em–C', key:'G', bpm:76, feel:'straight', bass:'root',
+    chords:['G','D','Em','C'], scales:['pent_maior','maior'] },
+  { id:'rock', title:'Rock menor: Am–G–F–G', key:'A', bpm:100, feel:'straight', bass:'eighths',
+    chords:['Am','G','F','G'], scales:['pent_menor','menor','blues'] },
+  { id:'metal', title:'Metal: Em–C–D–B', key:'E', bpm:132, feel:'straight', bass:'eighths',
+    chords:['Em','C','D','B'], scales:['menor_harm','menor','pent_menor'] },
+  { id:'dorico', title:'Modal dórico: Am7–D', key:'A', bpm:96, feel:'straight', bass:'root',
+    chords:['Am7','Am7','D','D'], scales:['dorico','pent_menor'] },
+];
+const JAM = { id:'blues', scale:null, bpm:null, drums:true, bass:true, comp:true, labels:'iv' };
+
+function parseChord(name) {
+  const m = name.match(/^([A-G][b#]?)(.*)$/);
+  const q = { '':'maior', 'm':'menor', '7':'dom7', 'm7':'m7', '7M':'maj7' }[m[2]] || 'maior';
+  return { root: T.pcOf(m[1]), q, name };
+}
+
+V.jam = (el, id) => {
+  if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; } JAM.id = id; }
+  const jam = JAMS.find(j => j.id === JAM.id);
+  if (!JAM.scale || !jam.scales.includes(JAM.scale)) JAM.scale = jam.scales[0];
+  if (!JAM.bpm) JAM.bpm = jam.bpm;
+  const chords = jam.chords.map(parseChord);
+  const keyPc = T.pcOf(jam.key);
+
+  el.innerHTML = treinoTabs('jam') + `
+    <section class="panel">
+      <div class="ctrl-row">${U.chips('jam', JAMS.map(j => ({ v:j.id, label:j.title })), jam.id)}</div>
+      <div class="ctrl-row">
+        <label class="field">Escala <select data-k="scale" id="jam-scale">${jam.scales.map(s => `<option value="${s}" ${s === JAM.scale ? 'selected' : ''}>${T.SCALES[s].name} de ${T.rootName(keyPc, U.set().latin)}</option>`).join('')}</select></label>
+        <label class="field">Andamento <input type="range" min="50" max="180" value="${JAM.bpm}" data-k="bpm" id="jam-bpm"> <b data-bpm>${JAM.bpm}</b> BPM</label>
+        <label class="check"><input type="checkbox" data-k="drums" id="jam-drums" ${JAM.drums ? 'checked' : ''}> Bateria</label>
+        <label class="check"><input type="checkbox" data-k="bass" id="jam-bass" ${JAM.bass ? 'checked' : ''}> Baixo</label>
+        <label class="check"><input type="checkbox" data-k="comp" id="jam-comp" ${JAM.comp ? 'checked' : ''}> Acordes</label>
+      </div>
+      <div class="jam-now">
+        <button type="button" class="btn primary big" data-act="go">▶ Tocar base</button>
+        <div class="now"><span>Agora</span><b data-now>${chords[0].name}</b></div>
+        <div class="now dim"><span>Próximo</span><b data-next>${chords[1 % chords.length].name}</b></div>
+        <ol class="bars" data-bars>${chords.map((c, i) => `<li data-i="${i}">${c.name}</li>`).join('')}</ol>
+      </div>
+      <div data-fb></div>
+      <p class="caption">Notas grandes: notas do acorde atual (rótulos em relação ao acorde). Pontos pequenos: o resto da escala. Mire nas notas grandes quando o acorde mudar.</p>
+    </section>`;
+  const fb = FB.create(el.querySelector('[data-fb]'));
+  const sc = T.SCALES[JAM.scale];
+  const flats = T.useFlats(keyPc, sc.parent);
+
+  function showChord(ci) {
+    const c = chords[ci], civ = T.CHORDS[c.q].iv.map(i => T.mod(c.root + i));
+    const scalePcs = sc.iv.map(i => T.mod(keyPc + i));
+    const N = U.set().frets, marks = [];
+    for (let s = 0; s < 6; s++) for (let f = 0; f <= N; f++) {
+      const pc = T.mod(T.pitch(s, f));
+      if (civ.includes(pc)) marks.push(T.mark(s, f, c.root));
+      else if (scalePcs.includes(pc)) marks.push(Object.assign(T.mark(s, f, keyPc), { small: true, role: 'n', label: '' }));
+    }
+    fb.set(U.fbState({ marks, labels: JAM.labels, flats,
+      onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
+    el.querySelector('[data-now]').textContent = c.name;
+    el.querySelector('[data-next]').textContent = chords[(ci + 1) % chords.length].name;
+    el.querySelectorAll('[data-bars] li').forEach((li, i) => li.classList.toggle('on', i === ci));
+  }
+  showChord(0);
+
+  const bassMidi = pc => 28 + T.mod(pc - 4);
+  const BOOGIE = [0, 4, 7, 9, 10, 9, 7, 4];
+  const clock = A.Clock(() => JAM.bpm, 2, (i, t) => {
+    const spb = 60 / JAM.bpm;
+    const bar = Math.floor(i / 8) % chords.length, pos = i % 8, beat = pos >> 1, off = pos & 1;
+    const c = chords[bar];
+    const tt = off && jam.feel === 'shuffle' ? t + spb / 6 : t;
+    if (pos === 0) setTimeout(() => showChord(bar), Math.max(0, (t - A.ctx.currentTime) * 1000));
+    if (JAM.drums) {
+      if (!off && (beat === 0 || beat === 2)) A.drum('kick', tt);
+      if (jam.id === 'metal' && off) A.drum('kick', tt, 0.7);
+      if (!off && (beat === 1 || beat === 3)) A.drum('snare', tt);
+      A.drum('hat', tt, off ? 0.6 : 1);
+    }
+    if (JAM.bass) {
+      const r = bassMidi(c.root);
+      if (jam.bass === 'boogie') A.bass(r + (c.q === 'menor' && BOOGIE[pos] === 4 ? 3 : BOOGIE[pos]), tt, spb * 0.45);
+      else if (jam.bass === 'eighths') A.bass(r, tt, spb * 0.42);
+      else if (!off && beat !== 3) A.bass(r, tt, spb * 0.9);
+      else if (!off) A.bass(r + 7, tt, spb * 0.9);
+    }
+    if (JAM.comp) {
+      const ivs = T.CHORDS[c.q].iv;
+      const voice = ivs.map(iv => 52 + T.mod(c.root + iv - 4)).sort((a, b) => a - b);
+      const strum = (vel, dur) => voice.forEach((m, k) => A.play(m, tt + k * 0.018, { dur, vel, bus: 'back' }));
+      if (jam.feel === 'shuffle') { if (off === 0 && (beat === 1 || beat === 3)) strum(0.35, spb * 0.5); }
+      else if (jam.id === 'metal') { if (pos === 0) strum(0.4, spb * 3.6); }
+      else if (pos === 0 || pos === 3 || pos === 6) strum(pos === 0 ? 0.42 : 0.3, spb * (pos === 0 ? 1.4 : 1));
+    }
+  });
+
+  el.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips="jam"] .chip');
+    if (chip) { clock.stop(); A.stopAll(); location.hash = '#jam-' + chip.dataset.v; return; }
+    const btn = e.target.closest('[data-act="go"]');
+    if (btn) {
+      if (clock.running) { clock.stop(); A.stopAll(); btn.textContent = '▶ Tocar base'; showChord(0); }
+      else { clock.start(); btn.textContent = '■ Parar'; S.practiced(); }
+    }
+  });
+  el.addEventListener('input', e => {
+    if (e.target.dataset.k === 'bpm') { JAM.bpm = +e.target.value; el.querySelector('[data-bpm]').textContent = JAM.bpm; }
+  });
+  el.addEventListener('change', e => {
+    const k = e.target.dataset.k;
+    if (k === 'scale') { JAM.scale = e.target.value; const running = clock.running; APP.rerender(); if (running) U.toast('Escala trocada. Toque a base de novo.'); }
+    if (['drums', 'bass', 'comp'].includes(k)) JAM[k] = e.target.checked;
+  });
+  return () => { clock.stop(); A.stopAll(); };
+};
+
+/* ===== Quizzes ===== */
+const QUIZZES = [
+  { id:'qual-nota', title:'Qual é a nota?', desc:'Uma casa acende no braço. Escolha o nome da nota.', scope:true },
+  { id:'ache-nota', title:'Ache a nota', desc:'Clique na casa da nota pedida, na corda indicada.', scope:true },
+  { id:'intervalo', title:'Que intervalo é esse?', desc:'Tônica em vermelho e outra nota. Diga a distância entre elas.' },
+  { id:'triade', title:'Tríade e inversão', desc:'Três notas acesas. É maior ou menor? Qual inversão?' },
+  { id:'ouvido', title:'Treino de ouvido', desc:'Ouça duas notas e diga o intervalo, sem olhar o braço.' },
+];
+const QZ = { scope:'65', rounds:10 };
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+
+V.quiz = (el, id) => {
+  const q = QUIZZES.find(x => x.id === id);
+  if (!q) return quizHome(el);
+  return quizRun(el, q);
+};
+
+function quizHome(el) {
+  const best = S.get().quiz;
+  el.innerHTML = `<header class="page-head"><p class="eyebrow">Quiz</p><h1>Decorar o braço jogando</h1>
+    <p class="lede">Rodadas de ${QZ.rounds} perguntas. Seu melhor resultado fica salvo.</p></header>
+    <div class="quiz-grid">${QUIZZES.map(z => `<a class="quiz-card" href="#quiz-${z.id}">
+      <h2>${z.title}</h2><p>${z.desc}</p>
+      <span class="pill ${best[z.id] ? (best[z.id].best >= 90 ? 'ok' : '') : 'muted'}">${best[z.id] ? `Melhor: ${best[z.id].best}% · ${best[z.id].time}s` : 'Ainda não jogado'}</span></a>`).join('')}</div>`;
+}
+
+function quizRun(el, q) {
+  let round = 0, score = 0, t0 = performance.now(), cur = null, locked = false, timer = null;
+  el.innerHTML = `<nav class="crumbs"><a href="#quiz">Quiz</a><span>›</span><span>${q.title}</span></nav>
+    <section class="panel quiz">
+      <div class="quiz-top"><h1>${q.title}</h1>
+        ${q.scope ? U.chips('scope', [{ v:'65', label:'Cordas 6 e 5' }, { v:'all', label:'Todas as cordas' }], QZ.scope) : ''}
+        <span class="pill" data-count></span></div>
+      <p class="prompt" data-prompt></p>
+      <div data-fb></div>
+      <div class="answers" data-ans></div>
+      <p class="feedback" data-fbk aria-live="polite"></p>
+    </section>`;
+  const fb = FB.create(el.querySelector('[data-fb]'));
+  const promptEl = el.querySelector('[data-prompt]'), ansEl = el.querySelector('[data-ans]'), fbk = el.querySelector('[data-fbk]');
+  const latin = () => U.set().latin;
+  const N = 12;
+  const strings = () => QZ.scope === '65' ? [0, 1] : [0, 1, 2, 3, 4, 5];
+  const noteButtons = () => T.ROOTS.map((r, i) => `<button type="button" class="btn ans" data-a="${i}">${T.noteName(i, false, latin())}${[1, 3, 6, 8, 10].includes(i) ? ' / ' + T.noteName(i, true, latin()) : ''}</button>`).join('');
+
+  const GEN = {
+    'qual-nota'() {
+      const s = pick(strings()), f = rnd(N + 1), pc = T.mod(T.pitch(s, f));
+      fb.set(U.fbState({ frets: N, marks: [Object.assign(T.mark(s, f, pc), { role:'q', label:'?' })], onPick: null }));
+      promptEl.textContent = `Que nota é esta? (${T.stringLabel(s)}, casa ${f})`;
+      ansEl.innerHTML = noteButtons();
+      return { answer: pc, reveal: () => fb.set({ marks: [Object.assign(T.mark(s, f, pc), { role:'r' })], labels:'note' }) };
+    },
+    'ache-nota'() {
+      const s = pick(strings()), pc = rnd(12);
+      fb.set(U.fbState({ frets: N, marks: [], labels:'note', onPick: (ss, ff) => answer(ss === s && T.mod(T.pitch(ss, ff)) === pc, { s: ss, f: ff }) }));
+      promptEl.innerHTML = `Ache <b>${T.noteName(pc, false, latin())}${[1, 3, 6, 8, 10].includes(pc) ? ' / ' + T.noteName(pc, true, latin()) : ''}</b> na <b>${T.stringLabel(s).toLowerCase()}</b>.`;
+      ansEl.innerHTML = '';
+      return { custom: true, reveal: (click) => {
+        const marks = [];
+        for (let f = 0; f <= N; f++) if (T.mod(T.pitch(s, f)) === pc) marks.push(Object.assign(T.mark(s, f, pc), { role:'r' }));
+        if (click && !marks.some(m => m.s === click.s && m.f === click.f)) marks.push(Object.assign(T.mark(click.s, click.f, pc), { role:'bad' }));
+        fb.set({ marks, labels:'note', onPick: null });
+      } };
+    },
+    'intervalo'() {
+      const ivs = [2, 3, 4, 5, 7, 9, 10, 11, 12];
+      for (;;) {
+        const s = rnd(4), f = 1 + rnd(9), iv = pick(ivs), rp = T.pitch(s, f), opts = [];
+        for (let ss = s; ss <= Math.min(5, s + 2); ss++) for (let ff = Math.max(0, f - 3); ff <= f + 4; ff++)
+          if (T.pitch(ss, ff) === rp + iv && ss !== s) opts.push({ s: ss, f: ff });
+        if (!opts.length) continue;
+        const tg = pick(opts), rootPc = T.mod(rp);
+        fb.set(U.fbState({ frets: 15, labels:'iv', marks: [T.mark(s, f, rootPc), Object.assign(T.mark(tg.s, tg.f, rootPc), { role:'q', label:'?' })], onPick: null }));
+        promptEl.textContent = 'Qual é o intervalo entre a tônica e a nota “?”';
+        ansEl.innerHTML = ivs.map(i => `<button type="button" class="btn ans" data-a="${i}">${i === 12 ? 'Oitava' : T.IV_NAME[i]}</button>`).join('');
+        A.play(rp, null, { dur: 0.8 }); A.play(rp + iv, A.now() + 0.5, { dur: 1 });
+        return { answer: iv, reveal: () => fb.set({ marks: [T.mark(s, f, rootPc), Object.assign(T.mark(tg.s, tg.f, rootPc), iv === 12 ? { label:'8' } : {})] }) };
+      }
+    },
+    'triade'() {
+      const root = rnd(12), qual = pick(['maior', 'menor']), set = pick(T.STRING_SETS);
+      const vs = T.triads(root, qual, set.s, 15);
+      const v = pick(vs);
+      fb.set(U.fbState({ frets: 15, labels:'note', flats: T.useFlats(root, qual === 'menor' ? 3 : 0), marks: v.notes.map(n => Object.assign({}, n, { role:'q' })), onPick: null }));
+      promptEl.textContent = `Que tríade é esta? (${set.label})`;
+      ansEl.innerHTML = ['maior', 'menor'].flatMap(qq => [0, 1, 2].map(i => `<button type="button" class="btn ans" data-a="${qq}-${i}">${T.CHORDS[qq].name} · ${T.INV_NAME[i]}</button>`)).join('');
+      v.notes.forEach((n, k) => A.play(T.pitch(n.s, n.f), A.now() + k * 0.03, { dur: 1.2, vel: 0.6 }));
+      return { answer: `${qual}-${v.inv}`, extra: `${T.chordName(root, qual, latin())}, ${T.INV_NAME[v.inv].toLowerCase()}`, reveal: () => fb.set({ marks: v.notes, labels:'iv' }) };
+    },
+    'ouvido'() {
+      const ivs = [3, 4, 5, 7, 9, 10, 12];
+      const iv = pick(ivs), base = 48 + rnd(12);
+      const playIt = () => { A.play(base, null, { dur: 0.9 }); A.play(base + iv, A.now() + 0.7, { dur: 0.9 }); A.play(base, A.now() + 1.6, { dur: 1.2, vel: 0.6 }); A.play(base + iv, A.now() + 1.6, { dur: 1.2, vel: 0.6 }); };
+      fb.set(U.fbState({ frets: 15, marks: [], onPick: null }));
+      promptEl.innerHTML = 'Ouça e escolha o intervalo. <button type="button" class="btn" data-act="replay">♪ Ouvir de novo</button>';
+      promptEl.querySelector('[data-act]').onclick = playIt;
+      ansEl.innerHTML = ivs.map(i => `<button type="button" class="btn ans" data-a="${i}">${i === 12 ? 'Oitava' : T.IV_NAME[i]}</button>`).join('');
+      playIt();
+      const s = base - 40 < 12 ? 0 : 1, f = base - T.TUNING[s];
+      return { answer: iv, reveal: () => {
+        const tp = base + iv; let best = null;
+        for (let ts = s; ts < 6; ts++) {
+          const tf = tp - T.TUNING[ts];
+          if (tf < 0 || tf > 15) continue;
+          const d = Math.abs(tf - f);
+          if (!best || d < best.d) best = { ts, tf, d };
+        }
+        fb.set({ marks: [T.mark(s, f, T.mod(base)), Object.assign(T.mark(best.ts, best.tf, T.mod(base)), iv === 12 ? { label:'8' } : {})], labels:'iv' });
+      } };
+    },
+  };
+
+  function next() {
+    clearTimeout(timer);
+    if (round >= QZ.rounds) return finish();
+    locked = false; fbk.textContent = ''; fbk.className = 'feedback';
+    el.querySelector('[data-count]').textContent = `${round + 1}/${QZ.rounds} · ${score} acertos`;
+    cur = GEN[q.id]();
+  }
+
+  function answer(ok, click) {
+    if (locked) return;
+    locked = true; round++;
+    if (ok) score++;
+    let right = '';
+    if (q.id === 'qual-nota') right = T.noteName(cur.answer, false, latin());
+    else if (q.id === 'intervalo' || q.id === 'ouvido') right = cur.answer === 12 ? 'Oitava' : T.IV_NAME[cur.answer];
+    else if (q.id === 'triade') right = cur.extra;
+    fbk.textContent = ok ? (q.id === 'triade' ? `Certo: ${cur.extra}.` : 'Certo!') : (right ? `Era ${right}.` : 'Não é aqui. Veja as posições certas.');
+    fbk.className = 'feedback ' + (ok ? 'ok' : 'bad');
+    cur.reveal(click);
+    if (click) A.play(T.pitch(click.s, click.f), null, { dur: 0.8 });
+    el.querySelector('[data-count]').textContent = `${round}/${QZ.rounds} · ${score} acertos`;
+    timer = setTimeout(next, ok ? 900 : 1900);
+  }
+
+  function finish() {
+    const pct = Math.round(score / QZ.rounds * 100), secs = Math.round((performance.now() - t0) / 1000);
+    const prev = S.get().quiz[q.id];
+    const isBest = !prev || pct > prev.best || (pct === prev.best && secs < prev.time);
+    if (isBest) S.update(s => { s.quiz[q.id] = { best: pct, time: secs, date: S.today() }; });
+    S.practiced();
+    promptEl.innerHTML = '';
+    ansEl.innerHTML = `<div class="result"><b>${pct}%</b><span>${score} de ${QZ.rounds} em ${secs}s${isBest ? ' · novo recorde' : ` · recorde ${prev.best}%`}</span>
+      <div class="ctrl-row center"><button type="button" class="btn primary" data-act="again">Jogar de novo</button><a class="btn" href="#quiz">Outros quizzes</a></div></div>`;
+    fbk.textContent = pct >= 90 ? 'Excelente. Tente ficar mais rápido.' : pct >= 60 ? 'Bom. Repita até passar de 90%.' : 'Reveja a aula correspondente e tente de novo.';
+    fbk.className = 'feedback';
+  }
+
+  el.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips="scope"] .chip');
+    if (chip) { QZ.scope = chip.dataset.v; chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === chip)); round = 0; score = 0; t0 = performance.now(); next(); return; }
+    const a = e.target.closest('[data-a]');
+    if (a && cur && !cur.custom) { answer(String(cur.answer) === a.dataset.a); a.classList.add(String(cur.answer) === a.dataset.a ? 'ok' : 'bad'); return; }
+    if (e.target.closest('[data-act="again"]')) { round = 0; score = 0; t0 = performance.now(); next(); }
+  });
+  next();
+  return () => { clearTimeout(timer); A.stopAll(); };
+}
+
+/* ===== Progresso, configurações e roteamento ===== */
+V.progresso = (el) => {
+  const st = S.get(), all = ALL_LESSONS();
+  const doneN = all.filter(l => st.done[l.id]).length;
+  const days = new Set(st.days);
+  const cells = [];
+  const d = new Date(); d.setDate(d.getDate() - 83);
+  for (let i = 0; i < 84; i++) {
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    cells.push(`<i class="${days.has(k) ? 'on' : ''}" title="${d.toLocaleDateString('pt-BR')}"></i>`);
+    d.setDate(d.getDate() + 1);
+  }
+  const recs = LICKS.filter(l => st.bpm[l.id]);
+  el.innerHTML = `
+    <header class="page-head"><p class="eyebrow">Progresso</p><h1>Seu caderno de estudo</h1>
+      <p class="lede" data-syncline></p></header>
+    <div class="stat-row wide">
+      <div class="stat"><b>${doneN}<small>/${all.length}</small></b><span>aulas concluídas</span></div>
+      <div class="stat"><b>${S.streak()}</b><span>dias seguidos</span></div>
+      <div class="stat"><b>${st.days.length}</b><span>dias de prática</span></div>
+      <div class="stat"><b>${recs.length}</b><span>recordes de BPM</span></div>
+    </div>
+    <div class="info-grid">
+      <section class="panel"><p class="eyebrow">Últimas 12 semanas</p><div class="heat">${cells.join('')}</div>
+        <p class="small">Um dia conta quando você toca um lick, faz um quiz, usa o treino ou conclui uma aula.</p></section>
+      <section class="panel"><p class="eyebrow">Módulos</p>
+        <ul class="mod-prog">${MODULES.map(m => { const n = m.lessons.filter(l => st.done[l.id]).length;
+          return `<li><span>${m.title}</span><div class="bar"><i style="width:${n / m.lessons.length * 100}%"></i></div><em>${n}/${m.lessons.length}</em></li>`; }).join('')}</ul></section>
+      <section class="panel"><p class="eyebrow">Recordes de velocidade</p>
+        ${recs.length ? `<table class="tbl"><thead><tr><th>Exercício</th><th>Recorde</th><th>Original</th></tr></thead><tbody>${recs.map(l => `<tr><td><a href="#treino-${l.id}">${U.esc(l.title)}</a></td><td><b>${st.bpm[l.id]}</b> BPM</td><td>${l.bpm} BPM</td></tr>`).join('')}</tbody></table>`
+          : '<p class="small">Nenhum recorde ainda. No <a href="#treino-ex-pent">treino de velocidade</a>, toque limpo e clique em “Consegui limpo”.</p>'}</section>
+      <section class="panel"><p class="eyebrow">Quizzes</p>
+        <table class="tbl"><tbody>${QUIZZES.map(z => `<tr><td><a href="#quiz-${z.id}">${z.title}</a></td><td>${st.quiz[z.id] ? `<b>${st.quiz[z.id].best}%</b> · ${st.quiz[z.id].time}s` : '—'}</td></tr>`).join('')}</tbody></table></section>
+    </div>
+    ${S.standalone ? `<section class="panel backup"><p class="eyebrow">Backup</p>
+      <p class="small">Neste modo o progresso fica salvo só neste aparelho. Para levar para outro (do PC para o celular, por exemplo), exporte aqui e importe lá.</p>
+      <div class="ctrl-row"><button type="button" class="btn" data-act="export">Exportar progresso</button>
+        <label class="btn" for="import-file">Importar backup</label><input type="file" id="import-file" accept="application/json,.json" hidden></div></section>` : ''}
+    <section class="danger"><button type="button" class="btn ghost" data-act="reset">Apagar meu progresso</button></section>`;
+  const sync = () => { el.querySelector('[data-syncline]').textContent = S.mode === 'conta'
+    ? 'Seu progresso fica salvo na sua conta e aparece igual no computador e no celular.'
+    : S.standalone ? 'Seu progresso fica salvo neste aparelho. Use o backup abaixo para levar para outro.'
+    : 'Seu progresso está salvo neste navegador. Abra pelo link do Claude com sua conta para levar para outros aparelhos.'; };
+  sync();
+  const off = S.on(sync);
+  let armed = false;
+  el.addEventListener('change', e => {
+    if (e.target.id !== 'import-file' || !e.target.files[0]) return;
+    e.target.files[0].text().then(txt => { S.importData(JSON.parse(txt)); U.toast('Backup importado'); APP.rerender(); })
+      .catch(() => U.toast('Não consegui ler esse arquivo. Use um backup exportado por este app.'));
+  });
+  el.addEventListener('click', e => {
+    if (e.target.closest('[data-act="export"]')) {
+      const blob = new Blob([S.exportData()], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `mapa-do-braco-backup-${S.today()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      return;
+    }
+    const b = e.target.closest('[data-act="reset"]'); if (!b) return;
+    if (!armed) { armed = true; b.textContent = 'Clique de novo para apagar tudo'; b.classList.add('warn'); setTimeout(() => { armed = false; b.textContent = 'Apagar meu progresso'; b.classList.remove('warn'); }, 4000); return; }
+    S.reset(); U.toast('Progresso apagado'); APP.rerender();
+  });
+  return off;
+};
+
+const APP = (() => {
+  let cleanup = null;
+  const host = () => document.getElementById('view');
+
+  function route() {
+    const h = (location.hash || '#trilha').slice(1);
+    const pre = (p) => h.startsWith(p) ? h.slice(p.length) : null;
+    if (pre('aula-') != null) return ['trilha', el => V.lesson(el, pre('aula-'))];
+    if (h === 'licks' || pre('lick-') != null) return ['licks', el => V.licks(el, pre('lick-'))];
+    if (h === 'treino') return ['treino', el => V.metronomo(el)];
+    if (pre('treino-') != null) return ['treino', el => V.speed(el, pre('treino-'))];
+    if (h === 'jam' || pre('jam-') != null) return ['treino', el => V.jam(el, pre('jam-'))];
+    if (h === 'quiz' || pre('quiz-') != null) return ['quiz', el => V.quiz(el, pre('quiz-'))];
+    if (h === 'braco') return ['braco', el => V.braco(el)];
+    if (h === 'progresso') return ['progresso', el => V.progresso(el)];
+    return ['trilha', el => V.trilha(el)];
+  }
+
+  let lastHash = null;
+  function render() {
+    if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
+    const [nav, fn] = route();
+    const el = document.createElement('div');
+    el.className = 'view';
+    host().replaceChildren(el);
+    try { const r = fn(el); cleanup = typeof r === 'function' ? r : null; }
+    catch (e) { console.error(e); el.innerHTML = `<div class="panel"><p>Algo deu errado ao abrir esta tela. <a href="#trilha">Voltar para a trilha</a>.</p></div>`; }
+    document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.nav === nav));
+    const h = location.hash;
+    const sameBase = lastHash && lastHash.startsWith('#lick-') && h.startsWith('#lick-');
+    if (sameBase && window.innerWidth < 900) el.querySelector('.lick-main')?.scrollIntoView({ block: 'start' });
+    else if (!sameBase) window.scrollTo(0, 0);
+    lastHash = h;
+  }
+
+  function settingsSheet() {
+    const st = S.get().settings;
+    const sh = document.getElementById('settings');
+    sh.querySelector('[data-body]').innerHTML = `
+      <div class="set-row"><span>Nomes das notas</span>${U.chips('latin', [{ v:'0', label:'C D E' }, { v:'1', label:'Dó Ré Mi' }], st.latin ? '1' : '0')}</div>
+      <div class="set-row"><span>Mão</span>${U.chips('lefty', [{ v:'0', label:'Destro' }, { v:'1', label:'Canhoto' }], st.lefty ? '1' : '0')}</div>
+      <div class="set-row"><span>Casas visíveis</span>${U.chips('frets', [{ v:'12', label:'12' }, { v:'15', label:'15' }, { v:'22', label:'22' }], String(st.frets))}</div>
+      <div class="set-row"><span>Timbre</span>${U.chips('tone', [{ v:'clean', label:'Limpo' }, { v:'drive', label:'Drive' }], st.tone)}</div>
+      <div class="set-row"><label for="set-vol">Volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05" value="${st.volume}"></div>
+      <p class="small">Toque qualquer casa do braço para ouvir a nota.</p>`;
+  }
+
+  function init() {
+    const st = S.get().settings;
+    A.setTone(st.tone); A.setVolume(st.volume);
+    window.addEventListener('hashchange', render);
+    const sh = document.getElementById('settings');
+    const open = () => { settingsSheet(); sh.hidden = false; sh.querySelector('.chip')?.focus(); };
+    const close = () => { sh.hidden = true; };
+    document.getElementById('btn-settings').addEventListener('click', () => sh.hidden ? open() : close());
+    sh.addEventListener('click', e => {
+      if (e.target === sh || e.target.closest('[data-close]')) return close();
+      const chip = e.target.closest('[data-chips] .chip'); if (!chip) return;
+      const k = chip.parentElement.dataset.chips, v = chip.dataset.v;
+      S.update(s => {
+        if (k === 'latin' || k === 'lefty') s.settings[k] = v === '1';
+        else if (k === 'frets') s.settings.frets = +v;
+        else s.settings[k] = v;
+      });
+      if (k === 'tone') { A.setTone(v); A.play(52, null, { dur: 1 }); A.play(59, A.now() + 0.02, { dur: 1 }); A.play(64, A.now() + 0.04, { dur: 1 }); }
+      settingsSheet();
+      if (k !== 'tone') render();
+    });
+    sh.addEventListener('input', e => { if (e.target.id === 'set-vol') { A.setVolume(+e.target.value); S.update(s => { s.settings.volume = +e.target.value; }); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sh.hidden) close(); });
+
+    const syncEl = document.getElementById('sync');
+    let lastMode = S.mode;
+    const paint = () => {
+      syncEl.textContent = S.mode === 'conta' ? 'Salvo na conta' : S.standalone ? 'Salvo neste aparelho' : 'Salvo neste navegador';
+      syncEl.className = 'sync ' + S.mode;
+      if (S.mode !== lastMode) { lastMode = S.mode; const n = route()[0]; if (n === 'trilha' && !location.hash.startsWith('#aula-') || n === 'progresso') render(); }
+    };
+    S.on(paint); paint();
+    render();
+    S.connect();
+  }
+
+  return { init, rerender: render };
+})();
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', APP.init); else APP.init();
+
+</script>
+<script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () {});</script>
+</body></html>
