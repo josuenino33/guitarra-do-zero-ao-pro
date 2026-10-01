@@ -1,5 +1,5 @@
 /* Service worker: guarda o app para funcionar offline. A versão muda a cada build. */
-const VERSION = 'mapa-97a7d794aa';
+const VERSION = 'mapa-8d6b778fd3';
 const FONTS = 'mapa-fonts';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png', './icons/favicon-32.png'];
 
