@@ -1,0 +1,35 @@
+/* ===== dicionário de acordes ===== */
+.grp { min-width: 72px; font-weight: 700; }
+.dict-head { margin-block: 14px 10px; }
+.dict-head h3 { font-size: 34px; }
+
+/* ===== campo harmônico ===== */
+.campo { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.campo-deg { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px 6px; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c, var(--line)); background: var(--surface); color: var(--fg); cursor: pointer; font: inherit; min-width: 0; }
+.campo-deg:hover { border-color: var(--accent); }
+.campo-deg .roman { font: 700 20px/1 var(--f-display); color: var(--muted); }
+.campo-deg b { font: 700 19px/1.1 var(--f-display); text-align: center; overflow-wrap: anywhere; }
+.campo-deg .fn { font: 600 10px var(--f-mono); letter-spacing: .08em; color: var(--muted); }
+.campo-deg .chord-svg { width: 100%; max-width: 78px; }
+.fn-T { --c: var(--iv-5); } .fn-SD { --c: var(--iv-3); } .fn-D { --c: var(--iv-r); }
+.prog-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* ===== partitura ===== */
+.staff-wrap { overflow-x: auto; padding-block: 6px; }
+.staff-wrap.single { display: flex; justify-content: center; }
+.staff-wrap.single .staff { min-width: 0 !important; width: 230px; }
+.staff { width: 100%; height: auto; display: block; }
+.st-line, .st-ledger { stroke: var(--fg); stroke-width: 1; }
+.st-ledger { stroke-width: 1.4; }
+.st-bar { stroke: var(--fg); stroke-width: 1.3; }
+.st-bar.end { stroke-width: 3; }
+.st-clef { fill: var(--fg); font-family: 'Noto Music', serif; font-size: 58px; }
+.st-8 { fill: var(--fg); font: 700 10px var(--f-mono); }
+.st-acc { fill: var(--fg); font-family: 'Noto Music', serif; font-size: 20px; }
+.st-label { fill: var(--muted); font: 600 11px var(--f-mono); }
+.st-rest { font-size: 30px; }
+.rn-head.on { fill: var(--accent); stroke: var(--accent); }
+
+@media (max-width: 760px) {
+  .campo { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

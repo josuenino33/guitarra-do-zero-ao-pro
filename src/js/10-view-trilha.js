@@ -5,7 +5,7 @@ const ALL_LESSONS = () => MODS().flatMap(m => m.lessons.map((l, li) => Object.as
 const levelOf = n => LEVELS.find(l => l.n === n);
 
 function linkHref(l) {
-  const map = { quiz:'#quiz-', treino:'#treino-', jam:'#jam-', licks:'#lick-', levadas:'#levadas-' };
+  const map = { quiz:'#quiz-', treino:'#treino-', jam:'#jam-', licks:'#lick-', levadas:'#levadas-', aula:'#aula-' };
   if (map[l.to]) return l.id ? map[l.to] + l.id : '#' + (l.to === 'licks' ? 'licks' : l.to === 'levadas' ? 'levadas' : l.to);
   if (l.to === 'metronomo') return '#treino';
   return '#' + l.to;

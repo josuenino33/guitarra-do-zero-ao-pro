@@ -87,7 +87,7 @@ const FB = (() => {
           `<circle cx="${cx}" cy="${cy}" r="${r}"/>` +
           (txt ? `<text x="${cx}" y="${cy + fs * 0.36}" font-size="${fs}">${txt}</text>` : '') + `</g>`);
       }
-      host.innerHTML = `<svg class="fb" viewBox="0 0 ${g.W} ${g.H}" style="min-width:${Math.round(g.W * 0.74)}px" role="img" aria-label="Braço da guitarra">${p.join('')}</svg>`;
+      host.innerHTML = `<svg class="fb" viewBox="0 0 ${g.W} ${g.H}" style="min-width:${Math.round(g.W * 0.74)}px;max-width:${Math.round(g.W * 1.35)}px;margin-inline:auto" role="img" aria-label="Braço da guitarra">${p.join('')}</svg>`;
     }
 
     if (opts.state) inst.set(opts.state); else render();

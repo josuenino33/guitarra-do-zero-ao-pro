@@ -3,7 +3,8 @@ const EXP = { type:'scale', root:9, scale:'pent_menor', pos:0, quality:'maior', 
 
 V.braco = (el) => {
   el.innerHTML = `
-    <header class="page-head"><p class="eyebrow">Explorador</p><h1>O braço inteiro, em qualquer tom</h1></header>
+    <header class="page-head"><p class="eyebrow">Braço</p><h1>O braço inteiro, em qualquer tom</h1></header>
+    ${bracoTabs('exp')}
     <section class="panel">
       <div class="explorer-ctrl" data-ctrl></div>
       <div data-fb></div>

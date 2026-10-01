@@ -7,11 +7,11 @@ const TAB = (() => {
 
   function parse(src) {
     const ev = [];
-    let d = 0.5, beat = 0;
+    let d = 0.5, beat = 0, ticks = 0;   // 48 ticks por tempo: soma exata de tercinas e semicolcheias
     for (const tok of src.trim().split(/\s+/)) {
       if (!tok) continue;
       if (tok[0] === '|') { d = DUR[tok[1]] * (tok[2] === '.' ? 1.5 : 1); continue; }
-      if (tok === '-') { ev.push({ rest: true, d, beat, notes: [] }); beat += d; continue; }
+      if (tok === '-') { ev.push({ rest: true, d, beat, notes: [] }); ticks += Math.round(d * 48); beat = ticks / 48; continue; }
       const notes = tok.split('+').map(nt => {
         const m = nt.match(/^([1-6]):(\d+|x)(.*)$/);
         if (!m) throw new Error('Token inválido: ' + nt);
@@ -22,13 +22,15 @@ const TAB = (() => {
         if (tech.includes('/')) o.sl = true;
         if (tech.includes('~')) o.vib = true;
         if (tech.includes('m')) o.pm = true;
+        if (tech.includes('t')) o.tap = true;
+        if (tech.includes('n')) o.harm = true;
         const b = tech.match(/b(\d)/); if (b) o.bend = +b[1];
         const B = tech.match(/B(\d)/); if (B) { o.bend = +B[1]; o.pre = true; }
         if (tech.includes('r')) o.rel = true;
         return o;
       });
       ev.push({ notes, d, beat });
-      beat += d;
+      ticks += Math.round(d * 48); beat = ticks / 48;
     }
     // casa anterior em cada corda (para rótulo e áudio de slide/legato)
     const last = {};
@@ -42,7 +44,9 @@ const TAB = (() => {
 
   function noteLabel(o) {
     if (o.dead) return 'x';
+    if (o.harm) return `<${o.f}>`;
     let t = String(o.f);
+    if (o.tap) t = 't' + t;
     if (o.h) t = 'h' + t;
     else if (o.p) t = 'p' + t;
     else if (o.sl) t = (o.prev != null && o.prev > o.f ? '\\' : '/') + t;
@@ -72,7 +76,7 @@ const TAB = (() => {
       const w = Math.max(maxLen + 1.4, Math.round(e.d * 6) + 1);
       const pm = e.notes.some(o => o.pm) ? '<i>PM</i>' : '';
       cols.push(`<div class="tab-col" data-i="${i}" style="--w:${w}"><span class="tab-top">${countLabel(e.beat)}${pm}</span>` +
-        rows.map(r => `<span class="tab-cell">${r ? `<b>${r.replace('\\', '&#92;')}</b>` : ''}</span>`).join('') + `</div>`);
+        rows.map(r => `<span class="tab-cell">${r ? `<b>${r.replace(/[<>\\]/g, c => ({ '<': '&lt;', '>': '&gt;', '\\': '&#92;' })[c])}</b>` : ''}</span>`).join('') + `</div>`);
     });
     bar();
     host.innerHTML = `<div class="tab" role="img" aria-label="Tablatura"><div class="tab-names"><span class="tab-top"></span>${['e','B','G','D','A','E'].map(n => `<span class="tab-cell">${n}</span>`).join('')}</div>${cols.join('')}</div>`;
@@ -114,8 +118,10 @@ const TAB = (() => {
       const isLast = i === parsed.events.length - 1;
       e.notes.forEach(o => {
         if (o.dead) { A.play(T.TUNING[o.s] + 5, t, { dur: 0.05, vel: 0.5, mute: true, string: o.s }); return; }
-        const legato = o.h || o.p || o.sl;
+        const legato = o.h || o.p || o.sl || o.tap;
+        const HARM = { 12: 12, 24: 24, 7: 19, 19: 19, 5: 24, 4: 28, 9: 28, 16: 28, 3: 31 };
         const dur = isLast ? Math.max(e.d * spb, 1.6) : Math.max(e.d * spb * 1.05, 0.12) + (o.bend || o.vib ? 0.15 : 0.35);
+        if (o.harm) { A.play(T.TUNING[o.s] + (HARM[o.f] ?? o.f), t, { dur: Math.max(e.d * spb, 1.2) + 0.8, vel: 0.42, string: o.s }); return; }
         A.play(T.TUNING[o.s] + o.f, t, {
           dur, string: o.s, vel: legato ? 0.55 : (e.notes.length > 1 ? 0.6 : 0.85),
           slideFrom: o.sl && o.prev != null ? T.TUNING[o.s] + o.prev : null,

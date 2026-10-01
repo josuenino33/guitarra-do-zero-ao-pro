@@ -107,6 +107,14 @@ const U = (() => {
         }
         break;
       }
+      case 'arp': {
+        const ch = T.CHORDS[cfg.chord];
+        flats = T.useFlats(root, ch.iv.includes(3) ? 3 : 0);
+        const lo = cfg.lo ?? 0, hi = Math.min(cfg.hi ?? N, N);
+        marks = T.allNotes(ch.iv, root, hi, lo);
+        caption = `Arpejo de ${T.chordName(root, cfg.chord, st.latin)} entre as casas ${lo} e ${hi}.`;
+        seq = 'run'; break;
+      }
       case 'lick': {
         const lk = lickById(cfg.lick);
         const p = TAB.parse(lk.src);

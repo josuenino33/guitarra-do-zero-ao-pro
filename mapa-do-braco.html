@@ -480,6 +480,42 @@ code { font: 13px var(--f-mono); background: var(--surface-2); padding: 1px 5px;
   .nav { grid-template-columns: repeat(7, 1fr); }
   .nav a { font-size: 10.5px; letter-spacing: .02em; }
 }
+
+/* ===== dicionário de acordes ===== */
+.grp { min-width: 72px; font-weight: 700; }
+.dict-head { margin-block: 14px 10px; }
+.dict-head h3 { font-size: 34px; }
+
+/* ===== campo harmônico ===== */
+.campo { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.campo-deg { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px 6px; border-radius: 10px; border: 1px solid var(--line); border-top: 4px solid var(--c, var(--line)); background: var(--surface); color: var(--fg); cursor: pointer; font: inherit; min-width: 0; }
+.campo-deg:hover { border-color: var(--accent); }
+.campo-deg .roman { font: 700 20px/1 var(--f-display); color: var(--muted); }
+.campo-deg b { font: 700 19px/1.1 var(--f-display); text-align: center; overflow-wrap: anywhere; }
+.campo-deg .fn { font: 600 10px var(--f-mono); letter-spacing: .08em; color: var(--muted); }
+.campo-deg .chord-svg { width: 100%; max-width: 78px; }
+.fn-T { --c: var(--iv-5); } .fn-SD { --c: var(--iv-3); } .fn-D { --c: var(--iv-r); }
+.prog-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* ===== partitura ===== */
+.staff-wrap { overflow-x: auto; padding-block: 6px; }
+.staff-wrap.single { display: flex; justify-content: center; }
+.staff-wrap.single .staff { min-width: 0 !important; width: 230px; }
+.staff { width: 100%; height: auto; display: block; }
+.st-line, .st-ledger { stroke: var(--fg); stroke-width: 1; }
+.st-ledger { stroke-width: 1.4; }
+.st-bar { stroke: var(--fg); stroke-width: 1.3; }
+.st-bar.end { stroke-width: 3; }
+.st-clef { fill: var(--fg); font-family: 'Noto Music', serif; font-size: 58px; }
+.st-8 { fill: var(--fg); font: 700 10px var(--f-mono); }
+.st-acc { fill: var(--fg); font-family: 'Noto Music', serif; font-size: 20px; }
+.st-label { fill: var(--muted); font: 600 11px var(--f-mono); }
+.st-rest { font-size: 30px; }
+.rn-head.on { fill: var(--accent); stroke: var(--accent); }
+
+@media (max-width: 760px) {
+  .campo { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 </style>
 <div class="app">
   <header class="top">
@@ -791,7 +827,7 @@ const CH = (() => {
     const m = String(name).match(/^([A-G])([#b]?)(.*?)(?:\/([A-G][#b]?))?$/);
     if (!m) return null;
     const root = T.pcOf(m[1] + m[2]);
-    const q = SUFFIX[m[3]] || 'maior';
+    const q = SUFFIX[m[3]] ?? null;
     return { root, q, suffix: m[3], bass: m[4] ? T.pcOf(m[4]) : null, name };
   }
 
@@ -818,7 +854,7 @@ const CH = (() => {
   /** Forma de um acorde pelo nome (aberta quando existe, senão com pestana). */
   function get(name, prefer) {
     if (!prefer && OPEN[name]) return Object.assign({ name }, OPEN[name]);
-    const p = parse(name); if (!p) return null;
+    const p = CH.parse(name); if (!p) return null;
     const sh = movable(p, prefer);
     return sh ? Object.assign({ name }, sh) : (OPEN[name] ? Object.assign({ name }, OPEN[name]) : null);
   }
@@ -850,7 +886,7 @@ const CH = (() => {
       p.push(`<rect class="cd-barre" x="${x(shape.b.from) - 7}" y="${y - 7}" width="${x(shape.b.to) - x(shape.b.from) + 14}" height="14" rx="7"/>`);
       p.push(`<text class="cd-fing" x="${x(shape.b.from)}" y="${y + 4}" text-anchor="middle">1</text>`);
     }
-    const rootPc = parse(shape.name)?.root;
+    const rootPc = CH.parse(shape.name)?.root;
     shape.f.forEach((f, s) => {
       if (f <= 0 || (shape.b && f === shape.b.f && s >= shape.b.from && s <= shape.b.to && shape.d[s] === 1)) return;
       const y = top + (f - base + 0.5) * gy;
@@ -863,20 +899,128 @@ const CH = (() => {
 
   /** Cartão com nome + diagrama; clicável para ouvir. */
   function card(name, o = {}) {
-    const sh = get(name, o.prefer);
+    const sh = CH.get(name, o.prefer);
     return `<button type="button" class="chord-card" data-chord="${name}" ${o.prefer ? `data-prefer="${o.prefer}"` : ''} aria-label="Ouvir ${name}">
       <b>${name}</b>${o.prefer ? `<small>forma de ${o.prefer}</small>` : ''}${diagram(sh)}</button>`;
   }
 
   /** Toca o acorde como uma palhetada para baixo. */
   function strum(name, when, o = {}) {
-    const sh = get(name, o.prefer); if (!sh) return;
+    const sh = CH.get(name, o.prefer); if (!sh) return;
     const t = when ?? A.now() + 0.03;
     voicing(sh).forEach((v, i) => A.play(v.midi, t + i * 0.022, { dur: o.dur ?? 1.8, vel: o.vel ?? 0.55, string: v.s }));
   }
 
-  return { OPEN, parse, get, voicing, diagram, card, strum };
+  return { OPEN, SUFFIX, parse, get, voicing, diagram, card, strum };
 })();
+
+/* ===== Harmonia avançada: tétrades, extensões, voicings drop 2/drop 3 e escalas extras ===== */
+Object.assign(T.CHORDS, {
+  dim7:  { name:'Diminuto (°7)', sym:'°7', iv:[0,3,6,9] },
+  six:   { name:'Sexta (6)', sym:'6', iv:[0,4,7,9] },
+  m6:    { name:'Menor com sexta (m6)', sym:'m6', iv:[0,3,7,9] },
+  nine:  { name:'Nona (9)', sym:'9', iv:[0,4,7,10,2] },
+  m9:    { name:'Menor com nona (m9)', sym:'m9', iv:[0,3,7,10,2] },
+  maj9:  { name:'Sétima maior com nona', sym:'7M(9)', iv:[0,4,7,11,2] },
+  add9:  { name:'Com nona (add9)', sym:'add9', iv:[0,2,4,7] },
+  thirteen: { name:'Treze (13)', sym:'13', iv:[0,4,7,10,9] },
+  b9:    { name:'Sétima com nona menor', sym:'7(b9)', iv:[0,4,7,10,1] },
+  s9:    { name:'Sétima com nona aumentada', sym:'7(#9)', iv:[0,4,7,10,3] },
+});
+
+Object.assign(T.SCALES, {
+  menor_mel:  { name:'Menor melódica', iv:[0,2,3,5,7,9,11], parent:3, sys:'3nps' },
+  lidio_dom:  { name:'Lídio dominante', iv:[0,2,4,6,7,9,10], parent:5, sys:'3nps' },
+  alterada:   { name:'Alterada (superlócrio)', iv:[0,1,3,4,6,8,10], parent:1, sys:'3nps' },
+  dim_ts:     { name:'Diminuta (tom-semitom)', iv:[0,2,3,5,6,8,9,11], parent:3, sys:'3nps' },
+  dim_st:     { name:'Dominante diminuta (semitom-tom)', iv:[0,1,3,4,6,7,9,10], parent:1, sys:'3nps' },
+  tons_inteiros: { name:'Tons inteiros', iv:[0,2,4,6,8,10], parent:0, sys:'3nps' },
+});
+
+/* Voicings móveis: rs = corda da tônica (0 = corda 6), o = casas relativas (-9 = não tocar). */
+const VOICINGS = {
+  maior:  [{ k:'Forma de E', rs:0, o:[0,2,2,1,0,0] }, { k:'Forma de A', rs:1, o:[-9,0,2,2,2,0] }, { k:'Tríade aguda (forma de D)', rs:2, o:[-9,-9,0,2,3,2] }],
+  menor:  [{ k:'Forma de Em', rs:0, o:[0,2,2,0,0,0] }, { k:'Forma de Am', rs:1, o:[-9,0,2,2,1,0] }, { k:'Tríade aguda (forma de Dm)', rs:2, o:[-9,-9,0,2,3,1] }],
+  dom7:   [{ k:'Forma de E7', rs:0, o:[0,2,0,1,0,0] }, { k:'Drop 3 (corda 6)', rs:0, o:[0,-9,0,1,0,-9] }, { k:'Drop 2 (corda 5)', rs:1, o:[-9,0,2,0,2,-9] }, { k:'Drop 2 (corda 4)', rs:2, o:[-9,-9,0,2,1,2] }],
+  maj7:   [{ k:'Drop 3 (corda 6)', rs:0, o:[0,-9,1,1,0,-9] }, { k:'Drop 2 (corda 5)', rs:1, o:[-9,0,2,1,2,-9] }, { k:'Drop 2 (corda 4)', rs:2, o:[-9,-9,0,2,2,2] }],
+  m7:     [{ k:'Forma de Em7', rs:0, o:[0,2,0,0,0,0] }, { k:'Drop 3 (corda 6)', rs:0, o:[0,-9,0,0,0,-9] }, { k:'Drop 2 (corda 5)', rs:1, o:[-9,0,2,0,1,-9] }, { k:'Drop 2 (corda 4)', rs:2, o:[-9,-9,0,2,1,1] }],
+  m7b5:   [{ k:'Drop 3 (corda 6)', rs:0, o:[0,-9,0,0,-1,-9] }, { k:'Drop 2 (corda 5)', rs:1, o:[-9,0,1,0,1,-9] }, { k:'Drop 2 (corda 4)', rs:2, o:[-9,-9,0,1,1,1] }],
+  dim7:   [{ k:'Drop 3 (corda 6)', rs:0, o:[0,-9,-1,0,-1,-9] }, { k:'Drop 2 (corda 5)', rs:1, o:[-9,0,1,-1,1,-9] }],
+  six:    [{ k:'Corda 6', rs:0, o:[0,-9,-1,1,0,-9] }, { k:'Corda 5', rs:1, o:[-9,0,2,2,2,2] }],
+  m6:     [{ k:'Corda 5', rs:1, o:[-9,0,-2,-1,-2,-9] }],
+  nine:   [{ k:'Corda 5', rs:1, o:[-9,0,-1,0,0,0] }],
+  m9:     [{ k:'Corda 5', rs:1, o:[-9,0,-2,0,0,-9] }],
+  maj9:   [{ k:'Corda 5', rs:1, o:[-9,0,-1,1,0,-9] }],
+  thirteen: [{ k:'Corda 6', rs:0, o:[0,-9,0,1,2,-9] }],
+  b9:     [{ k:'Corda 5', rs:1, o:[-9,0,-1,0,-1,-9] }],
+  s9:     [{ k:'Corda 5 (o acorde do Hendrix)', rs:1, o:[-9,0,-1,0,1,-9] }],
+  sus2:   [{ k:'Forma de A', rs:1, o:[-9,0,2,2,0,0] }],
+  sus4:   [{ k:'Forma de E', rs:0, o:[0,2,2,2,0,0] }, { k:'Forma de A', rs:1, o:[-9,0,2,2,3,0] }],
+  aum:    [{ k:'Corda 5', rs:1, o:[-9,0,-1,-2,-2,-9] }, { k:'Corda 4', rs:2, o:[-9,-9,0,-1,-1,-2] }],
+  dim:    [{ k:'Corda 5', rs:1, o:[-9,0,1,2,1,-9] }],
+  power:  [{ k:'Corda 6', rs:0, o:[0,2,2,-9,-9,-9] }, { k:'Corda 5', rs:1, o:[-9,0,2,2,-9,-9] }],
+};
+const QUAL_SUFFIX = { maior:'', menor:'m', dom7:'7', maj7:'7M', m7:'m7', m7b5:'m7(b5)', dim7:'°7', six:'6', m6:'m6', nine:'9', m9:'m9', maj9:'7M(9)',
+  thirteen:'13', b9:'7(b9)', s9:'7(#9)', sus2:'sus2', sus4:'sus4', aum:'+', dim:'°', power:'5', add9:'add9' };
+
+(() => {
+  // novas cifras reconhecidas pelo parser
+  const extra = { '6':'six', 'm6':'m6', '9':'nine', 'm9':'m9', '7M(9)':'maj9', 'maj9':'maj9', '13':'thirteen', '7(b9)':'b9', '7b9':'b9',
+    '7(#9)':'s9', '7#9':'s9', '°7':'dim7', 'dim7':'dim7', '+':'aum', 'aug':'aum', 'add9':'add9' };
+  Object.assign(CH.SUFFIX, extra);
+
+  /** Todas as formas de um acorde no braço (aberta, se houver, e móveis). */
+  CH.voicings = (rootPc, q, maxFret = 15) => {
+    const name = T.ROOTS[T.mod(rootPc)] + (QUAL_SUFFIX[q] ?? '');
+    const out = [];
+    if (CH.OPEN[name]) out.push(Object.assign({ name, k: 'Aberta' }, CH.OPEN[name]));
+    (VOICINGS[q] || []).forEach(v => {
+      let f = T.mod(rootPc - T.TUNING[v.rs]);
+      const offs = v.o.filter(o => o !== -9);
+      if (f + Math.min(...offs) < 1) f += 12;
+      if (f + Math.max(...offs) > maxFret && f - 12 + Math.min(...offs) >= 1) f -= 12;
+      const frets = v.o.map(o => o === -9 ? -1 : f + o);
+      if (frets.some(x => x > maxFret)) return;
+      const same = frets.map((x, i) => x === f ? i : -1).filter(i => i >= 0);
+      const sh = { name, k: v.k, f: frets, d: frets.map(() => 0) };
+      if (same.length >= 3 && v.o.filter(o => o === 0).length >= 3 && Math.min(...offs) === 0) sh.b = { f, from: Math.min(...same), to: Math.max(...same) };
+      out.push(sh);
+    });
+    return out;
+  };
+
+  // acordes sem forma aberta caem na primeira forma móvel
+  const baseGet = CH.get;
+  CH.get = (name, prefer) => {
+    const sh = baseGet(name, prefer);
+    if (sh) return sh;
+    const p = CH.parse(name); if (!p) return null;
+    const v = CH.voicings(p.root, p.q)[0];
+    return v ? Object.assign({}, v, { name }) : null;
+  };
+})();
+
+/** Campo harmônico: tríades e tétrades de cada grau. */
+function harmonize(rootPc, scaleKey) {
+  const iv = T.SCALES[scaleKey].iv, flats = T.useFlats(rootPc, T.SCALES[scaleKey].parent);
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+  const tri = { '4,7':'maior', '3,7':'menor', '3,6':'dim', '4,8':'aum' };
+  const tet = { '4,7,11':'maj7', '3,7,10':'m7', '4,7,10':'dom7', '3,6,10':'m7b5', '3,6,9':'dim7', '3,7,11':'mmaj7', '4,8,11':'aummaj7' };
+  return iv.map((d, i) => {
+    const at = k => T.mod(iv[(i + k) % 7] - d);
+    const t3 = tri[`${at(2)},${at(4)}`] || 'maior';
+    const t4 = tet[`${at(2)},${at(4)},${at(6)}`] || 'm7';
+    const pc = T.mod(rootPc + d);
+    const nm = (flats ? T.FLAT : T.SHARP)[pc];
+    const minor = t3 === 'menor' || t3 === 'dim';
+    let roman = ROMAN[i]; if (minor) roman = roman.toLowerCase();
+    const acc = T.mod(d - T.SCALES.maior.iv[i]);
+    if (acc === 11) roman = '♭' + roman; else if (acc === 1) roman = '♯' + roman;
+    const sym4 = { maj7:'7M', m7:'m7', dom7:'7', m7b5:'m7(b5)', dim7:'°7', mmaj7:'m(7M)', aummaj7:'+(7M)' }[t4];
+    return { deg: i + 1, pc, roman: roman + (t3 === 'dim' ? '°' : t3 === 'aum' ? '+' : ''), triad: nm + QUAL_SUFFIX[t3], tetrad: nm + sym4, q3: t3, q4: t4,
+      fn: ['T', 'SD', 'T', 'SD', 'D', 'T', 'D'][i] };
+  });
+}
 
 /* ===== Áudio: corda sintetizada (Karplus-Strong), timbres, cliques e relógio ===== */
 const A = (() => {
@@ -1521,6 +1665,77 @@ const LOOP = (() => {
     set click(v) { clickOn = v; }, get click() { return clickOn; } };
 })();
 
+/* ===== Partitura: pauta com clave de sol (guitarra soa uma oitava abaixo do escrito) ===== */
+const STAFF = (() => {
+  const SP = 10;                         // distância entre linhas
+  const LETTER = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
+  const STEP_E4 = 4 * 7 + 2;             // linha de baixo da pauta = Mi4
+
+  /** Grafia de uma altura escrita: letra, acidente e degrau diatônico. */
+  function spell(midiWritten, flats) {
+    const nm = (flats ? T.FLAT : T.SHARP)[T.mod(midiWritten)];
+    const oct = Math.floor(midiWritten / 12) - 1;
+    return { letter: nm[0], acc: nm[1] === '#' ? '♯' : nm[1] === 'b' ? '♭' : '', step: oct * 7 + LETTER[nm[0]] };
+  }
+
+  /**
+   * notes: [{ midi (som real), d (tempos, opcional), rest? }]
+   * o: { flats, width, per (tempos por compasso), unit }
+   */
+  function render(notes, o = {}) {
+    const top = 46, bottom = top + 4 * SP, left = 48;
+    const unit = o.unit || 44;
+    const timed = notes.some(n => n.d);
+    let x = left + 18, beat = 0;
+    const per = o.per || 4;
+    const items = notes.map(n => {
+      const it = Object.assign({}, n, { x });
+      const w = timed ? Math.max(26, (n.d || 1) * unit) : 56;
+      beat += n.d || 1;
+      x += w;
+      if (timed && Math.abs(beat / per - Math.round(beat / per)) < 1e-6) { it.barAfter = x - w / 2 + 4 + (w / 2); x += 10; }
+      return it;
+    });
+    const W = Math.max(o.width || 0, x + 16), H = bottom + 46;
+    const p = [];
+    for (let i = 0; i < 5; i++) p.push(`<line class="st-line" x1="6" x2="${W - 6}" y1="${top + i * SP}" y2="${top + i * SP}"/>`);
+    p.push(`<text class="st-clef" x="10" y="${bottom - SP * 0.98}">𝄞</text>`);
+    p.push(`<text class="st-8" x="21" y="${bottom + 32}">8</text>`);
+    items.forEach((n, i) => {
+      if (n.barAfter && i < items.length - 1) p.push(`<line class="st-bar" x1="${n.barAfter}" x2="${n.barAfter}" y1="${top}" y2="${bottom}"/>`);
+      if (n.rest) { p.push(`<text class="rn-rest st-rest" x="${n.x}" y="${top + SP * 2.9}" text-anchor="middle">${({ 4:'𝄻', 2:'𝄼', 1:'𝄽', 0.5:'𝄾', 0.25:'𝄿' })[n.d || 1] || '𝄽'}</text>`); return; }
+      const sp = spell(n.midi + 12, o.flats);
+      const y = bottom - (sp.step - STEP_E4) * SP / 2;
+      for (let st = STEP_E4 - 2; st >= sp.step; st -= 2) { const ly = bottom - (st - STEP_E4) * SP / 2; p.push(`<line class="st-ledger" x1="${n.x - 11}" x2="${n.x + 11}" y1="${ly}" y2="${ly}"/>`); }
+      for (let st = STEP_E4 + 10; st <= sp.step; st += 2) { const ly = bottom - (st - STEP_E4) * SP / 2; p.push(`<line class="st-ledger" x1="${n.x - 11}" x2="${n.x + 11}" y1="${ly}" y2="${ly}"/>`); }
+      if (sp.acc) p.push(`<text class="st-acc" x="${n.x - 15}" y="${y + 5}" text-anchor="middle">${sp.acc}</text>`);
+      const d = n.d || 1, hollow = d >= 2;
+      p.push(`<ellipse class="rn-head ${hollow ? 'hollow' : ''}" data-n="${i}" cx="${n.x}" cy="${y}" rx="6.4" ry="4.6" transform="rotate(-20 ${n.x} ${y})"/>`);
+      if (timed && d < 4) {
+        const up = sp.step < STEP_E4 + 4;
+        const sx = up ? n.x + 5.6 : n.x - 5.6, sy2 = up ? y - 32 : y + 32;
+        p.push(`<line class="rn-stem" x1="${sx}" x2="${sx}" y1="${y}" y2="${sy2}"/>`);
+        const flags = d === 0.5 || d === 0.75 ? 1 : d === 0.25 ? 2 : 0;
+        for (let k = 0; k < flags; k++) { const fy = sy2 + (up ? 1 : -1) * k * 7; p.push(`<path class="rn-flag" d="M${sx} ${fy} q 9 ${up ? 8 : -8} 7 ${up ? 18 : -18}"/>`); }
+        if ([1.5, 3, 0.75].includes(d)) p.push(`<circle class="rn-dot" cx="${n.x + 11}" cy="${y - 2}" r="2"/>`);
+      }
+      if (n.label) p.push(`<text class="st-label" x="${n.x}" y="${H - 6}" text-anchor="middle">${n.label}</text>`);
+    });
+    if (timed) p.push(`<line class="st-bar end" x1="${W - 8}" x2="${W - 8}" y1="${top}" y2="${bottom}"/>`);
+    return `<svg class="staff" viewBox="0 0 ${W} ${H}" style="max-width:${Math.round(W * 1.5)}px;min-width:${Math.round(Math.min(W, 900) * 0.9)}px" role="img" aria-label="Partitura">${p.join('')}</svg>`;
+  }
+
+  /** Notas de uma tablatura (só notas simples) para a pauta. */
+  function fromTab(parsed) {
+    return parsed.events.map(e => {
+      const n = e.notes.find(o => !o.dead);
+      return n ? { midi: T.TUNING[n.s] + n.f, d: e.d } : { rest: true, d: e.d };
+    });
+  }
+
+  return { render, spell, fromTab };
+})();
+
 /* ===== Braço da guitarra em SVG ===== */
 const FB = (() => {
   const NUT = 60, PAD_R = 14, TOP = 22, GAP = 28, K = 20;
@@ -1610,7 +1825,7 @@ const FB = (() => {
           `<circle cx="${cx}" cy="${cy}" r="${r}"/>` +
           (txt ? `<text x="${cx}" y="${cy + fs * 0.36}" font-size="${fs}">${txt}</text>` : '') + `</g>`);
       }
-      host.innerHTML = `<svg class="fb" viewBox="0 0 ${g.W} ${g.H}" style="min-width:${Math.round(g.W * 0.74)}px" role="img" aria-label="Braço da guitarra">${p.join('')}</svg>`;
+      host.innerHTML = `<svg class="fb" viewBox="0 0 ${g.W} ${g.H}" style="min-width:${Math.round(g.W * 0.74)}px;max-width:${Math.round(g.W * 1.35)}px;margin-inline:auto" role="img" aria-label="Braço da guitarra">${p.join('')}</svg>`;
     }
 
     if (opts.state) inst.set(opts.state); else render();
@@ -1629,11 +1844,11 @@ const TAB = (() => {
 
   function parse(src) {
     const ev = [];
-    let d = 0.5, beat = 0;
+    let d = 0.5, beat = 0, ticks = 0;   // 48 ticks por tempo: soma exata de tercinas e semicolcheias
     for (const tok of src.trim().split(/\s+/)) {
       if (!tok) continue;
       if (tok[0] === '|') { d = DUR[tok[1]] * (tok[2] === '.' ? 1.5 : 1); continue; }
-      if (tok === '-') { ev.push({ rest: true, d, beat, notes: [] }); beat += d; continue; }
+      if (tok === '-') { ev.push({ rest: true, d, beat, notes: [] }); ticks += Math.round(d * 48); beat = ticks / 48; continue; }
       const notes = tok.split('+').map(nt => {
         const m = nt.match(/^([1-6]):(\d+|x)(.*)$/);
         if (!m) throw new Error('Token inválido: ' + nt);
@@ -1644,13 +1859,15 @@ const TAB = (() => {
         if (tech.includes('/')) o.sl = true;
         if (tech.includes('~')) o.vib = true;
         if (tech.includes('m')) o.pm = true;
+        if (tech.includes('t')) o.tap = true;
+        if (tech.includes('n')) o.harm = true;
         const b = tech.match(/b(\d)/); if (b) o.bend = +b[1];
         const B = tech.match(/B(\d)/); if (B) { o.bend = +B[1]; o.pre = true; }
         if (tech.includes('r')) o.rel = true;
         return o;
       });
       ev.push({ notes, d, beat });
-      beat += d;
+      ticks += Math.round(d * 48); beat = ticks / 48;
     }
     // casa anterior em cada corda (para rótulo e áudio de slide/legato)
     const last = {};
@@ -1664,7 +1881,9 @@ const TAB = (() => {
 
   function noteLabel(o) {
     if (o.dead) return 'x';
+    if (o.harm) return `<${o.f}>`;
     let t = String(o.f);
+    if (o.tap) t = 't' + t;
     if (o.h) t = 'h' + t;
     else if (o.p) t = 'p' + t;
     else if (o.sl) t = (o.prev != null && o.prev > o.f ? '\\' : '/') + t;
@@ -1694,7 +1913,7 @@ const TAB = (() => {
       const w = Math.max(maxLen + 1.4, Math.round(e.d * 6) + 1);
       const pm = e.notes.some(o => o.pm) ? '<i>PM</i>' : '';
       cols.push(`<div class="tab-col" data-i="${i}" style="--w:${w}"><span class="tab-top">${countLabel(e.beat)}${pm}</span>` +
-        rows.map(r => `<span class="tab-cell">${r ? `<b>${r.replace('\\', '&#92;')}</b>` : ''}</span>`).join('') + `</div>`);
+        rows.map(r => `<span class="tab-cell">${r ? `<b>${r.replace(/[<>\\]/g, c => ({ '<': '&lt;', '>': '&gt;', '\\': '&#92;' })[c])}</b>` : ''}</span>`).join('') + `</div>`);
     });
     bar();
     host.innerHTML = `<div class="tab" role="img" aria-label="Tablatura"><div class="tab-names"><span class="tab-top"></span>${['e','B','G','D','A','E'].map(n => `<span class="tab-cell">${n}</span>`).join('')}</div>${cols.join('')}</div>`;
@@ -1736,8 +1955,10 @@ const TAB = (() => {
       const isLast = i === parsed.events.length - 1;
       e.notes.forEach(o => {
         if (o.dead) { A.play(T.TUNING[o.s] + 5, t, { dur: 0.05, vel: 0.5, mute: true, string: o.s }); return; }
-        const legato = o.h || o.p || o.sl;
+        const legato = o.h || o.p || o.sl || o.tap;
+        const HARM = { 12: 12, 24: 24, 7: 19, 19: 19, 5: 24, 4: 28, 9: 28, 16: 28, 3: 31 };
         const dur = isLast ? Math.max(e.d * spb, 1.6) : Math.max(e.d * spb * 1.05, 0.12) + (o.bend || o.vib ? 0.15 : 0.35);
+        if (o.harm) { A.play(T.TUNING[o.s] + (HARM[o.f] ?? o.f), t, { dur: Math.max(e.d * spb, 1.2) + 0.8, vel: 0.42, string: o.s }); return; }
         A.play(T.TUNING[o.s] + o.f, t, {
           dur, string: o.s, vel: legato ? 0.55 : (e.notes.length > 1 ? 0.6 : 0.85),
           slideFrom: o.sl && o.prev != null ? T.TUNING[o.s] + o.prev : null,
@@ -2092,6 +2313,251 @@ MODULES.push(
   ]},
 );
 
+/* ===== Nível 4: harmonia e técnicas avançadas ===== */
+MODULES.push(
+  { id:'harm', level:4, order:1, title:'Harmonia', tag:'Acordes e campo harmônico', lessons:[
+    { id:'campo', title:'O campo harmônico maior', min:15,
+      body:`<p>Se você empilhar terças sobre cada nota da escala maior (pulando uma nota da escala), surgem os <b>7 acordes do tom</b>. Em Dó: <b>C Dm Em F G Am B°</b>.</p>
+<p>A sequência <b>maior, menor, menor, maior, maior, menor, diminuto</b> vale para qualquer tom. Por isso a harmonia usa números romanos: <b>I ii iii IV V vi vii°</b> (maiúsculo = maior). “Um quatro cinco” é a mesma ideia em Dó, em Sol ou em Mi.</p>
+<p>Troque o tom abaixo e toque cada grau. A maioria das músicas que você conhece usa só esses acordes.</p>`,
+      demo:{ kind:'campo', root:'C', scale:'maior' },
+      tasks:['Toque o campo de Dó, de Sol e de Ré em sequência, dizendo o grau.','Pegue uma música que você toca e escreva os graus dos acordes.'] },
+    { id:'tetrades', title:'Tétrades: 7M, m7, 7 e m7(b5)', min:15,
+      body:`<p>Empilhando mais uma terça, cada acorde ganha a <b>sétima</b>. O campo maior em tétrades fica <b>I7M ii7 iii7 IV7M V7 vi7 viiø</b>. Em Dó: C7M Dm7 Em7 F7M G7 Am7 Bm7(b5).</p>
+<ul><li><b>7M</b>: som aberto e sonhador (bossa nova, MPB, neo soul).</li>
+<li><b>m7</b>: menor mais suave.</li>
+<li><b>7</b> (dominante): tensão que pede resolução; a base do blues.</li>
+<li><b>m7(b5)</b> ou ø: menor com quinta diminuta, comum antes do V em tons menores.</li></ul>`,
+      demo:{ kind:'campo', root:'C', scale:'maior', tetrads:true },
+      tasks:['Toque as 7 tétrades de Dó.','Compare C e C7M, Am e Am7: o que muda no som?'] },
+    { id:'funcoes', title:'Funções e o ii–V–I', min:15,
+      body:`<p>Cada grau tem uma <b>função</b>:</p>
+<ul><li><b>Tônica</b> (I, iii, vi): repouso, sensação de casa.</li>
+<li><b>Subdominante</b> (ii, IV): afasta da tônica.</li>
+<li><b>Dominante</b> (V, vii°): tensão que pede a volta para o I.</li></ul>
+<p>A tensão do V7 vem do <b>trítono</b> entre a 3ª e a 7ª do acorde (em G7: Si e Fá), que resolve em Dó e Mi. A progressão <b>ii–V–I</b> (Dm7–G7–C7M) é a mais importante do jazz, da bossa e do gospel. Aprenda a tocá-la em todos os tons.</p>`,
+      demo:{ kind:'campo', root:'G', scale:'maior', tetrads:true, prog:'ii-V-I' },
+      tasks:['Toque ii–V–I em Dó, Sol e Fá.','No Jam ii–V–I, solte arpejos de cada acorde.'],
+      links:[{ to:'jam', id:'iivi', label:'Jam: ii–V–I em Sol' }] },
+    { id:'progressoes', title:'Progressões que todo músico usa', min:15,
+      body:`<p>Algumas sequências de graus aparecem em milhares de músicas. Reconhecer de ouvido é uma das habilidades mais úteis para tocar com outras pessoas:</p>
+<ul><li><b>I–V–vi–IV</b>: pop e louvor. <b>vi–IV–I–V</b>: a mesma, começando no menor.</li>
+<li><b>I–vi–IV–V</b>: anos 50 e baladas. <b>I–IV–V</b>: rock, blues e sertanejo.</li>
+<li><b>ii–V–I</b>: jazz e bossa. <b>i–♭VII–♭VI–♭VII</b>: rock e metal em tom menor.</li></ul>
+<p>Escolha uma progressão abaixo, ouça e toque junto em vários tons.</p>`,
+      demo:{ kind:'campo', root:'D', scale:'maior', prog:'I-V-vi-IV' },
+      tasks:['Toque cada progressão em 3 tons diferentes.','Ouça 3 músicas e diga qual progressão elas usam.'] },
+    { id:'menor-campo', title:'Campo harmônico menor', min:15,
+      body:`<p>O campo da <b>menor natural</b> é <b>i ii° ♭III iv v ♭VI ♭VII</b> (em Lá: Am B° C Dm Em F G). São os mesmos acordes do campo maior relativo, com outro centro.</p>
+<p>Na <b>menor harmônica</b> a 7ª sobe meio tom e o v vira <b>V maior</b> (E e E7 em Lá menor). Isso cria uma resolução muito mais forte para o i, típica do metal neoclássico, do tango e de muitas músicas gospel em tom menor.</p>`,
+      demo:{ kind:'campo', root:'A', scale:'menor', views:[{ label:'Menor natural', scale:'menor' },{ label:'Menor harmônica', scale:'menor_harm' }] },
+      tasks:['Toque Am–Dm–Em–Am e depois Am–Dm–E–Am. Ouça a diferença do E maior.'] },
+    { id:'drop2', title:'Voicings drop 2 e drop 3', min:20,
+      body:`<p>Uma tétrade “fechada” (as 4 notas dentro de uma oitava) é difícil de tocar na guitarra. A solução são os <b>voicings abertos</b>:</p>
+<ul><li><b>Drop 2</b>: a segunda nota mais aguda desce uma oitava. Fica em 4 cordas vizinhas (5-4-3-2 ou 4-3-2-1). É o som clássico da guitarra de jazz e de bossa.</li>
+<li><b>Drop 3</b>: a terceira nota mais aguda desce uma oitava. A tônica fica na corda 6 e a corda 5 não toca.</li></ul>
+<p>No dicionário abaixo, troque o tom e o tipo de acorde e veja todas as formas no braço.</p>`,
+      demo:{ kind:'dict', root:'C', q:'maj7' },
+      tasks:['Toque Dm7–G7–C7M só com drop 2 nas cordas 5 a 2.','Faça o mesmo com drop 3, tônica na corda 6.'],
+      links:[{ to:'acordes', label:'Abrir o dicionário de acordes' }] },
+    { id:'extensoes', title:'Extensões e alterações: 9, 11, 13, ♭9 e ♯9', min:20,
+      body:`<p>Continuando a empilhar terças passamos da oitava: <b>9</b> (= 2), <b>11</b> (= 4) e <b>13</b> (= 6). Elas colorem o acorde sem mudar a função. Na guitarra, quase sempre tiramos a 5ª (ou até a tônica, se o baixo tocar) para caber nos dedos.</p>
+<p>No acorde dominante podemos <b>alterar</b> a 9ª e a 5ª: ♭9, ♯9, ♭5, ♯5. Elas aumentam a tensão antes da resolução. O <b>7(♯9)</b> é o “acorde do Hendrix”, ouvido em muito rock e funk.</p>`,
+      demo:{ kind:'dict', root:'G', q:'nine', views:[{ label:'9', q:'nine' },{ label:'13', q:'thirteen' },{ label:'7(♭9)', q:'b9' },{ label:'7(♯9)', q:'s9' },{ label:'m9', q:'m9' },{ label:'7M(9)', q:'maj9' }] },
+      tasks:['Toque G7 → G9 → G13 e ouça a cor de cada um.','Use E7(♯9) num riff de funk ou rock.'] },
+  ]},
+  { id:'tec', level:4, order:4, title:'Técnicas avançadas', tag:'Mãos de profissional', lessons:[
+    { id:'tapping', title:'Tapping', min:20,
+      body:`<p>No <b>tapping</b> a mão direita também aperta notas no braço. O dedo médio (ou indicador) “bate” firme na casa e depois puxa a corda para o lado, fazendo soar a nota que a mão esquerda está segurando.</p>
+<p>O padrão clássico é em tercinas: <b>t</b> (mão direita) → <b>p</b> (pull-off para a mão esquerda) → <b>h</b> (hammer-on). Mudando as notas, você toca arpejos amplos que seriam impossíveis com uma mão só.</p>`,
+      demo:{ kind:'lick', lick:'tap1' }, lick:'tap1',
+      tasks:['Só a primeira tercina, devagar, até as três notas terem o mesmo volume.','Lick completo a 60 BPM, depois 80.'],
+      links:[{ to:'treino', id:'tap1', label:'Treino de velocidade' }] },
+    { id:'hibrida', title:'Palhetada híbrida', min:20,
+      body:`<p>Na <b>palhetada híbrida</b> a palheta toca as cordas graves e os dedos médio e anelar puxam as agudas. Dá para tocar notas em cordas distantes ao mesmo tempo, como no violão dedilhado, sem largar a palheta.</p>
+<p>É essencial no country, muito usada no pop, no gospel e no rock moderno. Comece com o padrão do lick: palheta, médio, anelar, médio.</p>`,
+      demo:{ kind:'lick', lick:'hib1' }, lick:'hib1',
+      tasks:['Só a mão direita nas cordas soltas, no mesmo padrão.','Lick completo a 70 BPM.'] },
+    { id:'economica', title:'Palhetada econômica', min:20,
+      body:`<p>Na palhetada alternada a palheta sempre alterna baixo e cima. Na <b>econômica</b>, quando você muda para a próxima corda <b>na mesma direção</b> do movimento, a palheta continua o movimento (como um mini sweep) em vez de voltar.</p>
+<p>Em escalas de 3 notas por corda subindo: <b>↓↑↓ ↓↑↓</b>… a terceira palhetada de uma corda e a primeira da seguinte saem num movimento só. Fica mais rápido e mais leve, mas exige rigor no tempo.</p>`,
+      demo:{ kind:'lick', lick:'ex-3nps' }, lick:'ex-3nps',
+      tasks:['Escala maior 3NPS subindo com palhetada econômica e descendo com alternada.','Compare a velocidade máxima limpa das duas.'],
+      links:[{ to:'treino', id:'ex-3nps', label:'Treino de velocidade' }] },
+    { id:'harmonicos', title:'Harmônicos naturais e artificiais', min:15,
+      body:`<p>Os <b>harmônicos naturais</b> (escritos &lt;12&gt;) soam como sininhos: encoste o dedo sem apertar exatamente em cima do traste 12, 7 ou 5 e solte logo após palhetar.</p>
+<p>O <b>harmônico artificial</b> (ou <i>pinch harmonic</i>) é aquele “grito” do rock e do metal: segure a palheta com pouca ponta para fora e deixe a lateral do polegar raspar a corda logo depois da palhetada. Funciona melhor com distorção e captador da ponte. A posição da mão direita muda a nota do harmônico: procure o ponto que mais grita.</p>`,
+      demo:{ kind:'lick', lick:'harm1' }, lick:'harm1',
+      tasks:['Harmônicos nas casas 12, 7 e 5 de todas as cordas.','Com drive, procure o pinch harmonic na corda 3, casa 7.'] },
+    { id:'skipping', title:'String skipping: pulando cordas', min:15,
+      body:`<p>Tocar pulando cordas abre intervalos maiores e dá um som menos “escala para cima e para baixo”. O desafio é <b>abafar</b> as cordas que você pula e acertar a palheta sem olhar.</p>
+<p>O lick desta aula toca a pentatônica em <b>oitavas</b>: a mesma nota duas vezes, uma corda pulada no meio.</p>`,
+      demo:{ kind:'lick', lick:'skip1' }, lick:'skip1',
+      tasks:['Lick a 70 BPM sem deixar a corda do meio soar.','Crie a mesma ideia com a escala maior.'] },
+    { id:'legato-avancado', title:'Legato avançado e trinados', min:20,
+      body:`<p>No legato quase todas as notas saem da mão esquerda. Para soar igual à palhetada, o <b>hammer-on</b> precisa ser rápido e firme e o <b>pull-off</b> deve puxar a corda levemente para baixo, quase “palhetando” com o dedo.</p>
+<p>O <b>trinado</b> (alternar rápido duas notas) é o melhor exercício de força e independência. Faça em todos os pares de dedos: 1-2, 1-3, 1-4, 2-3, 2-4, 3-4.</p>`,
+      demo:{ kind:'lick', lick:'trill1' }, lick:'trill1',
+      tasks:['30 segundos de trinado por par de dedos.','Lick de legato em 3 notas por corda a 80 BPM.'],
+      links:[{ to:'licks', id:'m4', label:'Legato em 3 notas por corda' }] },
+    { id:'vibrato-bend', title:'Bend e vibrato de profissional', min:20,
+      body:`<p>Bend afinado e vibrato controlado são o que mais diferencia um guitarrista experiente:</p>
+<ul><li><b>Bend afinado</b>: toque a nota-alvo antes, depois faça o bend e compare. Pratique ½ tom, 1 tom e 1 tom e meio.</li>
+<li><b>Pré-bend</b>: suba a corda sem tocar, palhete e solte devagar.</li>
+<li><b>Vibrato</b>: escolha a largura (estreito e rápido, ou largo e lento) e mantenha regular, no tempo da música.</li>
+<li><b>Bend em uníssono</b>: uma corda sobe até soar igual à outra parada.</li></ul>`,
+      demo:{ kind:'lick', lick:'b2' }, lick:'b2',
+      tasks:['10 bends de 1 tom conferindo com a nota-alvo.','Vibrato no tempo: 2 oscilações por tempo a 80 BPM.'],
+      links:[{ to:'licks', id:'r4', label:'Lick com bend em uníssono' }] },
+  ]},
+);
+
+/* ===== Nível 4 e 5: partitura, improvisação avançada e vida profissional ===== */
+MODULES.push(
+  { id:'l3', level:4, order:5, title:'Leitura 3', tag:'Partitura', lessons:[
+    { id:'pauta', title:'A pauta e a clave de sol', min:15,
+      body:`<p>A partitura usa <b>5 linhas</b>. Cada linha e cada espaço é uma nota. A <b>clave de sol</b> (𝄞) marca o Sol na segunda linha de baixo para cima. O pequeno <b>8</b> embaixo da clave indica que a guitarra soa <b>uma oitava abaixo</b> do que está escrito.</p>
+<ul><li>Linhas, de baixo para cima: <b>Mi Sol Si Ré Fá</b>.</li>
+<li>Espaços: <b>Fá Lá Dó Mi</b>.</li>
+<li>Notas mais graves ou mais agudas usam <b>linhas suplementares</b>, pequenos tracinhos.</li></ul>
+<p>Comece pelas notas das cordas 1, 2 e 3 até a casa 3.</p>`,
+      demo:{ kind:'staff', mode:'quiz', set:'cordas123' },
+      tasks:['Acerte 20 notas seguidas no exercício.','Depois de responder, toque a nota na guitarra.'] },
+    { id:'primeira-posicao', title:'Notas na primeira posição', min:20,
+      body:`<p>A <b>primeira posição</b> vai da corda solta até a casa 3 (ou 4), em todas as cordas. É onde se começa a ler partitura na guitarra, porque cada nota escrita tem um lugar só.</p>
+<p>As cordas graves ficam abaixo da pauta, com linhas suplementares: a corda 6 solta (Mi) está três linhas abaixo. A corda 1 solta (Mi) está no quarto espaço.</p>`,
+      demo:{ kind:'staff', mode:'quiz', set:'primeira' },
+      tasks:['Acerte 20 notas seguidas.','Leia em voz alta as notas da corda 6 até a corda 1.'] },
+    { id:'acidentes', title:'Sustenidos, bemóis e armadura', min:15,
+      body:`<p>O <b>sustenido (♯)</b> sobe meio tom (uma casa) e o <b>bemol (♭)</b> desce meio tom. O <b>bequadro (♮)</b> cancela. Na partitura, o acidente aparece antes da nota e vale até o fim do compasso.</p>
+<p>A <b>armadura de clave</b>, no começo da pauta, lista os acidentes do tom para a música inteira. Sol maior tem um sustenido (Fá♯); Fá maior tem um bemol (Si♭).</p>`,
+      demo:{ kind:'staff', mode:'quiz', set:'acidentes' },
+      tasks:['Acerte 15 notas seguidas com acidentes.','Diga as notas com ♯ e com ♭ de cada casa da corda 1 até a casa 5.'] },
+    { id:'ler-melodia', title:'Lendo uma melodia', min:20,
+      body:`<p>Juntando ritmo e notas, você lê uma melodia. A tablatura embaixo serve de conferência, mas tente ler a pauta primeiro: o nome da nota, onde ela fica e quanto tempo dura.</p>
+<p>Dica: leia sempre um pouco à frente do que está tocando, como na leitura de texto.</p>`,
+      demo:{ kind:'staff', mode:'melody', lick:'ex-melodia' },
+      tasks:['Leia a melodia falando o nome das notas.','Toque olhando só para a pauta.'] },
+  ]},
+  { id:'impro', level:5, order:2, title:'Improvisação avançada', tag:'Linguagem', lessons:[
+    { id:'notas-alvo', title:'Solando nas mudanças: notas do acorde', min:20,
+      body:`<p>Escala serve para todos os acordes do tom, mas quem dá direção ao solo são as <b>notas do acorde da vez</b>. O exercício profissional é ficar <b>numa região do braço</b> e trocar só as notas-alvo quando o acorde muda.</p>
+<p>Abaixo, a mesma região (casas 4 a 8) para Am7, D7 e G7M. Repare como só algumas notas mudam: a 3ª e a 7ª, que definem cada acorde. Mire nelas no tempo 1 de cada compasso.</p>`,
+      demo:{ kind:'arp', root:'A', chord:'m7', lo:4, hi:8, views:[{ label:'Am7', root:'A', chord:'m7' },{ label:'D7', root:'D', chord:'dom7' },{ label:'G7M', root:'G', chord:'maj7' }] },
+      tasks:['No Jam ii–V–I, toque só notas do acorde, uma por tempo.','Depois ligue as notas-alvo com notas da escala.'],
+      links:[{ to:'jam', id:'iivi', label:'Jam: ii–V–I em Sol' }] },
+    { id:'arpejos-tetrades', title:'Arpejos de tétrades no braço', min:20,
+      body:`<p>Os arpejos de <b>7M, m7, 7 e m7(♭5)</b> são o vocabulário básico do jazz, do fusion e do gospel moderno. Aprenda cada um em pelo menos duas regiões do braço, com a tônica na corda 6 e na corda 5.</p>
+<p>Um exercício excelente: toque o campo harmônico inteiro em arpejos, subindo e descendo, sem sair da mesma região.</p>`,
+      demo:{ kind:'arp', root:'C', chord:'maj7', lo:7, hi:11, views:[{ label:'C7M', chord:'maj7' },{ label:'Cm7', chord:'m7' },{ label:'C7', chord:'dom7' },{ label:'Cm7(♭5)', chord:'m7b5' },{ label:'C°7', chord:'dim7' }] },
+      tasks:['Cada arpejo subindo e descendo com metrônomo.','Campo de Dó em arpejos entre as casas 7 e 10.'] },
+    { id:'menor-melodica', title:'Menor melódica, lídio dominante e alterada', min:20,
+      body:`<p>A <b>menor melódica</b> é a escala menor com 6ª e 7ª maiores. Dela saem dois modos muito usados:</p>
+<ul><li><b>Lídio dominante</b> (4º modo): maior com ♯4 e ♭7. Perfeito sobre acordes 7 que não resolvem (blues moderno, fusion).</li>
+<li><b>Alterada</b> (7º modo): todas as tensões do dominante (♭9, ♯9, ♭5, ♯5). Use sobre o V7 logo antes de resolver.</li></ul>
+<p>Regra prática: sobre E7 que vai para Am, toque a menor melódica de Fá (meio tom acima do E).</p>`,
+      demo:{ kind:'scale', scale:'menor_mel', root:'A', pos:0, keySel:true, views:[{ label:'Menor melódica', scale:'menor_mel' },{ label:'Lídio dominante', scale:'lidio_dom' },{ label:'Alterada', scale:'alterada' }] },
+      lick:'alt1',
+      tasks:['Toque a menor melódica de Lá em 3 notas por corda.','Use a alterada no último compasso de um blues menor.'] },
+    { id:'simetricas', title:'Escalas simétricas', min:15,
+      body:`<p>Escalas <b>simétricas</b> repetem o mesmo desenho ao longo do braço:</p>
+<ul><li><b>Diminuta tom-semitom</b>: sobre acordes °7. O desenho se repete a cada 3 casas.</li>
+<li><b>Dominante diminuta</b> (semitom-tom): sobre 7(♭9), com som “tenso e moderno”.</li>
+<li><b>Tons inteiros</b>: só tons inteiros, som de sonho; sobre 7(♯5). Repete a cada 2 casas.</li></ul>`,
+      demo:{ kind:'scale', scale:'dim_st', root:'G', pos:-1, keySel:true, views:[{ label:'Dominante diminuta', scale:'dim_st' },{ label:'Diminuta', scale:'dim_ts' },{ label:'Tons inteiros', scale:'tons_inteiros' }] },
+      tasks:['Ache o desenho que se repete a cada 3 casas na diminuta.','Improvise sobre G7(♭9) com a dominante diminuta.'] },
+    { id:'fraseado', title:'Fraseado: motivo, ritmo e espaço', min:20,
+      body:`<p>O que faz um solo soar profissional não é a quantidade de notas. É o <b>fraseado</b>:</p>
+<ul><li><b>Motivo</b>: uma ideia curta (3 a 5 notas) que você repete e transforma.</li>
+<li><b>Sequência</b>: o mesmo motivo começando em outra nota da escala.</li>
+<li><b>Deslocamento rítmico</b>: a mesma frase começando meio tempo depois.</li>
+<li><b>Espaço e dinâmica</b>: pausas, notas longas, tocar mais forte ou mais fraco.</li></ul>
+<p>Grave seus improvisos e escute: você está conversando ou só passando escala?</p>`,
+      demo:{ kind:'lick', lick:'fusion1' }, lick:'fusion1',
+      tasks:['Improvise 2 minutos usando um motivo só.','Grave um improviso e anote 3 ideias que funcionaram.'],
+      links:[{ to:'gravar', label:'Abrir o gravador' }] },
+    { id:'jazz-fusion', title:'Linguagem de jazz e fusion', min:20,
+      body:`<p>Duas ferramentas da linguagem do jazz para começar:</p>
+<ul><li><b>Arpejos nas mudanças</b>: cada acorde do ii–V–I com o seu arpejo, ligando a 7ª de um à 3ª do seguinte (elas ficam a meio tom ou um tom de distância).</li>
+<li><b>Enclosures</b>: cercar a nota-alvo por cima e por baixo antes de tocá-la.</li></ul>
+<p>A melhor fonte é <b>transcrever</b>: tirar de ouvido frases dos músicos que você admira e tocá-las em outros tons.</p>`,
+      demo:{ kind:'lick', lick:'jazz1' }, lick:'jazz1',
+      tasks:['Toque o lick ii–V–I em mais dois tons.','Transcreva uma frase curta de um solo que você gosta.'],
+      links:[{ to:'aula', id:'transcrever', label:'Aula: tirar música de ouvido' }] },
+  ]},
+  { id:'pro', level:5, order:3, title:'Vida profissional', tag:'Timbre, banda e palco', lessons:[
+    { id:'timbre', title:'Timbre: amplificador, ganho e equalização', min:15,
+      body:`<p>Três timbres resolvem quase tudo:</p>
+<ul><li><b>Limpo</b>: ganho baixo (2–3), médios no meio, um pouco de reverb. Acordes, arpejos, louvor, pop.</li>
+<li><b>Crunch</b>: ganho médio (4–6). Blues, rock clássico, base de pop rock. Responde à força da palhetada.</li>
+<li><b>Drive de solo</b>: ganho alto, um pouco mais de <b>médios</b> para o solo aparecer na banda, e delay curto.</li></ul>
+<p>Erros comuns: tirar todos os médios (some na banda), ganho alto demais (embola e esconde a palhetada) e graves exagerados. Use também o <b>volume da guitarra</b>: com ele em 7, o crunch vira quase limpo.</p>`,
+      demo:{ kind:'none' },
+      tasks:['Monte e anote seus 3 timbres: limpo, crunch e solo.','Toque o mesmo riff nos três e grave.'] },
+    { id:'pedais', title:'Pedais e a ordem da cadeia', min:15,
+      body:`<p>A ordem mais usada, da guitarra para o amplificador:</p>
+<ol><li><b>Afinador</b></li><li><b>Filtros</b> (wah) e <b>compressor</b></li><li><b>Overdrive / distorção / fuzz</b></li><li><b>Modulação</b> (chorus, phaser, flanger)</li><li><b>Delay</b></li><li><b>Reverb</b></li></ol>
+<p>Se o amplificador tem <b>loop de efeitos</b>, modulação, delay e reverb soam melhor nele. Pedaleiras e simuladores seguem a mesma lógica. No louvor, delay sincronizado com o BPM e reverb longo são a base do timbre ambiente.</p>`,
+      demo:{ kind:'none' },
+      tasks:['Desenhe a sua cadeia de efeitos.','Ajuste o delay no tempo de uma música (semínima ou colcheia pontuada).'] },
+    { id:'regulagem', title:'Cordas, cuidados e regulagem', min:15,
+      body:`<ul><li><b>Cordas</b>: troque a cada 1–3 meses, ou quando perderem brilho e afinação. Calibre 0.09 é mais macio; 0.10 tem mais corpo e segura melhor a afinação.</li>
+<li><b>Ao trocar</b>: estique cada corda nova algumas vezes antes de afinar de vez.</li>
+<li><b>Altura das cordas (action)</b>: baixa facilita, baixa demais trasteja.</li>
+<li><b>Oitava (entonação)</b>: a casa 12 deve soar igual ao harmônico da casa 12; se não, ajuste o carrinho da ponte.</li>
+<li><b>Tensor</b>: ajusta a curvatura do braço; mexa pouco (1/8 de volta por vez) ou leve a um luthier.</li>
+<li>Limpe as cordas e o braço depois de tocar.</li></ul>`,
+      demo:{ kind:'none' },
+      tasks:['Troque as cordas sozinho uma vez.','Confira a oitava das 6 cordas com o afinador.'],
+      links:[{ to:'afinador', label:'Abrir o afinador' }] },
+    { id:'banda', title:'Tocando em banda', min:20,
+      body:`<ul><li><b>Ouça o baixo e o bombo</b>: o seu ritmo encaixa neles.</li>
+<li><b>Divida frequências</b>: se o teclado faz os acordes graves, toque tríades nas cordas agudas.</li>
+<li><b>Menos é mais</b>: deixe espaço para a voz; preencha só onde não há melodia.</li>
+<li><b>Dinâmica de banda</b>: verso mais vazio, refrão mais cheio, ponte diferente.</li>
+<li><b>Mapa da música</b>: anote a estrutura (intro, verso, refrão, ponte) com os graus. Fica fácil mudar de tom.</li>
+<li>Combine sinais para final, repetição e mudança de parte.</li></ul>`,
+      demo:{ kind:'none' },
+      tasks:['Faça o mapa de 3 músicas do seu repertório com os graus.','No Jam, toque só tríades nas cordas 1-2-3.'] },
+    { id:'estudio', title:'Gravando em casa', min:20,
+      body:`<p>Para gravar com qualidade você precisa de:</p>
+<ul><li><b>Interface de áudio</b> (entrada para guitarra) e um <b>programa de gravação</b> (DAW).</li>
+<li><b>Simulador de amplificador</b> no computador, ou microfone na frente do falante (perto do centro = mais agudo; para a borda = mais grave).</li>
+<li><b>Click</b> (metrônomo) sempre ligado ao gravar.</li>
+<li><b>Dobra</b>: grave a base duas vezes e coloque uma de cada lado (esquerda/direita). O som fica largo, de disco.</li>
+<li>Grave mais de uma tomada e escolha a melhor; descanse os ouvidos antes de decidir.</li></ul>`,
+      demo:{ kind:'none' },
+      tasks:['Grave uma base com click e um solo por cima no looper.','Grave a mesma base duas vezes e compare.'],
+      links:[{ to:'gravar', label:'Gravador e looper' }] },
+    { id:'palco', title:'Palco e performance', min:15,
+      body:`<ul><li><b>Setlist</b> com tom e BPM de cada música e a ordem das trocas de timbre.</li>
+<li><b>Passagem de som</b>: peça no retorno o que você precisa ouvir (normalmente voz e bateria).</li>
+<li><b>Kit de emergência</b>: cordas, cabo extra, palhetas, bateria/fonte dos pedais, afinador.</li>
+<li><b>Nervosismo</b>: ensaie a música mais difícil até ficar no automático. Se errar, não pare: a música continua.</li>
+<li>Ensaie as <b>transições</b> entre as músicas, não só as músicas.</li></ul>`,
+      demo:{ kind:'none' },
+      tasks:['Monte um setlist de 5 músicas com tom, BPM e timbre.','Toque o setlist inteiro sem parar, gravando.'] },
+    { id:'estudo-pro', title:'Como estudar como profissional', min:15,
+      body:`<ul><li><b>Prática deliberada</b>: estude o que você ainda não sabe, em blocos curtos e com objetivo claro.</li>
+<li><b>Meça</b>: BPM, trocas por minuto, porcentagem nos quizzes. O que é medido melhora.</li>
+<li><b>Grave e escute</b> toda semana.</li>
+<li><b>Divida o tempo</b>: técnica, repertório, improviso, ouvido e teoria (o plano do dia faz isso por você).</li>
+<li><b>Saúde</b>: aqueça antes, alongue depois, faça pausas a cada 25–30 minutos. Dor não é normal: pare e descanse.</li></ul>`,
+      demo:{ kind:'none' },
+      tasks:['Use o plano do dia por 2 semanas sem falhar.','Escolha uma meta medível para o mês.'],
+      links:[{ to:'hoje', label:'Plano de hoje' }] },
+    { id:'transcrever', title:'Tirar música de ouvido', min:20,
+      body:`<ol><li>Descubra o <b>tom</b>: procure a nota que “resolve” no fim das frases, ou a nota que o baixo mais repete.</li>
+<li>Ouça a <b>pentatônica</b> desse tom: a maioria das frases de rock, blues e pop sai dela.</li>
+<li>Tire <b>uma frase curta</b> de cada vez. Cante antes de procurar na guitarra.</li>
+<li>Use velocidade reduzida e loop do trecho (no app, o loop A-B dos licks treina isso).</li>
+<li>Depois de tirar, escreva no editor de licks e toque em outros tons.</li></ol>`,
+      demo:{ kind:'none' },
+      tasks:['Tire de ouvido a melodia de uma música infantil ou do “parabéns”.','Tire uma frase de um solo que você gosta e salve no editor.'],
+      links:[{ to:'quiz', id:'ouvido', label:'Treino de ouvido' },{ to:'editor', label:'Editor de licks' }] },
+  ]},
+);
+
 /* ===== Trilha de aulas — módulos 5 a 8 ===== */
 MODULES.push(
   { id:'m5', title:'Pentatônica e blues', tag:'Rock e blues', lessons:[
@@ -2206,7 +2672,7 @@ MODULES.push(
 );
 
 /* ===== Nível e ordem dos módulos originais (roda depois de todos os módulos) ===== */
-Object.entries({ m1:[2, 1], m2:[2, 2], m3:[3, 1], m4:[3, 2], m5:[3, 3], m6:[4, 1], m7:[4, 2], m8:[5, 1] })
+Object.entries({ m1:[2, 1], m2:[2, 2], m3:[3, 1], m4:[3, 2], m5:[3, 3], m6:[4, 2], m7:[4, 3], m8:[5, 1] })
   .forEach(([id, [lv, o]]) => { const m = MODULES.find(x => x.id === id); if (m) { m.level = lv; m.order = o; } });
 
 /* ===== Licks, solos e exercícios ===== */
@@ -2324,6 +2790,44 @@ const SONGS = [
       { name:'Refrão', lines:['[C]Toca, toca, [G]não para,','[D]mão no ritmo e o cora[Em]ção,','[C]um acorde [G]puxa o outro','[D]e a estrada vira can[G]ção.'] },
     ] },
 ];
+
+/* ===== Licks de técnicas avançadas e jazz/fusion ===== */
+STYLES.tecnica = 'Técnicas avançadas';
+STYLES.jazz = 'Jazz / Fusion';
+(() => {
+  const rep = (s, n) => Array(n).fill(s).join(' ');
+  LICKS.push(
+    { id:'tap1', style:'tecnica', title:'Tapping em arpejos (Am–F–G–E)', key:'A', scale:'menor_harm', bpm:80, level:4, tech:'Tapping, pull-off, hammer-on',
+      chords:['Am','F','G','E'],
+      src:'|t ' + [rep('1:12t 1:5p 1:8h', 4), rep('1:13t 1:5p 1:8h', 4), rep('1:15t 1:7p 1:10h', 4), rep('1:12t 1:4p 1:7h', 4)].join(' '),
+      tip:'O dedo médio da mão direita bate na casa marcada com t e puxa a corda para soar a nota da mão esquerda (pull-off). Abafe as outras cordas com a palma da mão direita.' },
+    { id:'hib1', style:'tecnica', title:'Palhetada híbrida em arpejos', key:'A', scale:'maior', bpm:80, level:4, tech:'Palheta + dedos médio e anelar',
+      chords:['A','D'],
+      src:'|s ' + [rep('4:7 2:5 1:5 2:5 3:6 2:5 1:5 2:5', 2), rep('5:5 2:7 1:5 2:7 4:7 2:7 1:5 2:7', 2)].join(' '),
+      tip:'Palheta nas cordas graves (4 e 5) e dedo médio na corda 2, anelar na corda 1. Soa como dois violões ao mesmo tempo e é a base do country e do pop moderno.' },
+    { id:'harm1', style:'tecnica', title:'Harmônicos naturais', key:'E', scale:'maior', bpm:70, level:3, tech:'Harmônicos nas casas 12, 7 e 5',
+      src:'|q 6:12n 5:12n 4:12n 3:12n 2:12n 1:12n |h 3:7n+2:7n |q 6:5n 5:5n 4:5n 3:5n |h 2:5n+1:5n |h -',
+      tip:'Encoste o dedo de leve exatamente em cima do traste (sem apertar) e solte logo depois de palhetar. Use o captador da ponte e um pouco de ganho para soar mais.' },
+    { id:'skip1', style:'tecnica', title:'Oitavas pulando cordas', key:'A', scale:'pent_menor', bpm:90, level:3, tech:'String skipping',
+      src:'|e 6:5 4:7 6:8 4:10 5:5 3:7 5:7 3:9 4:5 2:8 4:7 2:10 |h 1:5~',
+      tip:'Cada par é a mesma nota em duas oitavas, com uma corda pulada no meio. Abafe a corda do meio com o dedo que está tocando a nota grave.' },
+    { id:'trill1', style:'tecnica', title:'Trinado e legato rápido', key:'A', scale:'dorico', bpm:70, level:4, tech:'Hammer-on e pull-off em sextinas',
+      src:'|x ' + [rep('2:5 2:7h 2:5p 2:7h 2:5p 2:7h', 2), '2:5 2:8h 2:5p 2:8h 2:5p 2:8h', '3:7 3:9h 3:7p 3:9h 3:7p 3:9h'].join(' ') + ' |h 3:7~ |h -',
+      tip:'Palhete só a primeira nota de cada grupo. O dedo que faz o pull-off puxa a corda um pouco para baixo, como se tocasse a corda com a mão esquerda.' },
+    { id:'jazz1', style:'jazz', title:'ii–V–I com notas do acorde', key:'C', scale:'maior', bpm:100, level:4, tech:'Arpejos de tétrades, nota de passagem',
+      chords:['Dm7','G7','C7M'],
+      src:'|e 5:5 4:3 4:7 3:5 2:6 3:5 4:7 4:3 4:9 3:7 3:10 2:8 2:6 3:9 3:7 4:9 |q 3:9 |e 2:8 1:7 |h 1:8~',
+      tip:'Compasso 1: arpejo de Dm7 (Ré Fá Lá Dó). Compasso 2: G7 começando na 3ª (Si), com Mi de passagem. Compasso 3: resolve na 3ª do C7M (Mi). Cada acorde ganha as notas dele.' },
+    { id:'fusion1', style:'jazz', title:'Enclosures: cercando a nota-alvo', key:'A', scale:'dorico', bpm:84, level:5, tech:'Aproximação cromática',
+      chords:['Am7','Am7'],
+      src:'|t 1:7 1:4 1:5 2:6 2:4 2:5 3:7 3:4 3:5 4:9 4:6 4:7 |q 5:7 4:5 |h 4:7~',
+      tip:'Cada grupo cerca uma nota do Am7: uma acima (da escala), uma meio tom abaixo, e cai na nota do acorde (Lá, Mi, Dó, Lá). É o jeito do jazz e do fusion de deixar a frase “com tensão”.' },
+    { id:'alt1', style:'jazz', title:'Escala alterada resolvendo em Am', key:'E', scale:'alterada', bpm:90, level:5, tech:'Tensões no acorde dominante',
+      chords:['E7(#9)','Am'],
+      src:'|e 1:8 1:6 1:4 2:8 2:6 3:7 3:5 3:3 |q 3:2 2:5 |h 1:5~',
+      tip:'Sobre o E7 a escala alterada traz ♭9, ♯9, ♭5 e ♯5: muita tensão. Ela resolve meio tom abaixo, no Lá do Am. Toque devagar para ouvir cada nota “puxando” para a resolução.' },
+  );
+})();
 
 /* ===== Progresso: conta (db) com cópia local ===== */
 const S = (() => {
@@ -2558,6 +3062,14 @@ const U = (() => {
           caption = `Forma ${sh.k} de ${T.chordName(root, q, st.latin)}, casas ${sh.lo} a ${sh.hi}.`;
         }
         break;
+      }
+      case 'arp': {
+        const ch = T.CHORDS[cfg.chord];
+        flats = T.useFlats(root, ch.iv.includes(3) ? 3 : 0);
+        const lo = cfg.lo ?? 0, hi = Math.min(cfg.hi ?? N, N);
+        marks = T.allNotes(ch.iv, root, hi, lo);
+        caption = `Arpejo de ${T.chordName(root, cfg.chord, st.latin)} entre as casas ${lo} e ${hi}.`;
+        seq = 'run'; break;
       }
       case 'lick': {
         const lk = lickById(cfg.lick);
@@ -3175,6 +3687,175 @@ const PT = (() => {
   return { start, stop: () => finish(false), get active() { return cur; } };
 })();
 
+/* ===== Componentes avançados: dicionário de acordes, campo harmônico, partitura ===== */
+Object.assign(T.CHORDS, { mmaj7: { name:'Menor com 7M', sym:'m(7M)', iv:[0,3,7,11] }, aummaj7: { name:'Aumentado com 7M', sym:'+(7M)', iv:[0,4,8,11] } });
+Object.assign(CH.SUFFIX, { 'm(7M)':'mmaj7', '+(7M)':'aummaj7' });
+Object.assign(QUAL_SUFFIX, { mmaj7:'m(7M)', aummaj7:'+(7M)' });
+VOICINGS.mmaj7 = [{ k:'Corda 5', rs:1, o:[-9,0,2,1,1,0] }];
+VOICINGS.aummaj7 = [{ k:'Corda 5', rs:1, o:[-9,0,-1,-2,-3,-9] }];
+
+const prettyChord = n => String(n).replace(/^([A-G])#/, '$1♯').replace(/^([A-G])b/, '$1♭').replace('(b5)', '(♭5)').replace('(b9)', '(♭9)').replace('(#9)', '(♯9)');
+const EXT_LABEL = { 1:'♭9', 2:'9', 3:'♯9', 9:'13' };
+function formula(q) {
+  const ext = ['nine', 'm9', 'maj9', 'b9', 's9', 'thirteen'].includes(q);
+  return T.CHORDS[q].iv.map((iv, i) => ext && i >= 4 && EXT_LABEL[iv] ? EXT_LABEL[iv] : T.ivLabel(iv));
+}
+const DICT_GROUPS = [
+  ['Tríades', ['maior', 'menor', 'dim', 'aum', 'sus2', 'sus4', 'power']],
+  ['Tétrades', ['maj7', 'm7', 'dom7', 'm7b5', 'dim7', 'six', 'm6', 'mmaj7']],
+  ['Extensões', ['nine', 'm9', 'maj9', 'thirteen', 'b9', 's9']],
+];
+
+W.dict = (host, cfg = {}) => {
+  let root = T.pcOf(cfg.root || 'C'), q = cfg.q || 'maior';
+  host.innerHTML = `<div class="ctrl-row"><label class="field">Tônica <select data-root id="dict-root">${U.rootOptions(root)}</select></label></div>
+    ${DICT_GROUPS.map(([g, qs]) => `<div class="ctrl-row"><span class="small grp">${g}</span>${U.chips('q', qs.map(k => ({ v: k, label: k === 'maior' ? 'maior' : prettyChord('C' + QUAL_SUFFIX[k]).slice(1) })), q)}</div>`).join('')}
+    <div class="dict-head" data-head></div>
+    <div class="chord-row" data-voicings></div>`;
+  const $ = s => host.querySelector(s);
+  function paint() {
+    const flats = T.useFlats(root, T.CHORDS[q].iv.includes(3) ? 3 : 0);
+    const name = (flats ? T.FLAT : T.SHARP)[root] + (QUAL_SUFFIX[q] ?? '');
+    const ivs = T.CHORDS[q].iv, labels = formula(q);
+    $('[data-head]').innerHTML = `<h3>${prettyChord(name)}</h3><p class="small">${T.CHORDS[q].name}</p>
+      <div class="degrees">${ivs.map((iv, i) => `<div class="deg iv-${T.IV_ROLE[iv]}"><b>${T.noteName(root + iv, flats, U.set().latin)}</b><span>${labels[i]}</span></div>`).join('')}</div>`;
+    const vs = CH.voicings(root, q);
+    $('[data-voicings]').innerHTML = vs.length ? vs.map((v, i) => `<button type="button" class="chord-card" data-v="${i}"><b>${prettyChord(name)}</b><small>${v.k}</small>${CH.diagram(v)}</button>`).join('')
+      : '<p class="small">Sem forma cadastrada para este acorde.</p>';
+    paint.vs = vs;
+    host.querySelectorAll('[data-chips="q"] .chip').forEach(c => c.classList.toggle('on', c.dataset.v === q));
+  }
+  host.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips="q"] .chip'); if (chip) { q = chip.dataset.v; paint(); return; }
+    const c = e.target.closest('[data-v]');
+    if (c && paint.vs) { const v = paint.vs[+c.dataset.v]; A.init(); const t = A.now() + 0.03; CH.voicing(v).forEach((n, i) => A.play(n.midi, t + i * 0.025, { dur: 1.8, vel: 0.55, string: n.s })); }
+  });
+  host.addEventListener('change', e => { if (e.target.matches('[data-root]')) { root = +e.target.value; paint(); } });
+  paint();
+  return () => A.stopAll();
+};
+
+const PROG_MAJOR = [[1, 5, 6, 4], [6, 4, 1, 5], [1, 6, 4, 5], [1, 4, 5, 4], [2, 5, 1, 1], [4, 5, 3, 6], [1, 4, 6, 5]];
+const PROG_MINOR = [[1, 4, 5, 1], [1, 6, 3, 7], [1, 7, 6, 7], [1, 4, 7, 3], [2, 5, 1, 1]];
+const PROG_NAMED = { 'ii-V-I': [2, 5, 1, 1], 'I-V-vi-IV': [1, 5, 6, 4] };
+
+W.campo = (host, cfg = {}) => {
+  let root = T.pcOf(cfg.root || 'C'), scale = cfg.scale || 'maior', tet = !!cfg.tetrads, view = 0, pi = 0, pattern = 'pop', bpm = 84;
+  const views = cfg.views;
+  const progs = () => scale === 'maior' ? PROG_MAJOR : PROG_MINOR;
+  if (cfg.prog && PROG_NAMED[cfg.prog]) pi = Math.max(0, progs().findIndex(p => p.join() === PROG_NAMED[cfg.prog].join()));
+  host.innerHTML = `
+    ${views ? `<div class="ctrl-row" data-views></div>` : ''}
+    <div class="ctrl-row"><label class="field">Tom <select data-root id="campo-root">${U.rootOptions(root)}</select></label>
+      ${U.chips('tet', [{ v: 0, label: 'Tríades' }, { v: 1, label: 'Tétrades' }], tet ? 1 : 0)}</div>
+    <div class="campo" data-grid></div>
+    <p class="small">T = tônica (repouso) · SD = subdominante (afastamento) · D = dominante (tensão). Toque num acorde para ouvir.</p>
+    <div class="prog-box">
+      <p class="eyebrow">Progressões</p>
+      <div class="ctrl-row" data-progs></div>
+      <ol class="bars" data-bars></ol>
+      <div class="ctrl-row">
+        <button type="button" class="btn primary" data-act="play">▶ Tocar progressão</button>
+        ${U.chips('pat', [{ v: 'pop', label: 'Pop' }, { v: 'balada', label: 'Balada' }, { v: 'rock', label: 'Rock' }, { v: 'semi', label: '1 por tempo' }], pattern)}
+        <label class="field">Andamento <input type="range" min="50" max="150" value="${bpm}" data-bpm id="campo-bpm"> <b data-bpmv>${bpm}</b></label>
+      </div>
+    </div>`;
+  const $ = s => host.querySelector(s);
+  let degs = [];
+  const player = RH.Strummer({ onSlot(bar) { host.querySelectorAll('[data-bars] li').forEach((li, i) => li.classList.toggle('on', i === bar)); } });
+  const chordsOf = p => p.map(d => tet ? degs[d - 1].tetrad : degs[d - 1].triad);
+  function paint() {
+    degs = harmonize(root, scale);
+    if (views) $('[data-views]').innerHTML = U.chips('cview', views.map((v, i) => ({ v: i, label: v.label })), view);
+    $('[data-grid]').innerHTML = degs.map((d, i) => `<button type="button" class="campo-deg fn-${d.fn}" data-deg="${i}">
+      <span class="roman">${d.roman}</span><b>${prettyChord(tet ? d.tetrad : d.triad)}</b><span class="fn">${d.fn}</span>${CH.diagram(CH.get(tet ? d.tetrad : d.triad))}</button>`).join('');
+    $('[data-progs]').innerHTML = U.chips('prog', progs().map((p, i) => ({ v: i, label: p.map(x => degs[x - 1].roman).join('–') })), pi);
+    $('[data-bars]').innerHTML = chordsOf(progs()[pi]).map(c => `<li>${prettyChord(c)}</li>`).join('');
+  }
+  function restart() { if (player.running) player.start({ pattern, chords: chordsOf(progs()[pi]), bpm }); }
+  host.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips] .chip');
+    if (chip) {
+      const g = chip.parentElement.dataset.chips;
+      if (g === 'tet') tet = chip.dataset.v === '1';
+      if (g === 'prog') pi = +chip.dataset.v;
+      if (g === 'pat') pattern = chip.dataset.v;
+      if (g === 'cview') { view = +chip.dataset.v; scale = views[view].scale; pi = Math.min(pi, progs().length - 1); }
+      paint(); restart(); return;
+    }
+    const d = e.target.closest('[data-deg]'); if (d) { CH.strum(tet ? degs[+d.dataset.deg].tetrad : degs[+d.dataset.deg].triad); return; }
+    const b = e.target.closest('[data-act="play"]');
+    if (b) { if (player.running) { player.stop(); b.textContent = '▶ Tocar progressão'; } else { player.start({ pattern, chords: chordsOf(progs()[pi]), bpm }); b.textContent = '■ Parar'; S.practiced(); } }
+  });
+  host.addEventListener('change', e => { if (e.target.matches('[data-root]')) { root = +e.target.value; paint(); restart(); } });
+  host.addEventListener('input', e => { if (e.target.matches('[data-bpm]')) { bpm = +e.target.value; $('[data-bpmv]').textContent = bpm; player.setBpm(bpm); } });
+  paint();
+  return () => player.stop();
+};
+
+W.staff = (host, cfg = {}) => {
+  const latin = () => U.set().latin;
+  if (cfg.mode === 'melody') {
+    const lk = lickById(cfg.lick), parsed = TAB.parse(lk.src);
+    const flats = T.useFlats(T.pcOf(lk.key), T.SCALES[lk.scale]?.parent || 0);
+    host.innerHTML = `<div class="staff-wrap" data-st>${STAFF.render(STAFF.fromTab(parsed), { flats })}</div>
+      <div class="tab-scroll" data-tab></div>
+      <div class="ctrl-row"><button type="button" class="btn primary" data-act="play">▶ Tocar</button>
+        <label class="check"><input type="checkbox" data-hide id="staff-hide"> Esconder a tablatura</label></div>`;
+    const hl = TAB.render(host.querySelector('[data-tab]'), parsed);
+    const btn = host.querySelector('[data-act="play"]');
+    const pl = TAB.Player({ onEvent(i) { hl(i); host.querySelectorAll('.rn-head.on').forEach(h => h.classList.remove('on')); host.querySelector(`.rn-head[data-n="${i}"]`)?.classList.add('on'); },
+      onEnd() { btn.textContent = '▶ Tocar'; } });
+    btn.addEventListener('click', () => { if (pl.playing) { pl.stop(); btn.textContent = '▶ Tocar'; } else { pl.play(parsed, { bpm: lk.bpm, click: true }); btn.textContent = '■ Parar'; S.practiced(); } });
+    host.querySelector('[data-hide]').addEventListener('change', e => { host.querySelector('[data-tab]').hidden = e.target.checked; });
+    return () => pl.stop();
+  }
+  const NAT = [0, 2, 4, 5, 7, 9, 11];
+  const sets = { cordas123: [55, 67], primeira: [40, 67], acidentes: [40, 67] };
+  const [lo, hi] = sets[cfg.set] || sets.primeira;
+  const pool = []; for (let m = lo; m <= hi; m++) if (cfg.set === 'acidentes' || NAT.includes(T.mod(m))) pool.push(m);
+  let cur = null, flats = false, streak = 0, best = 0, locked = false;
+  host.innerHTML = `<div class="ctrl-row"><span class="pill" data-streak>Sequência: 0</span><span class="small" data-best></span></div>
+    <div class="staff-wrap single" data-st></div>
+    <div class="answers" data-ans></div>
+    <p class="feedback" data-fbk aria-live="polite"></p>
+    <div data-fb></div>`;
+  const $ = s => host.querySelector(s);
+  const fb = FB.create($('[data-fb]'));
+  const opts = cfg.set === 'acidentes'
+    ? T.ROOTS.map((r, i) => ({ v: i, label: T.noteName(i, false, latin()) + ([1, 3, 6, 8, 10].includes(i) ? ' / ' + T.noteName(i, true, latin()) : '') }))
+    : NAT.map(i => ({ v: i, label: T.noteName(i, false, latin()) }));
+  $('[data-ans]').innerHTML = opts.map(o => `<button type="button" class="btn ans" data-a="${o.v}">${o.label}</button>`).join('');
+  function next() {
+    locked = false;
+    let m; do { m = pool[Math.floor(Math.random() * pool.length)]; } while (cur && m === cur.m && pool.length > 1);
+    flats = cfg.set === 'acidentes' ? Math.random() < 0.5 : false;
+    cur = { m };
+    $('[data-st]').innerHTML = STAFF.render([{ midi: m }], { flats, width: 150 });
+    $('[data-fbk]').textContent = ''; $('[data-fbk]').className = 'feedback';
+    host.querySelectorAll('.ans').forEach(b => b.classList.remove('ok', 'bad'));
+    fb.set(U.fbState({ frets: 5, marks: [] }));
+  }
+  host.addEventListener('click', e => {
+    const a = e.target.closest('[data-a]'); if (!a || locked) return;
+    locked = true;
+    const ok = +a.dataset.a === T.mod(cur.m);
+    a.classList.add(ok ? 'ok' : 'bad');
+    streak = ok ? streak + 1 : 0; best = Math.max(best, streak);
+    $('[data-streak]').textContent = `Sequência: ${streak}`; $('[data-best]').textContent = best ? `Melhor: ${best}` : '';
+    const nm = T.noteName(cur.m, flats, latin()), pos = [];
+    for (let s = 0; s < 6; s++) { const f = cur.m - T.TUNING[s]; if (f >= 0 && f <= 5) pos.push(T.mark(s, f, T.mod(cur.m))); }
+    $('[data-fbk]').textContent = ok ? `Certo: ${nm}.` : `Era ${nm}.`;
+    $('[data-fbk]').className = 'feedback ' + (ok ? 'ok' : 'bad');
+    fb.set({ marks: pos.map(p => Object.assign(p, { role: 'r' })), labels: 'note' });
+    A.play(cur.m, null, { dur: 1 });
+    if (ok) S.practiced();
+    setTimeout(next, ok ? 900 : 1800);
+  });
+  next();
+};
+
+
 /* ===== Trilha (por níveis) e aula ===== */
 const V = {};
 const MODS = () => MODULES.slice().sort((a, b) => (a.level || 9) - (b.level || 9) || (a.order || 0) - (b.order || 0));
@@ -3182,7 +3863,7 @@ const ALL_LESSONS = () => MODS().flatMap(m => m.lessons.map((l, li) => Object.as
 const levelOf = n => LEVELS.find(l => l.n === n);
 
 function linkHref(l) {
-  const map = { quiz:'#quiz-', treino:'#treino-', jam:'#jam-', licks:'#lick-', levadas:'#levadas-' };
+  const map = { quiz:'#quiz-', treino:'#treino-', jam:'#jam-', licks:'#lick-', levadas:'#levadas-', aula:'#aula-' };
   if (map[l.to]) return l.id ? map[l.to] + l.id : '#' + (l.to === 'licks' ? 'licks' : l.to === 'levadas' ? 'levadas' : l.to);
   if (l.to === 'metronomo') return '#treino';
   return '#' + l.to;
@@ -3370,7 +4051,8 @@ const EXP = { type:'scale', root:9, scale:'pent_menor', pos:0, quality:'maior', 
 
 V.braco = (el) => {
   el.innerHTML = `
-    <header class="page-head"><p class="eyebrow">Explorador</p><h1>O braço inteiro, em qualquer tom</h1></header>
+    <header class="page-head"><p class="eyebrow">Braço</p><h1>O braço inteiro, em qualquer tom</h1></header>
+    ${bracoTabs('exp')}
     <section class="panel">
       <div class="explorer-ctrl" data-ctrl></div>
       <div data-fb></div>
@@ -3523,6 +4205,20 @@ V.hoje = (el) => {
     if (e.target.closest('[data-act="free"]')) { PT.start({ free: true }); U.toast('Cronômetro livre ligado: ele fica no topo da tela'); }
   });
   el.addEventListener('change', e => { if (e.target.matches('[data-goal]')) { S.update(s => { s.settings.weekGoal = +e.target.value; }); APP.rerender(); } });
+};
+
+/* ===== Telas do Braço: dicionário de acordes e campo harmônico ===== */
+function bracoTabs(active) {
+  return `<nav class="subtabs">${[['exp', 'braco', 'Explorador'], ['dict', 'acordes', 'Dicionário de acordes'], ['campo', 'campo', 'Campo harmônico']]
+    .map(([k, h, l]) => `<a href="#${h}" class="${k === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
+}
+V.acordes = (el) => {
+  el.innerHTML = `<header class="page-head"><p class="eyebrow">Braço</p><h1>Dicionário de acordes</h1></header>${bracoTabs('dict')}<section class="panel" data-w></section>`;
+  return W.dict(el.querySelector('[data-w]'), { root: 'C', q: 'maior' });
+};
+V.campo = (el) => {
+  el.innerHTML = `<header class="page-head"><p class="eyebrow">Braço</p><h1>Campo harmônico</h1></header>${bracoTabs('campo')}<section class="panel" data-w></section>`;
+  return W.campo(el.querySelector('[data-w]'), { root: 'C', scale: 'maior', views: [{ label: 'Maior', scale: 'maior' }, { label: 'Menor natural', scale: 'menor' }, { label: 'Menor harmônica', scale: 'menor_harm' }] });
 };
 
 /* ===== Biblioteca de licks ===== */
@@ -4493,6 +5189,8 @@ const APP = (() => {
     if (h === 'jam' || pre('jam-') != null) return ['treino', el => V.jam(el, pre('jam-'))];
     if (h === 'quiz' || pre('quiz-') != null) return ['quiz', el => V.quiz(el, pre('quiz-'))];
     if (h === 'braco') return ['braco', el => V.braco(el)];
+    if (h === 'acordes') return ['braco', el => V.acordes(el)];
+    if (h === 'campo') return ['braco', el => V.campo(el)];
     if (h === 'progresso') return ['progresso', el => V.progresso(el)];
     return ['trilha', el => V.trilha(el)];
   }

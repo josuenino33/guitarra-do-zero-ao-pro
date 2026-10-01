@@ -52,7 +52,7 @@ const CH = (() => {
     const m = String(name).match(/^([A-G])([#b]?)(.*?)(?:\/([A-G][#b]?))?$/);
     if (!m) return null;
     const root = T.pcOf(m[1] + m[2]);
-    const q = SUFFIX[m[3]] || 'maior';
+    const q = SUFFIX[m[3]] ?? null;
     return { root, q, suffix: m[3], bass: m[4] ? T.pcOf(m[4]) : null, name };
   }
 
@@ -79,7 +79,7 @@ const CH = (() => {
   /** Forma de um acorde pelo nome (aberta quando existe, senão com pestana). */
   function get(name, prefer) {
     if (!prefer && OPEN[name]) return Object.assign({ name }, OPEN[name]);
-    const p = parse(name); if (!p) return null;
+    const p = CH.parse(name); if (!p) return null;
     const sh = movable(p, prefer);
     return sh ? Object.assign({ name }, sh) : (OPEN[name] ? Object.assign({ name }, OPEN[name]) : null);
   }
@@ -111,7 +111,7 @@ const CH = (() => {
       p.push(`<rect class="cd-barre" x="${x(shape.b.from) - 7}" y="${y - 7}" width="${x(shape.b.to) - x(shape.b.from) + 14}" height="14" rx="7"/>`);
       p.push(`<text class="cd-fing" x="${x(shape.b.from)}" y="${y + 4}" text-anchor="middle">1</text>`);
     }
-    const rootPc = parse(shape.name)?.root;
+    const rootPc = CH.parse(shape.name)?.root;
     shape.f.forEach((f, s) => {
       if (f <= 0 || (shape.b && f === shape.b.f && s >= shape.b.from && s <= shape.b.to && shape.d[s] === 1)) return;
       const y = top + (f - base + 0.5) * gy;
@@ -124,17 +124,17 @@ const CH = (() => {
 
   /** Cartão com nome + diagrama; clicável para ouvir. */
   function card(name, o = {}) {
-    const sh = get(name, o.prefer);
+    const sh = CH.get(name, o.prefer);
     return `<button type="button" class="chord-card" data-chord="${name}" ${o.prefer ? `data-prefer="${o.prefer}"` : ''} aria-label="Ouvir ${name}">
       <b>${name}</b>${o.prefer ? `<small>forma de ${o.prefer}</small>` : ''}${diagram(sh)}</button>`;
   }
 
   /** Toca o acorde como uma palhetada para baixo. */
   function strum(name, when, o = {}) {
-    const sh = get(name, o.prefer); if (!sh) return;
+    const sh = CH.get(name, o.prefer); if (!sh) return;
     const t = when ?? A.now() + 0.03;
     voicing(sh).forEach((v, i) => A.play(v.midi, t + i * 0.022, { dur: o.dur ?? 1.8, vel: o.vel ?? 0.55, string: v.s }));
   }
 
-  return { OPEN, parse, get, voicing, diagram, card, strum };
+  return { OPEN, SUFFIX, parse, get, voicing, diagram, card, strum };
 })();

@@ -85,6 +85,8 @@ const APP = (() => {
     if (h === 'jam' || pre('jam-') != null) return ['treino', el => V.jam(el, pre('jam-'))];
     if (h === 'quiz' || pre('quiz-') != null) return ['quiz', el => V.quiz(el, pre('quiz-'))];
     if (h === 'braco') return ['braco', el => V.braco(el)];
+    if (h === 'acordes') return ['braco', el => V.acordes(el)];
+    if (h === 'campo') return ['braco', el => V.campo(el)];
     if (h === 'progresso') return ['progresso', el => V.progresso(el)];
     return ['trilha', el => V.trilha(el)];
   }
