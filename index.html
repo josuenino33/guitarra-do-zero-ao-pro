@@ -532,6 +532,39 @@ code { font: 13px var(--f-mono); background: var(--surface-2); padding: 1px 5px;
 @media (max-width: 760px) {
   .campo { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* ===== patente, desafio e conquistas ===== */
+.rank-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.rank-name { font: 700 34px/1 var(--f-display); }
+.xp { font: 600 15px var(--f-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.rank .small { margin-top: 8px; }
+.challenge .ch-text { font-size: 18px; font-weight: 700; margin-bottom: 12px; max-width: 50ch; }
+.challenge.done { border-color: var(--ok); }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-block: 8px; }
+.badge { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--line); color: var(--muted); }
+.badge i { font: normal 700 18px/1 var(--f-display); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); margin-bottom: 4px; }
+.badge b { font-size: 14px; color: var(--muted); }
+.badge span { font-size: 12px; }
+.badge.on { border-style: solid; border-color: var(--line); color: var(--fg); }
+.badge.on i { background: var(--accent); color: var(--accent-ink); }
+.badge.on b { color: var(--fg); }
+
+/* ===== repertório ===== */
+details[data-formbox] > summary { list-style: none; display: inline-flex; }
+details[data-formbox] > summary::-webkit-details-marker { display: none; }
+.song-form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-top: 14px; }
+.song-form textarea { flex: 1 1 100%; }
+.song-form .field.block { flex: 1 1 100%; margin: 0; }
+.songs { list-style: none; margin: 4px 0 0; padding: 0; counter-reset: sg; }
+.songs li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.songs li .ctrl-row { margin: 0; }
+.sg-main { display: flex; flex-direction: column; min-width: 0; flex: 1 1 260px; }
+.sg-main b { font-size: 17px; }
+.sg-notes { font-style: italic; }
+.setlist li { counter-increment: sg; }
+.setlist li .sg-main b::before { content: counter(sg) '. '; color: var(--accent); }
+.empty p { max-width: 60ch; }
+.songs select { font-size: 14px; }
 </style>
 </head><body>
 <div class="app">
@@ -1304,24 +1337,24 @@ const RH = (() => {
   }
 
   /** Toca um golpe de palheta no acorde. */
-  function hit(sym, chordName, t, slotDur, accent) {
+  function hit(sym, chordName, t, slotDur, accent, bus) {
     if (sym === '-') return;
     const sh = CH.get(chordName); if (!sh) return;
     const v = CH.voicing(sh);
     const vel = (accent ? 0.62 : 0.48);
     if (sym === 'X' || sym === 'x') {
       chuck(t, sym === 'X' ? 1 : 0.6);
-      v.slice(sym === 'X' ? 0 : 2).forEach((n, i) => A.play(n.midi, t + i * 0.006, { dur: 0.05, vel: 0.35, mute: true, string: n.s }));
+      v.slice(sym === 'X' ? 0 : 2).forEach((n, i) => A.play(n.midi, t + i * 0.006, { dur: 0.05, vel: 0.35, mute: true, string: bus ? 'bk' + n.s : n.s, bus }));
       return;
     }
     if (sym === 'B' || sym === 'b') {
       const n = sym === 'B' ? v[0] : (v[1] || v[0]);
-      A.play(n.midi, t, { dur: slotDur * 1.9, vel: 0.7, string: n.s });
+      A.play(n.midi, t, { dur: slotDur * 1.9, vel: 0.7, string: bus ? 'bk' + n.s : n.s, bus });
       return;
     }
     const notes = sym === 'U' ? v.slice(-4).reverse() : (sym === 'D' ? v : v);
     const ring = Math.max(0.25, slotDur * 2.2);
-    notes.forEach((n, i) => A.play(n.midi, t + i * (sym === 'U' ? 0.012 : 0.016), { dur: ring, vel: sym === 'U' ? vel * 0.82 : vel, string: n.s }));
+    notes.forEach((n, i) => A.play(n.midi, t + i * (sym === 'U' ? 0.012 : 0.016), { dur: ring, vel: sym === 'U' ? vel * 0.82 : vel, string: bus ? 'bk' + n.s : n.s, bus }));
   }
 
   /**
@@ -1710,7 +1743,8 @@ const STAFF = (() => {
       const w = timed ? Math.max(26, (n.d || 1) * unit) : 56;
       beat += n.d || 1;
       x += w;
-      if (timed && Math.abs(beat / per - Math.round(beat / per)) < 1e-6) { it.barAfter = x - w / 2 + 4 + (w / 2); x += 10; }
+      const rel = (beat - (o.pickup || 0)) / per;
+      if (timed && rel > 1e-6 && Math.abs(rel - Math.round(rel)) < 1e-6) { it.barAfter = x + 4; x += 10; }
       return it;
     });
     const W = Math.max(o.width || 0, x + 16), H = bottom + 46;
@@ -1910,26 +1944,28 @@ const TAB = (() => {
     return t;
   }
 
-  function countLabel(beat) {
-    const r = Math.round(beat * 6) / 6;
-    if (Math.abs(r - Math.round(r)) < 1e-6) return String((Math.round(r) % 4) + 1);
+  function countLabel(beat, meter = 4, pickup = 0) {
+    const r = Math.round((beat - pickup) * 6) / 6;
+    if (Math.abs(r - Math.round(r)) < 1e-6) return String(T.mod(Math.round(r), meter) + 1);
     if (Math.abs(r - Math.floor(r) - 0.5) < 1e-6) return '&';
     return '';
   }
 
   /** Desenha a tablatura dentro de `host`; retorna função para destacar evento. */
-  function render(host, parsed, beatsPerBar = 4) {
+  function render(host, parsed, opt = 4) {
+    const beatsPerBar = typeof opt === 'number' ? opt : (opt.meter || 4), pickup = typeof opt === 'number' ? 0 : (opt.pickup || 0);
     const cols = [];
     const bar = () => cols.push(`<div class="tab-bar" aria-hidden="true"></div>`);
     bar();
     parsed.events.forEach((e, i) => {
-      if (i > 0 && Math.abs(e.beat / beatsPerBar - Math.round(e.beat / beatsPerBar)) < 1e-6) bar();
+      const rel = (e.beat - pickup) / beatsPerBar;
+      if (i > 0 && rel > 1e-6 && Math.abs(rel - Math.round(rel)) < 1e-6) bar();
       const rows = ['', '', '', '', '', ''];
       e.notes.forEach(o => { rows[o.n - 1] = noteLabel(o); });
       const maxLen = Math.max(1, ...rows.map(r => r.length));
       const w = Math.max(maxLen + 1.4, Math.round(e.d * 6) + 1);
       const pm = e.notes.some(o => o.pm) ? '<i>PM</i>' : '';
-      cols.push(`<div class="tab-col" data-i="${i}" style="--w:${w}"><span class="tab-top">${countLabel(e.beat)}${pm}</span>` +
+      cols.push(`<div class="tab-col" data-i="${i}" style="--w:${w}"><span class="tab-top">${countLabel(e.beat, beatsPerBar, pickup)}${pm}</span>` +
         rows.map(r => `<span class="tab-cell">${r ? `<b>${r.replace(/[<>\\]/g, c => ({ '<': '&lt;', '>': '&gt;', '\\': '&#92;' })[c])}</b>` : ''}</span>`).join('') + `</div>`);
     });
     bar();
@@ -1964,10 +2000,11 @@ const TAB = (() => {
   }
 
   /** Agenda as notas de uma tablatura a partir de t0. onEv(i, t) para cada evento. */
-  function scheduleNotes(parsed, t0, bpm, onEv) {
+  function scheduleNotes(parsed, t0, bpm, onEv, swing) {
     const spb = 60 / bpm;
     parsed.events.forEach((e, i) => {
-      const t = t0 + e.beat * spb;
+      const fr = e.beat - Math.floor(e.beat);
+      const t = t0 + (e.beat + (swing && Math.abs(fr - 0.5) < 1e-6 ? 1 / 6 : 0)) * spb;
       onEv && onEv(i, t);
       const isLast = i === parsed.events.length - 1;
       e.notes.forEach(o => {
@@ -1990,10 +2027,10 @@ const TAB = (() => {
     let raf = null, sched = [], tEnd = 0, opt = {}, parsed = null, playing = false, lastIdx = -1;
 
     function schedule(t0) {
-      scheduleNotes(parsed, t0, opt.bpm, (i, t) => sched.push({ i, t }));
+      scheduleNotes(parsed, t0, opt.bpm, (i, t) => sched.push({ i, t }), opt.swing);
       if (opt.click) {
-        const spb = 60 / opt.bpm, beats = Math.ceil(parsed.beats);
-        for (let b = 0; b < beats; b++) A.click(t0 + b * spb, b % 4 === 0);
+        const spb = 60 / opt.bpm, beats = Math.ceil(parsed.beats), m = opt.meter || 4, pk = opt.pickup || 0;
+        for (let b = 0; b < beats; b++) A.click(t0 + b * spb, T.mod(b - pk, m) === 0);
       }
       return t0 + parsed.beats * 60 / opt.bpm;
     }
@@ -2018,7 +2055,7 @@ const TAB = (() => {
       parsed = p; opt = Object.assign({ bpm: 90, loop: false, click: false, countIn: true }, o);
       const spb = 60 / opt.bpm;
       let t0 = A.now() + 0.12;
-      if (opt.countIn) { for (let b = 0; b < 4; b++) A.click(t0 + b * spb, b === 0); t0 += 4 * spb; }
+      if (opt.countIn) { const m = opt.meter || 4; for (let b = 0; b < m; b++) A.click(t0 + b * spb, b === 0); t0 += m * spb; }
       sched = []; lastIdx = -2; playing = true;
       tEnd = schedule(t0);
       raf = requestAnimationFrame(loop);
@@ -2453,7 +2490,7 @@ MODULES.push(
     { id:'ler-melodia', title:'Lendo uma melodia', min:20,
       body:`<p>Juntando ritmo e notas, você lê uma melodia. A tablatura embaixo serve de conferência, mas tente ler a pauta primeiro: o nome da nota, onde ela fica e quanto tempo dura.</p>
 <p>Dica: leia sempre um pouco à frente do que está tocando, como na leitura de texto.</p>`,
-      demo:{ kind:'staff', mode:'melody', lick:'ex-melodia' },
+      demo:{ kind:'staff', mode:'melody', lick:'ex-melodia', more:['pd-ode', 'pd-green', 'pd-minueto'] },
       tasks:['Leia a melodia falando o nome das notas.','Toque olhando só para a pauta.'] },
   ]},
   { id:'impro', level:5, order:2, title:'Improvisação avançada', tag:'Linguagem', lessons:[
@@ -2846,6 +2883,40 @@ STYLES.jazz = 'Jazz / Fusion';
   );
 })();
 
+/* ===== Estudos originais e peças de domínio público, por nível ===== */
+STYLES.estudo = 'Estudos e peças';
+(() => {
+  const rep = (s, n) => Array(n).fill(s).join(' ');
+  const E = '6:0+5:2 6:0+5:2 6:0+5:4 6:0+5:4 6:0+5:2 6:0+5:2 6:0+5:4 6:0+5:4';
+  const Ab = '5:0+4:2 5:0+4:2 5:0+4:4 5:0+4:4 5:0+4:2 5:0+4:2 5:0+4:4 5:0+4:4';
+  const B = '5:2+4:4 5:2+4:4 5:2+4:6 5:2+4:6 5:2+4:4 5:2+4:4 5:2+4:6 5:2+4:6';
+  LICKS.push(
+    { id:'pd-brilha', style:'estudo', title:'Brilha, brilha, estrelinha', credit:'Melodia tradicional (domínio público)', key:'C', scale:'maior', bpm:90, level:1, tech:'Primeira melodia nas cordas 1 e 2',
+      src:'|q 2:1 2:1 1:3 1:3 1:5 1:5 |h 1:3 |q 1:1 1:1 1:0 1:0 2:3 2:3 |h 2:1 |q 1:3 1:3 1:1 1:1 1:0 1:0 |h 2:3 |q 1:3 1:3 1:1 1:1 1:0 1:0 |h 2:3 |q 2:1 2:1 1:3 1:3 1:5 1:5 |h 1:3 |q 1:1 1:1 1:0 1:0 2:3 2:3 |h 2:1',
+      tip:'Use um dedo por casa: casa 1 com o dedo 1, casa 3 com o dedo 3, casa 5 com o dedo 4. Cante a melodia enquanto toca.' },
+    { id:'pd-ode', style:'estudo', title:'Ode à Alegria', credit:'Beethoven, 9ª Sinfonia (domínio público)', key:'C', scale:'maior', bpm:100, level:1, tech:'Melodia por graus conjuntos',
+      src:'|q 1:0 1:0 1:1 1:3 1:3 1:1 1:0 2:3 2:1 2:1 2:3 1:0 |q. 1:0 |e 2:3 |h 2:3 |q 1:0 1:0 1:1 1:3 1:3 1:1 1:0 2:3 2:1 2:1 2:3 1:0 |q. 2:3 |e 2:1 |h 2:1',
+      tip:'Repare na semínima pontuada seguida de colcheia no fim de cada frase: conte “1 2 3 e 4”.' },
+    { id:'est-boogie', style:'estudo', title:'Estudo 1: boogie em Mi (12 compassos)', credit:'Estudo original do Mapa do Braço', key:'E', scale:'pent_menor', bpm:96, level:2, tech:'Shuffle com power chords', swing:true,
+      chords:['E7','E7','E7','E7','A7','A7','E7','E7','B7','A7','E7','B7'],
+      src:'|e ' + [E, E, E, E, Ab, Ab, E, E, B, Ab, E, B].join(' '),
+      tip:'O dedo 1 fica parado na casa 2 e o dedo 3 (ou 4) alterna para a casa 4. Palm mute leve e colcheias com swing. É a base de rock’n’roll e blues mais tocada da história.' },
+    { id:'est-funk', style:'estudo', title:'Estudo 2: riff de funk em Am7', credit:'Estudo original do Mapa do Braço', key:'A', scale:'dorico', bpm:88, level:2, tech:'Semicolcheias com notas abafadas',
+      src:'|s ' + rep('4:7 4:x 4:7 4:5 3:x 3:5 4:x 4:7 4:7 4:x 3:5 3:7 4:x 4:5 4:7 4:x', 2),
+      tip:'A mão direita faz semicolcheias sem parar; os “x” são notas abafadas com a mão esquerda solta sobre as cordas. As notas que soam devem ser curtas e secas.' },
+    { id:'pd-green', style:'estudo', title:'Greensleeves', credit:'Canção tradicional inglesa (domínio público)', key:'A', scale:'menor_harm', bpm:96, level:2, meter:3, pickup:1, tech:'Compasso 3/4 e anacruse',
+      src:'|q 3:2 |h 2:1 |q 2:3 |q. 1:0 |e 1:1 |q 1:0 |h 2:3 |q 2:0 |q. 3:0 |e 3:2 |q 2:0 |h 2:1 |q 3:2 |q. 3:2 |e 3:1 |q 3:2 |h 2:0 |q 3:1 |h 4:2 |q 3:2',
+      tip:'Compasso de 3 tempos que começa no tempo 3 (anacruse). Conte “3 | 1 2 3 | 1 2 3”. O Sol♯ vem da menor harmônica.' },
+    { id:'est-triades', style:'estudo', title:'Estudo 3: tríades em D–Bm–G–A', credit:'Estudo original do Mapa do Braço', key:'D', scale:'maior', bpm:80, level:3, tech:'Tríades arpejadas nas cordas 1-2-3',
+      chords:['D','Bm','G','A'],
+      src:'|e ' + ['3:2 2:3 1:2 2:3 3:2 2:3 1:2 2:3', '3:4 2:3 1:2 2:3 3:4 2:3 1:2 2:3', '3:4 2:3 1:3 2:3 3:4 2:3 1:3 2:3', '3:2 2:2 1:0 2:2 3:2 2:2 1:0 2:2'].join(' '),
+      tip:'Cada acorde muda o mínimo possível de notas: de D para Bm só a nota da corda 3 se move. Deixe as notas soarem juntas, como um piano.' },
+    { id:'pd-minueto', style:'estudo', title:'Minueto em Sol', credit:'Christian Petzold, atribuído a J. S. Bach (domínio público)', key:'G', scale:'maior', bpm:100, level:3, meter:3, tech:'Leitura em 3/4 na primeira posição',
+      src:'|q 2:3 |e 3:0 3:2 2:0 2:1 |q 2:3 3:0 3:0 1:0 |e 2:1 2:3 1:0 1:2 |q 1:3 3:0 3:0 2:1 |e 2:3 2:1 2:0 3:2 |q 2:0 |e 2:1 2:0 3:2 3:0 |q 4:4 |e 3:0 3:2 2:0 3:0 |h. 3:2',
+      tip:'Os primeiros 8 compassos da peça mais tocada por estudantes de música. Leia também na partitura (aula “Lendo uma melodia”) e toque com metrônomo em 3.' },
+  );
+})();
+
 /* ===== Progresso: conta (db) com cópia local ===== */
 const S = (() => {
   const KEY = 'mapa-do-braco-v1';
@@ -3137,7 +3208,7 @@ const U = (() => {
     const sfx = lick.id + (opts.idSuffix || '');
     host.innerHTML = `
       <div class="lick-head">
-        <div><h3>${esc(lick.title)}</h3>
+        <div><h3>${esc(lick.title)}</h3>${lick.credit ? `<p class="small">${esc(lick.credit)}</p>` : ''}
           <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span><span>Tom: ${T.rootName(root, set().latin)}</span><span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
       </div>
       ${lick.chords ? `<p class="chords">${lick.chords.map((c, i) => `<span>${i + 1}</span>${esc(c)}`).join('')}</p>` : ''}
@@ -3155,7 +3226,8 @@ const U = (() => {
       <p class="tu-msg" data-micmsg aria-live="polite" hidden></p>
       <p class="tip"><b>${esc(lick.tech)}.</b> ${esc(lick.tip)}</p>`;
     const tabHost = host.querySelector('[data-tab]');
-    const highlight = TAB.render(tabHost, parsed);
+    const meterOpt = { meter: lick.meter || 4, pickup: lick.pickup || 0 };
+    const highlight = TAB.render(tabHost, parsed, meterOpt);
     const btn = host.querySelector('[data-act="play"]');
     let A0 = null, B0 = null, offset = 0;
     const setActive = ev => fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
@@ -3184,7 +3256,9 @@ const U = (() => {
     function play() {
       opts.onPlay && opts.onPlay();
       const pct = +host.querySelector('[data-speed]').value;
-      player.play(sub(), { bpm: lick.bpm * pct / 100, loop: B0 != null || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked });
+      const ab = B0 != null;
+      player.play(sub(), { bpm: lick.bpm * pct / 100, loop: ab || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked,
+        meter: meterOpt.meter, pickup: ab ? 0 : meterOpt.pickup, swing: !!lick.swing });
       btn.textContent = '■ Parar'; btn.classList.add('on');
       S.practiced();
     }
@@ -3813,19 +3887,29 @@ W.campo = (host, cfg = {}) => {
 W.staff = (host, cfg = {}) => {
   const latin = () => U.set().latin;
   if (cfg.mode === 'melody') {
-    const lk = lickById(cfg.lick), parsed = TAB.parse(lk.src);
-    const flats = T.useFlats(T.pcOf(lk.key), T.SCALES[lk.scale]?.parent || 0);
-    host.innerHTML = `<div class="staff-wrap" data-st>${STAFF.render(STAFF.fromTab(parsed), { flats })}</div>
-      <div class="tab-scroll" data-tab></div>
-      <div class="ctrl-row"><button type="button" class="btn primary" data-act="play">▶ Tocar</button>
-        <label class="check"><input type="checkbox" data-hide id="staff-hide"> Esconder a tablatura</label></div>`;
-    const hl = TAB.render(host.querySelector('[data-tab]'), parsed);
-    const btn = host.querySelector('[data-act="play"]');
-    const pl = TAB.Player({ onEvent(i) { hl(i); host.querySelectorAll('.rn-head.on').forEach(h => h.classList.remove('on')); host.querySelector(`.rn-head[data-n="${i}"]`)?.classList.add('on'); },
-      onEnd() { btn.textContent = '▶ Tocar'; } });
-    btn.addEventListener('click', () => { if (pl.playing) { pl.stop(); btn.textContent = '▶ Tocar'; } else { pl.play(parsed, { bpm: lk.bpm, click: true }); btn.textContent = '■ Parar'; S.practiced(); } });
-    host.querySelector('[data-hide]').addEventListener('change', e => { host.querySelector('[data-tab]').hidden = e.target.checked; });
-    return () => pl.stop();
+    const ids = [cfg.lick].concat(cfg.more || []);
+    let cur = 0, pl = null;
+    host.innerHTML = `${ids.length > 1 ? `<div class="ctrl-row" data-pieces></div>` : ''}<div data-melody></div>`;
+    const paint = () => {
+      pl && pl.stop();
+      const lk = lickById(ids[cur]), parsed = TAB.parse(lk.src);
+      const flats = T.useFlats(T.pcOf(lk.key), T.SCALES[lk.scale]?.parent || 0);
+      if (ids.length > 1) host.querySelector('[data-pieces]').innerHTML = U.chips('piece', ids.map((id, i) => ({ v: i, label: lickById(id).title })), cur);
+      const box = host.querySelector('[data-melody]');
+      box.innerHTML = `${lk.credit ? `<p class="small">${U.esc(lk.credit)}</p>` : ''}<div class="staff-wrap" data-st>${STAFF.render(STAFF.fromTab(parsed), { flats, per: lk.meter || 4, pickup: lk.pickup || 0 })}</div>
+        <div class="tab-scroll" data-tab></div>
+        <div class="ctrl-row"><button type="button" class="btn primary" data-act="play">▶ Tocar</button>
+          <label class="check"><input type="checkbox" data-hide id="staff-hide-${cur}"> Esconder a tablatura</label></div>`;
+      const hl = TAB.render(box.querySelector('[data-tab]'), parsed, { meter: lk.meter || 4, pickup: lk.pickup || 0 });
+      const btn = box.querySelector('[data-act="play"]');
+      pl = TAB.Player({ onEvent(i) { hl(i); box.querySelectorAll('.rn-head.on').forEach(h => h.classList.remove('on')); box.querySelector(`.rn-head[data-n="${i}"]`)?.classList.add('on'); },
+        onEnd() { btn.textContent = '▶ Tocar'; } });
+      btn.addEventListener('click', () => { if (pl.playing) { pl.stop(); btn.textContent = '▶ Tocar'; } else { pl.play(parsed, { bpm: lk.bpm, click: true, meter: lk.meter || 4, pickup: lk.pickup || 0 }); btn.textContent = '■ Parar'; S.practiced(); } });
+      box.querySelector('[data-hide]').addEventListener('change', e => { box.querySelector('[data-tab]').hidden = e.target.checked; });
+    };
+    host.addEventListener('click', e => { const c = e.target.closest('[data-chips="piece"] .chip'); if (c) { cur = +c.dataset.v; paint(); } });
+    paint();
+    return () => pl && pl.stop();
   }
   const NAT = [0, 2, 4, 5, 7, 9, 11];
   const sets = { cordas123: [55, 67], primeira: [40, 67], acidentes: [40, 67] };
@@ -4241,16 +4325,18 @@ V.campo = (el) => {
 /* ===== Biblioteca de licks ===== */
 let LICK_FILTER = 'all';
 
-V.licks = (el, id) => {
-  let cur = lickById(id) || LICKS[0];
+V.licks = (el, id, opt = {}) => {
+  if (opt.estudos) LICK_FILTER = 'estudo';
+  else if (!id && LICK_FILTER === 'estudo') LICK_FILTER = 'all';
+  let cur = lickById(id) || (opt.estudos ? LICKS.find(l => l.style === 'estudo') : LICKS[0]);
   if (!lickById(id) && id) location.replace('#licks');
   if (id && LICK_FILTER !== 'all' && cur.style !== LICK_FILTER) LICK_FILTER = 'all';
   el.innerHTML = `
     <header class="page-head"><p class="eyebrow">Licks e solos</p><h1>Frases para tocar, ouvir e roubar</h1>
       <p class="lede">Cada frase tem tablatura, som e as notas no braço. Toque devagar primeiro: a velocidade fica no seletor.</p></header>
+    ${licksTabs(LICK_FILTER === 'estudo' ? 'estudos' : 'licks')}
     <div class="licks-layout">
       <aside class="lick-list">
-        <div class="ctrl-row"><a class="btn primary" href="#editor">＋ Criar meu lick</a></div>
         <div data-filter></div>
         <ul data-list></ul>
       </aside>
@@ -4410,6 +4496,113 @@ V.editor = (el, id) => {
   return () => { panel && panel.stop(); };
 };
 
+/* ===== Meu repertório e abas da seção Licks ===== */
+const SONG_STATUS = [
+  { v:'quero', label:'Quero aprender' }, { v:'aprendendo', label:'Aprendendo' }, { v:'pronta', label:'Pronta' }, { v:'palco', label:'No setlist' },
+];
+const mySongs = () => (S.get().songs || []).filter(s => !s.deleted);
+
+function licksTabs(active) {
+  return `<nav class="subtabs">${[['licks', 'licks', 'Licks e solos'], ['estudos', 'estudos', 'Estudos e peças'], ['rep', 'repertorio', 'Meu repertório'], ['ed', 'editor', '＋ Criar lick']]
+    .map(([k, h, l]) => `<a href="#${h}" class="${k === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
+}
+
+V.repertorio = (el) => {
+  let editing = null, armed = null;
+  el.innerHTML = `<header class="page-head"><p class="eyebrow">Repertório</p><h1>Suas músicas</h1>
+      <p class="lede">Anote o que você quer tocar, acompanhe o que está aprendendo e monte o seu setlist. Um repertório pronto é o que transforma estudo em música.</p></header>
+    ${licksTabs('rep')}
+    <div class="stat-row" data-stats></div>
+    <section class="panel">
+      <details data-formbox><summary class="btn primary">＋ Adicionar música</summary>
+        <form class="song-form" data-form autocomplete="off">
+          <label class="field grow">Música <input type="text" id="sg-title" name="title" required placeholder="Nome da música"></label>
+          <label class="field grow">Artista <input type="text" id="sg-artist" name="artist" placeholder="Quem toca"></label>
+          <label class="field">Tom <input type="text" id="sg-key" name="key" placeholder="Ex.: G, Am" size="5"></label>
+          <label class="field">BPM <input type="number" id="sg-bpm" name="bpm" min="30" max="260" placeholder="90"></label>
+          <label class="field">Afinação <select id="sg-tuning" name="tuning">${TUNINGS.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}</select></label>
+          <label class="field">Status <select id="sg-status" name="status">${SONG_STATUS.map(s => `<option value="${s.v}">${s.label}</option>`).join('')}</select></label>
+          <label class="field grow">Link (vídeo, cifra ou tablatura) <input type="url" id="sg-link" name="link" placeholder="https://"></label>
+          <label class="field block" for="sg-notes">Anotações</label>
+          <textarea id="sg-notes" name="notes" rows="2" placeholder="Trechos difíceis, levada, capotraste…"></textarea>
+          <div class="ctrl-row"><button type="submit" class="btn primary" data-save>Salvar música</button><button type="button" class="btn ghost" data-act="cancel">Cancelar</button></div>
+        </form>
+      </details>
+    </section>
+    <div data-list></div>`;
+  const $ = s => el.querySelector(s);
+  const form = $('[data-form]');
+  const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
+
+  function paint() {
+    const list = mySongs();
+    $('[data-stats]').innerHTML = SONG_STATUS.map(s => `<div class="stat"><b>${list.filter(x => x.status === s.v).length}</b><span>${s.label.toLowerCase()}</span></div>`).join('');
+    if (!list.length) { $('[data-list]').innerHTML = `<section class="panel empty"><p><b>Seu repertório está vazio.</b> Adicione a primeira música que você quer aprender, com o link do vídeo ou da cifra.</p></section>`; return; }
+    $('[data-list]').innerHTML = SONG_STATUS.map(st => {
+      let items = list.filter(x => x.status === st.v);
+      if (!items.length) return '';
+      items = items.sort((a, b) => st.v === 'palco' ? (a.order || 0) - (b.order || 0) : (b.updatedAt || 0) - (a.updatedAt || 0));
+      return `<section class="panel"><p class="eyebrow">${st.label}${st.v === 'palco' ? ' · ordem do show' : ''}</p><ol class="songs ${st.v === 'palco' ? 'setlist' : ''}">${items.map((s, i) => `<li>
+        <div class="sg-main"><b>${U.esc(s.title)}</b><span class="small">${[s.artist, s.key && 'Tom ' + s.key, s.bpm && s.bpm + ' BPM', s.tuning && s.tuning !== 'padrao' ? TUNINGS.find(t => t.id === s.tuning)?.name : ''].filter(Boolean).map(U.esc).join(' · ')}</span>
+          ${s.notes ? `<span class="small sg-notes">${U.esc(s.notes)}</span>` : ''}</div>
+        <div class="ctrl-row">
+          ${safeUrl(s.link) ? `<a class="btn" href="${U.esc(safeUrl(s.link))}" target="_blank" rel="noopener noreferrer">Abrir link ↗</a>` : ''}
+          <button type="button" class="btn primary" data-practice="${s.id}">▶ Praticar</button>
+          <select data-status="${s.id}" id="st-${s.id}" aria-label="Status">${SONG_STATUS.map(o => `<option value="${o.v}" ${o.v === s.status ? 'selected' : ''}>${o.label}</option>`).join('')}</select>
+          ${st.v === 'palco' ? `<button type="button" class="btn ghost" data-up="${s.id}" aria-label="Subir" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="btn ghost" data-down="${s.id}" aria-label="Descer" ${i === items.length - 1 ? 'disabled' : ''}>↓</button>` : ''}
+          <button type="button" class="btn ghost" data-edit="${s.id}">Editar</button>
+          <button type="button" class="btn ghost" data-del="${s.id}">${armed === s.id ? 'Clique de novo para apagar' : 'Apagar'}</button>
+        </div></li>`).join('')}</ol></section>`;
+    }).join('');
+  }
+  function save(song) { S.update(s => { s.songs = (s.songs || []).filter(x => x.id !== song.id).concat([Object.assign({}, song, { updatedAt: Date.now() })]); }); }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = new FormData(form);
+    const base = editing ? mySongs().find(x => x.id === editing) : { id: 's' + Date.now().toString(36) };
+    const song = Object.assign({}, base, { title: f.get('title').trim(), artist: f.get('artist').trim(), key: f.get('key').trim(), bpm: +f.get('bpm') || null,
+      tuning: f.get('tuning'), status: f.get('status'), link: safeUrl(f.get('link').trim()), notes: f.get('notes').trim() });
+    if (!song.title) return;
+    if (song.status === 'palco' && song.order == null) song.order = mySongs().filter(x => x.status === 'palco').length;
+    save(song); editing = null; form.reset(); $('[data-formbox]').open = false; $('[data-save]').textContent = 'Salvar música';
+    U.toast('Música salva'); paint();
+  });
+  el.addEventListener('click', e => {
+    if (e.target.closest('[data-act="cancel"]')) { editing = null; form.reset(); $('[data-formbox]').open = false; return; }
+    const t = e.target.closest('[data-practice],[data-edit],[data-del],[data-up],[data-down]'); if (!t) return;
+    const id = t.dataset.practice || t.dataset.edit || t.dataset.del || t.dataset.up || t.dataset.down;
+    const song = mySongs().find(x => x.id === id); if (!song) return;
+    if (t.dataset.practice) { PT.start({ id: 'repert', label: song.title, minutes: 10 }); save(Object.assign({}, song, { lastPracticed: S.today() })); S.practiced(); U.toast('Cronômetro de 10 minutos ligado'); paint(); }
+    if (t.dataset.edit) {
+      editing = id; $('[data-formbox]').open = true;
+      ['title', 'artist', 'key', 'bpm', 'tuning', 'status', 'link', 'notes'].forEach(k => { form.elements[k].value = song[k] ?? ''; });
+      $('[data-save]').textContent = 'Salvar alterações'; form.scrollIntoView({ block: 'center' });
+    }
+    if (t.dataset.del) {
+      if (armed !== id) { armed = id; paint(); setTimeout(() => { if (armed === id) { armed = null; paint(); } }, 3500); return; }
+      armed = null;
+      S.update(s => { s.songs = (s.songs || []).filter(x => x.id !== id).concat([{ id, deleted: true, updatedAt: Date.now() }]); }); paint();
+    }
+    if (t.dataset.up || t.dataset.down) {
+      const set = mySongs().filter(x => x.status === 'palco').sort((a, b) => (a.order || 0) - (b.order || 0));
+      const i = set.findIndex(x => x.id === id), j = i + (t.dataset.up ? -1 : 1);
+      if (j < 0 || j >= set.length) return;
+      [set[i], set[j]] = [set[j], set[i]];
+      S.update(s => { s.songs = (s.songs || []).map(x => { const k = set.findIndex(y => y.id === x.id); return k >= 0 ? Object.assign({}, x, { order: k, updatedAt: Date.now() }) : x; }); });
+      paint();
+    }
+  });
+  el.addEventListener('change', e => {
+    const id = e.target.dataset.status; if (!id) return;
+    const song = mySongs().find(x => x.id === id);
+    const upd = Object.assign({}, song, { status: e.target.value });
+    if (upd.status === 'palco') upd.order = mySongs().filter(x => x.status === 'palco').length;
+    save(upd); if (upd.status === 'pronta' || upd.status === 'palco') U.toast('Mais uma música pronta!'); paint();
+  });
+  paint();
+};
+
 /* ===== Treino: metrônomo e velocidade progressiva ===== */
 const MET = { bpm: 80, beats: 4, sub: 1 };
 const SPEED = { id: 'ex-pent', start: 60, target: 100, step: 5, reps: 2, listen: true };
@@ -4505,18 +4698,18 @@ V.speed = (el, id) => {
       <p class="tip">${U.esc(lick.tip)} Regra de ouro: só suba quando tocar 4 vezes seguidas sem erro. Se travar, volte 10 BPM.</p>
     </section>`;
   const parsed = TAB.parse(lick.src);
-  const hl = TAB.render(el.querySelector('[data-tab]'), parsed);
+  const hl = TAB.render(el.querySelector('[data-tab]'), parsed, { meter: lick.meter || 4, pickup: lick.pickup || 0 });
   const beats = Math.ceil(parsed.beats);
   let bpm = SPEED.start, rep = 0, beatInRep = 0, repStart = 0, repBpm = bpm, raf = null;
   const curEl = el.querySelector('[data-cur]'), repEl = el.querySelector('[data-rep]'), progEl = el.querySelector('[data-prog]');
   const clock = A.Clock(() => bpm, 1, (i, t) => {
     if (beatInRep === 0) {
       repStart = t; repBpm = bpm;
-      if (SPEED.listen) TAB.scheduleNotes(parsed, t, bpm);
+      if (SPEED.listen) TAB.scheduleNotes(parsed, t, bpm, null, !!lick.swing);
       const shown = bpm, r = rep + 1;
       setTimeout(() => { curEl.textContent = shown; repEl.textContent = r; progEl.style.width = Math.min(100, (shown - SPEED.start) / Math.max(1, SPEED.target - SPEED.start) * 100) + '%'; }, Math.max(0, (t - A.ctx.currentTime) * 1000));
     }
-    A.click(t, beatInRep % 4 === 0);
+    A.click(t, beatInRep % (lick.meter || 4) === 0);
     beatInRep++;
     if (beatInRep >= beats) {
       beatInRep = 0; rep++;
@@ -4730,57 +4923,81 @@ V.gravar = (el) => {
   return () => { cancelAnimationFrame(raf); clearInterval(tTimer); if (REC.on) REC.stop(); LOOP.close(); urls.forEach(u => URL.revokeObjectURL(u)); };
 };
 
-/* ===== Jam: bases para improvisar ===== */
+/* ===== Jam: bases em qualquer tom e vários estilos ===== */
+// meter = tempos por compasso, sub = divisões por tempo; comp = levada dos acordes (uma por compasso, ou duas alternadas)
 const JAMS = [
-  { id:'blues', title:'Blues em Lá (12 compassos)', key:'A', bpm:88, feel:'shuffle', bass:'boogie',
-    chords:['A7','D7','A7','A7','D7','D7','A7','A7','E7','D7','A7','E7'], scales:['blues','pent_menor','mixolidio'] },
-  { id:'pop', title:'Louvor / pop: G–D–Em–C', key:'G', bpm:76, feel:'straight', bass:'root',
+  { id:'blues', title:'Blues shuffle', key:'A', bpm:88, meter:4, sub:2, feel:'shuffle', bass:'boogie', comp:['--D---D-'],
+    chords:['A7','D7','A7','A7','D7','D7','A7','A7','E7','D7','A7','E7'], scales:['blues','pent_menor','mixolidio'], minor:false },
+  { id:'pop', title:'Pop / louvor', key:'G', bpm:76, meter:4, sub:2, feel:'straight', bass:'root', comp:['D-DU-UDU'],
     chords:['G','D','Em','C'], scales:['pent_maior','maior'] },
-  { id:'rock', title:'Rock menor: Am–G–F–G', key:'A', bpm:100, feel:'straight', bass:'eighths',
-    chords:['Am','G','F','G'], scales:['pent_menor','menor','blues'] },
-  { id:'metal', title:'Metal: Em–C–D–B', key:'E', bpm:132, feel:'straight', bass:'eighths',
-    chords:['Em','C','D','B'], scales:['menor_harm','menor','pent_menor'] },
-  { id:'dorico', title:'Modal dórico: Am7–D', key:'A', bpm:96, feel:'straight', bass:'root',
-    chords:['Am7','Am7','D','D'], scales:['dorico','pent_menor'] },
+  { id:'rock', title:'Rock menor', key:'A', bpm:100, meter:4, sub:2, feel:'straight', bass:'eighths', comp:['D-D-D-D-'],
+    chords:['Am','G','F','G'], scales:['pent_menor','menor','blues'], minor:true },
+  { id:'metal', title:'Metal', key:'E', bpm:132, meter:4, sub:2, feel:'metal', bass:'eighths', comp:['D-------'],
+    chords:['Em','C','D','B'], scales:['menor_harm','menor','pent_menor'], minor:true },
+  { id:'dorico', title:'Modal dórico', key:'A', bpm:96, meter:4, sub:2, feel:'straight', bass:'root', comp:['D--UD-DU'],
+    chords:['Am7','Am7','D','D'], scales:['dorico','pent_menor'], minor:true },
+  { id:'iivi', title:'ii–V–I (jazz)', key:'G', bpm:120, meter:4, sub:2, feel:'jazz', bass:'walk', comp:['D--D----'],
+    chords:['Am7','D7','G7M','G7M'], scales:['maior','pent_maior'] },
+  { id:'funk', title:'Funk', key:'E', bpm:98, meter:4, sub:4, feel:'funk', bass:'funk', comp:['D-xUX-xUD-xUX-xU'],
+    chords:['E9','E9','A9','E9'], scales:['dorico','pent_menor','mixolidio'], minor:true },
+  { id:'reggae', title:'Reggae', key:'A', bpm:76, meter:4, sub:2, feel:'reggae', bass:'reggae', comp:['-X-X-X-X'],
+    chords:['Am','D','Am','D'], scales:['dorico','pent_menor'], minor:true },
+  { id:'bossa', title:'Bossa nova', key:'C', bpm:126, meter:4, sub:2, feel:'bossa', bass:'bossa', comp:['D--D--D-', '--D-D---'],
+    chords:['C7M','Dm7','G7','C7M'], scales:['maior','pent_maior'] },
+  { id:'seisoito', title:'Balada 6/8', key:'C', bpm:56, meter:2, sub:3, feel:'sixeight', bass:'sixeight', comp:['D-UD-U'],
+    chords:['C','G','Am','F'], scales:['pent_maior','maior'] },
+  { id:'valsa', title:'Valsa 3/4', key:'G', bpm:100, meter:3, sub:2, feel:'waltz', bass:'waltz', comp:['--D-D-'],
+    chords:['G','D','D','G'], scales:['maior','pent_maior'] },
 ];
-const JAM = { id:'blues', scale:null, bpm:null, drums:true, bass:true, comp:true, labels:'iv' };
+const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, labels:'iv' };
 
 function parseChord(name) {
+  const p = CH.parse(name);
+  return { root: p.root, q: p.q || 'maior', name };
+}
+function transposeChord(name, shift, flats) {
   const m = name.match(/^([A-G][b#]?)(.*)$/);
-  const q = { '':'maior', 'm':'menor', '7':'dom7', 'm7':'m7', '7M':'maj7' }[m[2]] || 'maior';
-  return { root: T.pcOf(m[1]), q, name };
+  const pc = T.mod(T.pcOf(m[1]) + shift);
+  return (flats ? T.FLAT : T.SHARP)[pc] + m[2];
 }
 
 V.jam = (el, id) => {
-  if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; } JAM.id = id; }
+  if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; JAM.key = null; } JAM.id = id; }
   const jam = JAMS.find(j => j.id === JAM.id);
   if (!JAM.scale || !jam.scales.includes(JAM.scale)) JAM.scale = jam.scales[0];
   if (!JAM.bpm) JAM.bpm = jam.bpm;
-  const chords = jam.chords.map(parseChord);
-  const keyPc = T.pcOf(jam.key);
+  const baseKey = T.pcOf(jam.key);
+  const keyPc = JAM.key == null ? baseKey : JAM.key;
+  const flats = T.useFlats(keyPc, jam.minor ? 3 : 0);
+  const chords = jam.chords.map(c => parseChord(transposeChord(c, keyPc - baseKey, flats)));
+  const latin = U.set().latin;
 
   el.innerHTML = treinoTabs('jam') + `
     <section class="panel">
-      <div class="ctrl-row">${U.chips('jam', JAMS.map(j => ({ v:j.id, label:j.title })), jam.id)}</div>
+      <div class="ctrl-row">${U.chips('jam', JAMS.map(j => ({ v: j.id, label: j.title })), jam.id)}</div>
       <div class="ctrl-row">
-        <label class="field">Escala <select data-k="scale" id="jam-scale">${jam.scales.map(s => `<option value="${s}" ${s === JAM.scale ? 'selected' : ''}>${T.SCALES[s].name} de ${T.rootName(keyPc, U.set().latin)}</option>`).join('')}</select></label>
-        <label class="field">Andamento <input type="range" min="50" max="180" value="${JAM.bpm}" data-k="bpm" id="jam-bpm"> <b data-bpm>${JAM.bpm}</b> BPM</label>
+        <label class="field">Tom <select data-k="key" id="jam-key">${T.ROOTS.map((r, i) => `<option value="${i}" ${i === keyPc ? 'selected' : ''}>${T.rootName(i, latin)}${jam.minor ? 'm' : ''}</option>`).join('')}</select></label>
+        <label class="field">Escala <select data-k="scale" id="jam-scale">${jam.scales.map(s => `<option value="${s}" ${s === JAM.scale ? 'selected' : ''}>${T.SCALES[s].name} de ${T.rootName(keyPc, latin)}</option>`).join('')}</select></label>
+        <label class="field">Andamento <input type="range" min="40" max="200" value="${JAM.bpm}" data-k="bpm" id="jam-bpm"> <b data-bpm>${JAM.bpm}</b> BPM</label>
+      </div>
+      <div class="ctrl-row">
         <label class="check"><input type="checkbox" data-k="drums" id="jam-drums" ${JAM.drums ? 'checked' : ''}> Bateria</label>
         <label class="check"><input type="checkbox" data-k="bass" id="jam-bass" ${JAM.bass ? 'checked' : ''}> Baixo</label>
         <label class="check"><input type="checkbox" data-k="comp" id="jam-comp" ${JAM.comp ? 'checked' : ''}> Acordes</label>
+        <span class="small">${jam.meter === 2 ? 'Compasso 6/8' : jam.meter + '/4'} · ${({ shuffle:'shuffle', jazz:'swing', funk:'semicolcheias', reggae:'one drop', bossa:'bossa', sixeight:'6/8', waltz:'valsa', metal:'metal', straight:'reto' })[jam.feel]}</span>
       </div>
       <div class="jam-now">
         <button type="button" class="btn primary big" data-act="go">▶ Tocar base</button>
-        <div class="now"><span>Agora</span><b data-now>${chords[0].name}</b></div>
-        <div class="now dim"><span>Próximo</span><b data-next>${chords[1 % chords.length].name}</b></div>
-        <ol class="bars" data-bars>${chords.map((c, i) => `<li data-i="${i}">${c.name}</li>`).join('')}</ol>
+        <div class="now"><span>Agora</span><b data-now>${prettyChord(chords[0].name)}</b></div>
+        <div class="now dim"><span>Próximo</span><b data-next>${prettyChord(chords[1 % chords.length].name)}</b></div>
+        <ol class="bars" data-bars>${chords.map((c, i) => `<li data-i="${i}">${prettyChord(c.name)}</li>`).join('')}</ol>
       </div>
       <div data-fb></div>
       <p class="caption">Notas grandes: notas do acorde atual (rótulos em relação ao acorde). Pontos pequenos: o resto da escala. Mire nas notas grandes quando o acorde mudar.</p>
     </section>`;
   const fb = FB.create(el.querySelector('[data-fb]'));
   const sc = T.SCALES[JAM.scale];
-  const flats = T.useFlats(keyPc, sc.parent);
+  const sflats = T.useFlats(keyPc, sc.parent);
 
   function showChord(ci) {
     const c = chords[ci], civ = T.CHORDS[c.q].iv.map(i => T.mod(c.root + i));
@@ -4791,44 +5008,87 @@ V.jam = (el, id) => {
       if (civ.includes(pc)) marks.push(T.mark(s, f, c.root));
       else if (scalePcs.includes(pc)) marks.push(Object.assign(T.mark(s, f, keyPc), { small: true, role: 'n', label: '' }));
     }
-    fb.set(U.fbState({ marks, labels: JAM.labels, flats,
+    fb.set(U.fbState({ marks, labels: JAM.labels, flats: sflats,
       onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
-    el.querySelector('[data-now]').textContent = c.name;
-    el.querySelector('[data-next]').textContent = chords[(ci + 1) % chords.length].name;
+    el.querySelector('[data-now]').textContent = prettyChord(c.name);
+    el.querySelector('[data-next]').textContent = prettyChord(chords[(ci + 1) % chords.length].name);
     el.querySelectorAll('[data-bars] li').forEach((li, i) => li.classList.toggle('on', i === ci));
   }
   showChord(0);
 
   const bassMidi = pc => 28 + T.mod(pc - 4);
   const BOOGIE = [0, 4, 7, 9, 10, 9, 7, 4];
-  const clock = A.Clock(() => JAM.bpm, 2, (i, t) => {
-    const spb = 60 / JAM.bpm;
-    const bar = Math.floor(i / 8) % chords.length, pos = i % 8, beat = pos >> 1, off = pos & 1;
-    const c = chords[bar];
-    const tt = off && jam.feel === 'shuffle' ? t + spb / 6 : t;
+  const FUNK = { 0: 0, 3: 12, 6: 10, 8: 0, 10: 7, 14: 12 };
+  const slots = jam.meter * jam.sub;
+  const clock = A.Clock(() => JAM.bpm, jam.sub, (i, t) => {
+    const spb = 60 / JAM.bpm, sd = spb / jam.sub;
+    const barN = Math.floor(i / slots), bar = barN % chords.length, pos = i % slots, beat = Math.floor(pos / jam.sub), off = pos % jam.sub;
+    const c = chords[bar], next = chords[(bar + 1) % chords.length];
+    const swing = (jam.feel === 'shuffle' || jam.feel === 'jazz') && jam.sub === 2 && off === 1;
+    const tt = swing ? t + spb / 6 : t;
     if (pos === 0) setTimeout(() => showChord(bar), Math.max(0, (t - A.ctx.currentTime) * 1000));
-    if (JAM.drums) {
-      if (!off && (beat === 0 || beat === 2)) A.drum('kick', tt);
-      if (jam.id === 'metal' && off) A.drum('kick', tt, 0.7);
-      if (!off && (beat === 1 || beat === 3)) A.drum('snare', tt);
-      A.drum('hat', tt, off ? 0.6 : 1);
-    }
-    if (JAM.bass) {
-      const r = bassMidi(c.root);
-      if (jam.bass === 'boogie') A.bass(r + (c.q === 'menor' && BOOGIE[pos] === 4 ? 3 : BOOGIE[pos]), tt, spb * 0.45);
-      else if (jam.bass === 'eighths') A.bass(r, tt, spb * 0.42);
-      else if (!off && beat !== 3) A.bass(r, tt, spb * 0.9);
-      else if (!off) A.bass(r + 7, tt, spb * 0.9);
-    }
+    if (JAM.drums) drums(jam.feel, pos, beat, off, tt, barN);
+    if (JAM.bass) bassLine(jam.bass, c, next, pos, beat, off, tt, spb, sd);
     if (JAM.comp) {
-      const ivs = T.CHORDS[c.q].iv;
-      const voice = ivs.map(iv => 52 + T.mod(c.root + iv - 4)).sort((a, b) => a - b);
-      const strum = (vel, dur) => voice.forEach((m, k) => A.play(m, tt + k * 0.018, { dur, vel, bus: 'back' }));
-      if (jam.feel === 'shuffle') { if (off === 0 && (beat === 1 || beat === 3)) strum(0.35, spb * 0.5); }
-      else if (jam.id === 'metal') { if (pos === 0) strum(0.4, spb * 3.6); }
-      else if (pos === 0 || pos === 3 || pos === 6) strum(pos === 0 ? 0.42 : 0.3, spb * (pos === 0 ? 1.4 : 1));
+      const pat = jam.comp[barN % jam.comp.length], sym = pat[pos];
+      if (sym && sym !== '-') RH.hit(sym, c.name, tt, sd, pos === 0, 'back');
     }
   });
+
+  function drums(feel, pos, beat, off, t, barN) {
+    const D = A.drum;
+    switch (feel) {
+      case 'funk':
+        if ([0, 6, 8].includes(pos)) D('kick', t);
+        if (pos === 4 || pos === 12) D('snare', t); else if (pos === 7 || pos === 14) D('snare', t, 0.25);
+        D('hat', t, off === 0 ? 0.9 : 0.45); break;
+      case 'reggae':
+        if (pos === 4) { D('kick', t); D('snare', t, 0.8); }
+        D('hat', t, off ? 0.8 : 0.5); break;
+      case 'bossa':
+        if (pos === 0 || pos === 4) D('kick', t, 0.6); if (pos === 3 || pos === 7) D('kick', t, 0.35);
+        if ((barN % 2 ? [2, 4] : [0, 3, 6]).includes(pos)) D('snare', t, 0.22);
+        D('hat', t, 0.35); break;
+      case 'jazz':
+        if (off === 0) D('hat', t, 0.6); else if (beat === 1 || beat === 3) D('hat', t, 0.4);
+        if (off === 0 && (beat === 1 || beat === 3)) D('hat', t, 0.9);
+        if (pos === 0) D('kick', t, 0.35); break;
+      case 'sixeight':
+        if (pos === 0) D('kick', t); if (pos === 3) D('snare', t);
+        D('hat', t, off === 0 ? 0.8 : 0.5); break;
+      case 'waltz':
+        if (pos === 0) D('kick', t); if (off === 0 && beat > 0) D('snare', t, 0.35);
+        D('hat', t, off === 0 ? 0.6 : 0.3); break;
+      case 'metal':
+        D('kick', t, off ? 0.7 : 1); if (off === 0 && (beat === 1 || beat === 3)) D('snare', t);
+        if (off === 0) D('hat', t); break;
+      default:
+        if (off === 0 && (beat === 0 || beat === 2)) D('kick', t);
+        if (off === 0 && (beat === 1 || beat === 3)) D('snare', t);
+        D('hat', t, off ? 0.6 : 1);
+    }
+  }
+
+  function bassLine(kind, c, next, pos, beat, off, t, spb, sd) {
+    const r = bassMidi(c.root), minor = T.CHORDS[c.q].iv.includes(3);
+    const third = r + (minor ? 3 : 4), fifth = r + 7;
+    switch (kind) {
+      case 'boogie': A.bass(r + (minor && BOOGIE[pos] === 4 ? 3 : BOOGIE[pos]), t, spb * 0.45); break;
+      case 'eighths': A.bass(r, t, sd * 0.85); break;
+      case 'walk': {
+        if (off) return;
+        const nr = bassMidi(next.root);
+        const notes = [r, third, fifth, nr + (nr > fifth ? -1 : 1)];
+        A.bass(notes[beat], t, spb * 0.9); break;
+      }
+      case 'funk': if (FUNK[pos] != null) A.bass(r + FUNK[pos], t, sd * 1.6); break;
+      case 'reggae': if (pos === 0) A.bass(r, t, spb * 1.4); else if (pos === 3) A.bass(fifth, t, sd * 0.9); else if (pos === 4) A.bass(r + 12, t, spb * 0.8); break;
+      case 'bossa': if (pos === 0) A.bass(r, t, spb * 1.4); else if (pos === 3) A.bass(fifth - 12, t, sd); else if (pos === 4) A.bass(fifth - 12, t, spb * 1.4); break;
+      case 'sixeight': if (pos === 0) A.bass(r, t, spb * 0.9); else if (pos === 3) A.bass(fifth, t, spb * 0.9); break;
+      case 'waltz': if (pos === 0) A.bass(r, t, spb * 0.95); break;
+      default: if (off === 0) A.bass(beat === jam.meter - 1 ? fifth : r, t, spb * 0.9);
+    }
+  }
 
   el.addEventListener('click', e => {
     const chip = e.target.closest('[data-chips="jam"] .chip');
@@ -4844,7 +5104,10 @@ V.jam = (el, id) => {
   });
   el.addEventListener('change', e => {
     const k = e.target.dataset.k;
-    if (k === 'scale') { JAM.scale = e.target.value; const running = clock.running; APP.rerender(); if (running) U.toast('Escala trocada. Toque a base de novo.'); }
+    if (k === 'scale' || k === 'key') {
+      if (k === 'scale') JAM.scale = e.target.value; else JAM.key = +e.target.value;
+      const running = clock.running; APP.rerender(); if (running) U.toast('Base alterada. Toque de novo.');
+    }
     if (['drums', 'bass', 'comp'].includes(k)) JAM[k] = e.target.checked;
   });
   return () => { clock.stop(); A.stopAll(); };
@@ -5119,6 +5382,141 @@ function quizMicRun(el, q) {
   return () => { clearTimeout(timer); MIC.stop(); };
 }
 
+/* ===== Motivação: XP, patentes, conquistas e desafio do dia ===== */
+const MOT = (() => {
+  const RANKS = [
+    { xp:0, name:'Aprendiz' }, { xp:400, name:'Músico de quarto' }, { xp:1200, name:'Garagem' }, { xp:2600, name:'Barzinho' },
+    { xp:5000, name:'Palco' }, { xp:8500, name:'Estúdio' }, { xp:13000, name:'Turnê' }, { xp:20000, name:'Lenda' },
+  ];
+  const sum = o => Object.values(o || {}).reduce((a, b) => a + (+b || 0), 0);
+
+  /** XP calculado a partir do que você já fez (nada fica duplicado entre aparelhos). */
+  function xp(st = S.get()) {
+    const parts = {
+      'Aulas concluídas': Object.keys(st.done).length * 50,
+      'Metas de nível': Object.keys(st.goals || {}).length * 120,
+      'Minutos praticados': Math.round(sum(st.minutes) * 2),
+      'Dias de prática': st.days.length * 15,
+      'Quizzes': Math.round(Object.values(st.quiz).reduce((a, q) => a + q.best, 0) / 2),
+      'Recordes de BPM': Object.keys(st.bpm).length * 25,
+      'Trocas de acordes': Math.round(sum(st.changes) / 2),
+      'Desafios do dia': Object.keys(st.challenges || {}).length * 60,
+      'Repertório': (st.songs || []).filter(s => !s.deleted && (s.status === 'pronta' || s.status === 'palco')).length * 40,
+      'Licks criados': (st.myLicks || []).filter(l => !l.deleted).length * 20,
+    };
+    return { total: Object.values(parts).reduce((a, b) => a + b, 0), parts };
+  }
+  function rank(total) {
+    let i = 0; while (i + 1 < RANKS.length && total >= RANKS[i + 1].xp) i++;
+    const cur = RANKS[i], nx = RANKS[i + 1];
+    return { i, cur, next: nx, pct: nx ? (total - cur.xp) / (nx.xp - cur.xp) : 1 };
+  }
+
+  const done = st => Object.keys(st.done).length;
+  const totalMin = st => sum(st.minutes);
+  const bestQuiz = st => Math.max(0, ...Object.values(st.quiz).map(q => q.best));
+  const lvDone = (st, n) => typeof levelStats === 'function' && levelStats(n, st).pct >= 1;
+  const BADGES = [
+    { id:'primeira-aula', icon:'1', name:'Primeira aula', desc:'Concluiu a primeira aula.', test: st => done(st) >= 1 },
+    { id:'dez-aulas', icon:'10', name:'Dez aulas', desc:'Concluiu 10 aulas.', test: st => done(st) >= 10 },
+    { id:'meia-trilha', icon:'½', name:'Meia trilha', desc:'Concluiu metade das aulas.', test: st => done(st) >= Math.ceil(ALL_LESSONS().length / 2) },
+    { id:'semana', icon:'7', name:'Uma semana', desc:'7 dias seguidos de prática.', test: () => S.streak() >= 7 },
+    { id:'mes', icon:'30', name:'Um mês', desc:'30 dias seguidos de prática.', test: () => S.streak() >= 30 },
+    { id:'hora', icon:'60', name:'Uma hora num dia', desc:'60 minutos de prática no mesmo dia.', test: st => Math.max(0, ...Object.values(st.minutes)) >= 60 },
+    { id:'dez-horas', icon:'10h', name:'10 horas', desc:'10 horas de prática no total.', test: st => totalMin(st) >= 600 },
+    { id:'cem-horas', icon:'100h', name:'100 horas', desc:'100 horas de prática no total.', test: st => totalMin(st) >= 6000 },
+    { id:'trocas30', icon:'⇄', name:'Mão rápida', desc:'30 trocas de acordes em 1 minuto.', test: st => Math.max(0, ...Object.values(st.changes)) >= 30 },
+    { id:'quiz100', icon:'✓', name:'Gabaritou', desc:'100% em um quiz.', test: st => bestQuiz(st) >= 100 },
+    { id:'bpm120', icon:'♩', name:'120 BPM', desc:'Recorde de 120 BPM ou mais num exercício.', test: st => Math.max(0, ...Object.values(st.bpm)) >= 120 },
+    { id:'compositor', icon:'✎', name:'Compositor', desc:'Criou o primeiro lick no editor.', test: st => (st.myLicks || []).some(l => !l.deleted) },
+    { id:'repertorio5', icon:'♫', name:'Repertório', desc:'5 músicas prontas no repertório.', test: st => (st.songs || []).filter(s => !s.deleted && ['pronta', 'palco'].includes(s.status)).length >= 5 },
+    { id:'setlist', icon:'★', name:'Setlist montado', desc:'10 músicas no setlist.', test: st => (st.songs || []).filter(s => !s.deleted && s.status === 'palco').length >= 10 },
+    { id:'desafios7', icon:'⚑', name:'Desafiante', desc:'7 desafios do dia cumpridos.', test: st => Object.keys(st.challenges || {}).length >= 7 },
+    ...[1, 2, 3, 4, 5].map(n => ({ id:'nivel' + n, icon:'N' + n, name:'Nível ' + n + ' completo', desc:'Todas as aulas e metas do nível ' + n + '.', test: st => lvDone(st, n) })),
+  ];
+
+  let checking = false;
+  function checkBadges() {
+    if (checking) return; checking = true;
+    try {
+      const st = S.get(), fresh = BADGES.filter(b => !(st.badges || {})[b.id] && b.test(st));
+      if (fresh.length) {
+        S.update(s => { s.badges = s.badges || {}; fresh.forEach(b => { s.badges[b.id] = S.today(); }); });
+        U.toast(fresh.length === 1 ? `Conquista: ${fresh[0].name}` : `${fresh.length} conquistas novas!`);
+      }
+    } finally { checking = false; }
+  }
+
+  /* desafio do dia: sorteado pela data, adaptado ao nível */
+  const CHALLENGES = [
+    { lv:1, text:'Faça 20 trocas de G para C em 1 minuto.', href:'#trocas', test: st => (st.changes['G-C'] || 0) >= 20 },
+    { lv:1, text:'Toque a levada pop por 3 minutos sem parar.', href:'#levadas-pop' },
+    { lv:1, text:'Afine a guitarra sozinho e toque “Estrada de Terra”.', href:'#aula-primeira-musica' },
+    { lv:1, text:'Acerte 8 de 10 no quiz “Qual é a nota?”.', href:'#quiz-qual-nota', test: st => st.quiz['qual-nota']?.date === S.today() && st.quiz['qual-nota'].best >= 80 },
+    { lv:1, text:'Toque junto 3 ritmos da leitura rítmica com mais de 80%.', href:'#aula-pulso' },
+    { lv:2, text:'Toque o riff de power chords a 100 BPM.', href:'#treino-r3' },
+    { lv:2, text:'Toque a levada de funk por 2 minutos.', href:'#levadas-funk' },
+    { lv:2, text:'Toque F e Bm limpos, 10 vezes cada.', href:'#aula-pestana-f' },
+    { lv:2, text:'Acerte 9 de 10 no quiz “Ache a nota”.', href:'#quiz-ache-nota', test: st => st.quiz['ache-nota']?.date === S.today() && st.quiz['ache-nota'].best >= 90 },
+    { lv:3, text:'Improvise 5 minutos no blues usando só a caixa 1.', href:'#jam-blues' },
+    { lv:3, text:'Toque as 3 inversões de Ré maior nas cordas 1-2-3.', href:'#aula-triade-123' },
+    { lv:3, text:'Toque Dó maior nas 5 formas do CAGED.', href:'#aula-caged' },
+    { lv:3, text:'Acerte 8 de 10 no quiz de tríades.', href:'#quiz-triade', test: st => st.quiz.triade?.date === S.today() && st.quiz.triade.best >= 80 },
+    { lv:4, text:'Toque o campo harmônico de Sol em tétrades.', href:'#campo' },
+    { lv:4, text:'Suba 5 BPM no seu recorde de escala em 3 notas por corda.', href:'#treino-ex-3nps' },
+    { lv:4, text:'Leia 20 notas seguidas na partitura.', href:'#aula-primeira-posicao' },
+    { lv:4, text:'Improvise na base dórica destacando a 6ª maior.', href:'#jam-dorico' },
+    { lv:5, text:'Toque um ii–V–I em 3 tons diferentes.', href:'#jam-iivi' },
+    { lv:5, text:'Grave 2 minutos de improviso e escute com atenção.', href:'#gravar' },
+    { lv:5, text:'Tire de ouvido uma frase e salve no editor.', href:'#editor' },
+    { lv:5, text:'Toque o seu setlist do começo ao fim.', href:'#repertorio' },
+  ];
+  function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function daily() {
+    const lv = PLAN.currentLevel(), pool = CHALLENGES.filter(c => c.lv <= lv && c.lv >= lv - 1);
+    return pool[hash(S.today()) % pool.length];
+  }
+  function completeToday() { S.update(s => { s.challenges = s.challenges || {}; s.challenges[S.today()] = true; }); S.practiced(); U.toast('Desafio do dia cumprido! +60 XP'); }
+
+  function rankCard(st) {
+    const x = xp(st), r = rank(x.total);
+    return `<section class="panel rank"><p class="eyebrow">Sua patente</p>
+      <div class="rank-row"><b class="rank-name">${r.cur.name}</b><span class="xp">${x.total.toLocaleString('pt-BR')} XP</span></div>
+      <div class="bar wide"><i style="width:${Math.round(r.pct * 100)}%"></i></div>
+      <p class="small">${r.next ? `Faltam ${(r.next.xp - x.total).toLocaleString('pt-BR')} XP para <b>${r.next.name}</b>.` : 'Patente máxima!'} XP vem de aulas, metas, minutos, quizzes, recordes, desafios e repertório.</p></section>`;
+  }
+  function challengeCard(st) {
+    const c = daily(), ok = (st.challenges || {})[S.today()];
+    return `<section class="panel challenge ${ok ? 'done' : ''}"><p class="eyebrow">Desafio do dia</p>
+      <p class="ch-text">${c.text}</p>
+      <div class="ctrl-row">${ok ? '<span class="pill ok">Cumprido</span>' : `<a class="btn primary" href="${c.href}">Ir para o desafio →</a><button type="button" class="btn" data-ch-done>✓ Consegui</button>`}</div></section>`;
+  }
+  function badgesGrid(st, limit) {
+    const got = BADGES.filter(b => (st.badges || {})[b.id]);
+    const list = limit ? got.slice(-limit).reverse() : BADGES;
+    return `<div class="badges">${list.map(b => { const on = (st.badges || {})[b.id];
+      return `<div class="badge ${on ? 'on' : ''}" title="${b.desc}"><i>${b.icon}</i><b>${b.name}</b><span>${on ? new Date(on + 'T12:00').toLocaleDateString('pt-BR') : b.desc}</span></div>`; }).join('')}</div>`;
+  }
+
+  // Hoje: patente, desafio e últimas conquistas
+  HOJE_EXTRA.push(host => {
+    const st = S.get();
+    host.insertAdjacentHTML('beforeend', challengeCard(st) + rankCard(st));
+    const got = Object.keys(st.badges || {}).length;
+    if (got) host.insertAdjacentHTML('beforeend', `<section class="panel"><p class="eyebrow">Últimas conquistas · ${got} de ${BADGES.length}</p>${badgesGrid(st, 3)}<a class="small" href="#progresso">Ver todas →</a></section>`);
+    // marcação automática quando o próprio app consegue verificar o desafio
+    const c = daily();
+    if (!(st.challenges || {})[S.today()] && c.test && c.test(st)) setTimeout(() => { completeToday(); APP.rerender(); }, 300);
+    host.addEventListener('click', e => { if (e.target.closest('[data-ch-done]')) { completeToday(); APP.rerender(); } });
+  });
+
+  let tm = null;
+  S.on(() => { clearTimeout(tm); tm = setTimeout(checkBadges, 600); });
+  setTimeout(checkBadges, 1500);
+
+  return { xp, rank, BADGES, rankCard, badgesGrid, checkBadges, daily };
+})();
+
 /* ===== Progresso, configurações e roteamento ===== */
 V.progresso = (el) => {
   const st = S.get(), all = ALL_LESSONS();
@@ -5157,6 +5555,8 @@ V.progresso = (el) => {
       <p class="small">Neste modo o progresso fica salvo só neste aparelho. Para levar para outro (do PC para o celular, por exemplo), exporte aqui e importe lá.</p>
       <div class="ctrl-row"><button type="button" class="btn" data-act="export">Exportar progresso</button>
         <label class="btn" for="import-file">Importar backup</label><input type="file" id="import-file" accept="application/json,.json" hidden></div></section>` : ''}
+    ${MOT.rankCard(st)}
+    <section class="panel"><p class="eyebrow">Conquistas · ${Object.keys(st.badges || {}).length} de ${MOT.BADGES.length}</p>${MOT.badgesGrid(st)}</section>
     <section class="danger"><button type="button" class="btn ghost" data-act="reset">Apagar meu progresso</button></section>`;
   const sync = () => { el.querySelector('[data-syncline]').textContent = S.mode === 'conta'
     ? 'Seu progresso fica salvo na sua conta e aparece igual no computador e no celular.'
@@ -5196,6 +5596,8 @@ const APP = (() => {
     if (pre('aula-') != null) return ['trilha', el => V.lesson(el, pre('aula-'))];
     if (h === 'licks' || pre('lick-') != null) return ['licks', el => V.licks(el, pre('lick-'))];
     if (h === 'editor' || pre('editor-') != null) return ['licks', el => V.editor(el, pre('editor-'))];
+    if (h === 'estudos') return ['licks', el => V.licks(el, null, { estudos: true })];
+    if (h === 'repertorio') return ['licks', el => V.repertorio(el)];
     if (h === 'treino') return ['treino', el => V.metronomo(el)];
     if (h === 'levadas' || pre('levadas-') != null) return ['treino', el => V.levadas(el, pre('levadas-'))];
     if (h === 'trocas') return ['treino', el => V.trocas(el)];
