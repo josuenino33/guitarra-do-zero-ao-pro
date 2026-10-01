@@ -75,6 +75,9 @@ const APP = (() => {
     if (pre('aula-') != null) return ['trilha', el => V.lesson(el, pre('aula-'))];
     if (h === 'licks' || pre('lick-') != null) return ['licks', el => V.licks(el, pre('lick-'))];
     if (h === 'treino') return ['treino', el => V.metronomo(el)];
+    if (h === 'levadas' || pre('levadas-') != null) return ['treino', el => V.levadas(el, pre('levadas-'))];
+    if (h === 'trocas') return ['treino', el => V.trocas(el)];
+    if (h === 'afinador') return ['treino', el => V.afinador(el)];
     if (pre('treino-') != null) return ['treino', el => V.speed(el, pre('treino-'))];
     if (h === 'jam' || pre('jam-') != null) return ['treino', el => V.jam(el, pre('jam-'))];
     if (h === 'quiz' || pre('quiz-') != null) return ['quiz', el => V.quiz(el, pre('quiz-'))];

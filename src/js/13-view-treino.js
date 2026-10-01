@@ -3,9 +3,10 @@ const MET = { bpm: 80, beats: 4, sub: 1 };
 const SPEED = { id: 'ex-pent', start: 60, target: 100, step: 5, reps: 2, listen: true };
 
 function treinoTabs(active) {
-  return `<header class="page-head"><p class="eyebrow">Treino</p><h1>Tempo, velocidade e improviso</h1></header>
-    <nav class="subtabs">${[['treino', 'Metrônomo'], ['treino-' + SPEED.id, 'Velocidade progressiva'], ['jam', 'Jam (bases)']].map(([h, l], i) =>
-      `<a href="#${h}" class="${['met', 'speed', 'jam'][i] === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
+  const tabs = [['met', 'treino', 'Metrônomo'], ['lev', 'levadas', 'Levadas'], ['troc', 'trocas', 'Trocas de acordes'], ['afin', 'afinador', 'Afinador'],
+    ['speed', 'treino-' + SPEED.id, 'Velocidade'], ['jam', 'jam', 'Jam (bases)']];
+  return `<header class="page-head"><p class="eyebrow">Treino</p><h1>Ritmo, tempo, velocidade e improviso</h1></header>
+    <nav class="subtabs">${tabs.map(([k, h, l]) => `<a href="#${h}" class="${k === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
 }
 
 V.metronomo = (el) => {

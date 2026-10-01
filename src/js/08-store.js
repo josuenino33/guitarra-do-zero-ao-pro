@@ -1,13 +1,14 @@
 /* ===== Progresso: conta (db) com cópia local ===== */
 const S = (() => {
   const KEY = 'mapa-do-braco-v1';
-  const DEF = () => ({ v:1, done:{}, bpm:{}, quiz:{}, days:[],
+  const DEF = () => ({ v:1, done:{}, bpm:{}, quiz:{}, days:[], changes:{}, goals:{},
     settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8 } });
   let state = DEF(), ref = null, mode = 'local', timer = null, writing = Promise.resolve();
   const subs = new Set();
 
   try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(DEF(), JSON.parse(raw)); } catch (e) {}
   state.settings = Object.assign(DEF().settings, state.settings);
+  state.changes = state.changes || {}; state.goals = state.goals || {};
 
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -20,6 +21,8 @@ const S = (() => {
       if (!cur || src[k].best > cur.best) out.quiz[k] = src[k];
     }
     out.days = [...new Set([...(a.days || []), ...(b.days || [])])].sort().slice(-400);
+    out.goals = Object.assign({}, b.goals, a.goals);
+    for (const src of [a.changes || {}, b.changes || {}]) for (const k in src) out.changes[k] = Math.max(out.changes[k] || 0, src[k]);
     out.settings = Object.assign(DEF().settings, b.settings, a.settings);
     return out;
   }

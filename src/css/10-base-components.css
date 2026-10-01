@@ -1,0 +1,124 @@
+/* ===== níveis ===== */
+.level-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.level-nav a { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); text-decoration: none; position: relative; overflow: hidden; }
+.level-nav a b { font: 700 26px/1 var(--f-display); }
+.level-nav a span { font-size: 13px; color: var(--muted); font-weight: 700; }
+.level-nav a i { position: absolute; left: 0; bottom: 0; height: 4px; width: var(--p); background: var(--accent); }
+.level-nav a.on { border-color: var(--accent); }
+.level { display: flex; flex-direction: column; gap: 14px; padding-top: 10px; scroll-margin-top: 80px; }
+.level-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-top: 2px solid var(--fg); padding-top: 14px; }
+.level-head h2 { font-size: 34px; }
+.goals ul { list-style: none; margin: 6px 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.goals li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.goals li a { font-size: 13.5px; }
+.goals .check { font-size: 15px; align-items: flex-start; }
+.goals .check input { margin-top: 2px; flex: none; }
+.goals .check input:checked + span { text-decoration: line-through; color: var(--muted); }
+
+/* ===== acordes ===== */
+.chord-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.chord-row.two { justify-content: center; }
+.chord-card { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 8px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; font: inherit; }
+.chord-card:hover { border-color: var(--accent); }
+.chord-card b { font: 700 22px/1 var(--f-display); }
+.chord-card small { font-size: 11px; color: var(--muted); }
+.chord-svg { width: 96px; height: auto; display: block; }
+.small-cards .chord-card { padding: 6px 6px 2px; }
+.small-cards .chord-svg { width: 70px; }
+.small-cards .chord-card b { font-size: 17px; }
+.chord-row.two .chord-svg { width: 130px; }
+.chord-row.two .chord-card b { font-size: 30px; }
+.cd-fret { stroke: var(--muted); stroke-width: 1; }
+.cd-str { stroke: var(--fg); stroke-width: 1; }
+.cd-nut { fill: var(--fg); }
+.cd-dot { fill: var(--fg); }
+.cd-dot.root { fill: var(--iv-r); }
+.cd-barre { fill: var(--fg); }
+.cd-fing { fill: var(--bg); font: 700 9.5px var(--f-mono); }
+.cd-x { fill: var(--muted); font: 700 13px var(--f-body); }
+.cd-open { fill: none; stroke: var(--fg); stroke-width: 1.4; }
+.cd-base { fill: var(--muted); font: 600 10px var(--f-mono); }
+.sym { display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 110px; text-align: center; }
+.sym span { font-size: 12px; color: var(--muted); }
+details.syms { margin-top: 12px; }
+details.syms summary { cursor: pointer; font-weight: 700; padding-block: 6px; }
+
+/* ===== trocas ===== */
+.changes { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 12px; }
+.ch-side { display: flex; flex-direction: column; gap: 12px; }
+.ch-clock b { font: 700 60px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.ch-clock span { font-size: 13px; color: var(--muted); margin-left: 6px; }
+.tap-pad { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 120px; width: 100%; border-radius: 16px;
+  border: 2px dashed var(--accent); background: var(--accent-soft); color: var(--fg); cursor: pointer; font: inherit; touch-action: manipulation; user-select: none; }
+.tap-pad b { font: 700 54px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.tap-pad span { font-size: 13px; color: var(--muted); }
+.tap-pad:disabled { opacity: .55; cursor: default; }
+.tap-pad:not(:disabled):active { background: var(--accent); }
+.tap-pad.wide { margin-top: 12px; min-height: 96px; }
+
+/* ===== levadas ===== */
+.strum-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.strum-grid { display: grid; grid-template-columns: repeat(var(--n), minmax(30px, 1fr)); gap: 4px; margin-top: 10px; overflow-x: auto; padding-bottom: 4px; }
+.sg-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; border: 1px solid var(--line); border-radius: 8px; min-width: 30px; }
+.sg-cell b { font: 700 24px/1 var(--f-display); min-height: 24px; }
+.sg-cell span { font: 600 11px var(--f-mono); color: var(--muted); }
+.sg-cell.beat { background: var(--surface-2); }
+.sg-cell.mute b { color: var(--muted); }
+.sg-cell.on { background: var(--accent); border-color: var(--accent); }
+.sg-cell.on b, .sg-cell.on span { color: var(--accent-ink); }
+input[type="text"] { font: 15px var(--f-mono); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; min-width: 0; flex: 1; }
+
+/* ===== cifra ===== */
+.song-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.cifra { display: flex; flex-direction: column; gap: 14px; margin-block: 14px; padding: 14px; border-radius: 10px; background: var(--surface-2); max-height: 420px; overflow: auto; }
+.cf-name { font: 600 11px var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 4px; }
+.cf-line { display: flex; flex-wrap: wrap; align-items: flex-end; font-size: 17px; line-height: 1.3; }
+.cf-seg { display: inline-flex; flex-direction: column; white-space: pre; }
+.cf-seg i { font: normal 700 14px/1.4 var(--f-mono); color: var(--accent); min-height: 1.4em; }
+.cf-ch { cursor: pointer; padding: 0 2px; border-radius: 4px; }
+.cf-ch.on { background: var(--accent); color: var(--accent-ink) !important; }
+.cf-bars { font: 700 15px var(--f-mono); color: var(--accent); }
+
+/* ===== afinador ===== */
+.tuner { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-block: 16px 8px; }
+.tu-read { text-align: center; }
+.tu-read b { display: block; font: 700 84px/1 var(--f-display); }
+.tu-read span { font: 500 13px var(--f-mono); color: var(--muted); }
+.tu-meter { position: relative; width: min(100%, 520px); height: 54px; border-radius: 10px; background: var(--surface-2); }
+.tu-zero { position: absolute; left: calc(50% - 1px); top: 0; bottom: 0; width: 2px; background: var(--ok); }
+.tu-needle { position: absolute; top: 6px; bottom: 16px; left: calc(50% - 2px); width: 4px; border-radius: 2px; background: var(--bad); transition: left .08s linear; }
+.tu-needle.ok { background: var(--ok); }
+.tu-meter span { position: absolute; bottom: 2px; font: 600 10px var(--f-mono); color: var(--muted); }
+.tu-meter span:nth-of-type(1) { left: 6px; }
+.tu-meter span:nth-of-type(2) { left: calc(50% - 3px); }
+.tu-meter span:nth-of-type(3) { right: 6px; }
+.tu-msg { min-height: 1.5em; font-weight: 700; text-align: center; }
+.tu-strings { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-block: 8px 12px; }
+.tu-str { display: flex; flex-direction: column; align-items: center; padding: 10px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; font: inherit; }
+.tu-str b { font: 700 24px/1 var(--f-display); }
+.tu-str small { font: 600 11px var(--f-mono); color: var(--muted); }
+.tu-str.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.tu-str.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.tu-str.ok small { color: #fff; }
+
+/* ===== escrita rítmica ===== */
+.rn-wrap { overflow-x: auto; padding-block: 8px; }
+.rn { width: 100%; height: auto; display: block; }
+.rn-line { stroke: var(--muted); stroke-width: 1; }
+.rn-bar { stroke: var(--fg); stroke-width: 1.4; }
+.rn-head { fill: var(--fg); }
+.rn-head.hollow { fill: var(--surface); stroke: var(--fg); stroke-width: 1.8; }
+.rn-stem { stroke: var(--fg); stroke-width: 1.5; }
+.rn-flag { fill: none; stroke: var(--fg); stroke-width: 2.4; stroke-linecap: round; }
+.rn-beam, .rn-dot { fill: var(--fg); }
+.rn-rest { fill: var(--fg); font-family: 'Noto Music', serif; font-size: 28px; }
+.rn-hit { fill: var(--accent); fill-opacity: 0; }
+.rn-hit.on { fill-opacity: .25; }
+
+@media (max-width: 760px) {
+  .level-nav { grid-template-columns: repeat(5, minmax(56px, 1fr)); }
+  .level-nav a span { display: none; }
+  .changes { grid-template-columns: minmax(0, 1fr); }
+  .tu-strings { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .chord-svg { width: 80px; }
+}
