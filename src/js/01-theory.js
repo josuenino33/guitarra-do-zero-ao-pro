@@ -70,10 +70,13 @@ const T = (() => {
   const INV_NAME = ['Fundamental', '1ª inversão', '2ª inversão'];
 
   const mod = (n, m = 12) => ((n % m) + m) % m;
+  const NATPC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
   const pcOf = name => {
     if (typeof name === 'number') return mod(name);
-    const i = ROOTS.indexOf(name); if (i >= 0) return i;
-    const j = SHARP.indexOf(name); return j >= 0 ? j : mod(FLAT.indexOf(name));
+    const m = String(name).match(/^([A-G])(##|bb|#|b)?/);
+    if (!m) return 0;
+    const a = !m[2] ? 0 : m[2][0] === '#' ? m[2].length : -m[2].length;
+    return mod(NATPC[m[1]] + a);
   };
   const pitch = (s, f) => TUNING[s] + f;
 

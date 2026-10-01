@@ -60,16 +60,17 @@ V.braco = (el) => {
   }
 
   function info(c, d) {
-    const st = U.set();
-    let ivs = [], title = '';
-    if (c.kind === 'scale') { ivs = T.SCALES[c.scale].iv; title = T.SCALES[c.scale].name; }
-    else if (c.kind === 'triad' || c.kind === 'caged') { ivs = T.CHORDS[c.quality].iv; title = 'Tríade ' + T.CHORDS[c.quality].name.toLowerCase(); }
-    else if (c.kind === 'chord') { ivs = T.CHORDS[c.chord].iv; title = 'Arpejo ' + T.CHORDS[c.chord].name.toLowerCase(); }
-    else { ivs = [0]; title = 'Nota'; }
-    const cells = ivs.map(iv => `<div class="deg iv-${T.IV_ROLE[iv]}"><b>${T.noteName(c.root + iv, d.flats, st.latin)}</b><span>${T.ivLabel(iv)}</span></div>`).join('');
+    const st = U.set(), nm = sp => T.spellName(sp, st.latin);
+    let sp = null, title = '';
+    if (c.kind === 'scale') { sp = T.spellScale(c.root, c.scale); title = T.SCALES[c.scale].name; }
+    else if (c.kind === 'triad' || c.kind === 'caged') { sp = T.spellChord(c.root, c.quality); title = 'Tríade ' + T.CHORDS[c.quality].name.toLowerCase(); }
+    else if (c.kind === 'chord') { sp = T.spellChord(c.root, c.chord); title = 'Arpejo ' + T.CHORDS[c.chord].name.toLowerCase(); }
+    const role = l => ({ R: 'r' })[l] || (l.includes('♭5') ? 'b5' : { '2': '2', '9': '2', '3': '3', '4': '4', '11': '4', '5': '5', '6': '6', '13': '6', '7': '7' }[l.replace(/[♭♯]/g, '')] || 'n');
+    const cells = sp ? sp.list.map((n, i) => `<div class="deg iv-${role(sp.labels[i])}"><b>${nm(n)}</b><span>${sp.labels[i]}</span></div>`).join('')
+      : `<div class="deg iv-r"><b>${T.neutralName(c.root, st.latin)}</b><span>R</span></div>`;
     el.querySelector('[data-info]').innerHTML = `
-      <div class="panel"><p class="eyebrow">${title} de ${T.rootName(c.root, st.latin)}</p><div class="degrees">${cells}</div>
-      <p class="small">Fórmula: ${ivs.map(T.ivLabel).join(' – ')}</p></div>
+      <div class="panel"><p class="eyebrow">${title || 'Nota'} de ${sp ? nm(sp.root) : T.neutralName(c.root, st.latin)}</p><div class="degrees">${cells}</div>
+      <p class="small">Fórmula: ${sp ? sp.labels.join(' – ') : 'R'}</p></div>
       <div class="panel"><p class="eyebrow">Como estudar</p><p class="small">${tip(c)}</p></div>`;
   }
 
@@ -87,10 +88,11 @@ V.braco = (el) => {
     const c = cfg();
     let d;
     if (c.kind === 'chord') {
-      const ch = T.CHORDS[c.chord];
-      d = { marks: T.allNotes(ch.iv, c.root, U.set().frets), flats: T.useFlats(c.root, ch.iv.includes(3) ? 3 : 0), caption: `Arpejo de ${T.chordName(c.root, c.chord, U.set().latin)} no braço inteiro.`, seq: 'run' };
+      const ch = T.CHORDS[c.chord], sp = T.spellChord(c.root, c.chord);
+      d = { marks: T.allNotes(ch.iv, c.root, U.set().frets), flats: T.useFlats(c.root, ch.iv.includes(3) ? 3 : 0), spell: sp.map, seq: 'run',
+        caption: `Arpejo de ${T.spellName(sp.root, U.set().latin)}${ch.sym} no braço inteiro: ${sp.list.map(n => T.spellName(n, U.set().latin)).join(' ')}.` };
     } else d = U.buildDemo(c);
-    fb.set(U.fbState({ marks: d.marks, labels: EXP.labels, flats: d.flats,
+    fb.set(U.fbState({ marks: d.marks, labels: EXP.labels, flats: d.flats, spell: d.spell,
       onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
     el.querySelector('[data-caption]').textContent = d.caption;
     el.querySelector('[data-legend]').innerHTML = U.legend(c.kind);

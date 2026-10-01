@@ -95,13 +95,22 @@ const TAB = (() => {
     };
   }
 
+  // harmônico natural: semitons acima da corda solta conforme a casa
+  const HARM = { 12: 12, 24: 24, 7: 19, 19: 19, 5: 24, 4: 28, 9: 28, 16: 28, 3: 31 };
+  /** Altura que soa (o harmônico soa diferente da casa apertada). */
+  const soundingMidi = o => T.TUNING[o.s] + (o.harm ? (HARM[o.f] ?? o.f) : o.f);
+
   /** Marcas para o braço a partir dos eventos (todas as notas do lick). */
   function marks(parsed, rootPc) {
     const seen = new Map();
     parsed.events.forEach(e => e.notes.forEach(o => {
       if (o.dead) return;
       const k = o.s + ':' + o.f;
-      if (!seen.has(k)) seen.set(k, T.mark(o.s, o.f, rootPc));
+      if (!seen.has(k)) {
+        const m = T.mark(o.s, o.f, rootPc);
+        if (o.harm) { const pc = T.mod(soundingMidi(o)); Object.assign(m, { pc, iv: T.mod(pc - rootPc), role: T.IV_ROLE[T.mod(pc - rootPc)] }); }
+        seen.set(k, m);
+      }
       if (o.bend && !o.pre) {
         // o alvo do bend aparece como fantasma uma ou duas casas acima
         const kb = o.s + ':' + (o.f + o.bend);
@@ -122,7 +131,6 @@ const TAB = (() => {
       e.notes.forEach(o => {
         if (o.dead) { A.play(T.TUNING[o.s] + 5, t, { dur: 0.05, vel: 0.5, mute: true, string: o.s }); return; }
         const legato = o.h || o.p || o.sl || o.tap;
-        const HARM = { 12: 12, 24: 24, 7: 19, 19: 19, 5: 24, 4: 28, 9: 28, 16: 28, 3: 31 };
         const dur = isLast ? Math.max(e.d * spb, 1.6) : Math.max(e.d * spb * 1.05, 0.12) + (o.bend || o.vib ? 0.15 : 0.35);
         if (o.harm) { A.play(T.TUNING[o.s] + (HARM[o.f] ?? o.f), t, { dur: Math.max(e.d * spb, 1.2) + 0.8, vel: 0.42, string: o.s }); return; }
         A.play(T.TUNING[o.s] + o.f, t, {
@@ -135,7 +143,7 @@ const TAB = (() => {
   }
 
   /** Transpõe uma tablatura em `shift` semitons; muda de oitava se sair do braço. */
-  function transpose(src, shift, maxFret = 22) {
+  function transpose(src, shift, maxFret = 24) {
     const frets = [...src.matchAll(/(^|[\s+])[1-6]:(\d+)/g)].map(m => +m[2]);
     if (!frets.length || !shift) return { src, shift: 0 };
     let s = shift;
@@ -197,5 +205,5 @@ const TAB = (() => {
     return { play, stop, get playing() { return playing; } };
   }
 
-  return { parse, render, marks, Player, noteLabel, scheduleNotes, transpose, transposable };
+  return { parse, render, marks, Player, noteLabel, scheduleNotes, transpose, transposable, soundingMidi };
 })();

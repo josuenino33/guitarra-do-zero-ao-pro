@@ -134,7 +134,7 @@ V.lesson = (el, id) => {
     const keySel = demo0.keySel ? `<label class="field">Tom <select data-root id="lesson-root">${U.rootOptions(T.pcOf(c.root))}</select></label>` : '';
     const lab = demo0.kind !== 'natural' && demo0.kind !== 'lick' ? U.chips('labels', [{ v: 'iv', label: 'Intervalos' }, { v: 'note', label: 'Notas' }], labelsMode) : '';
     ctrl.innerHTML = `${views}<div class="ctrl-right">${keySel}${lab}${demo0.kind !== 'lick' ? '<button type="button" class="btn" data-act="hear">♪ Ouvir</button>' : ''}</div>`;
-    fb.set(U.fbState({ marks: d.marks, labels: demo0.kind === 'natural' ? 'note' : labelsMode, flats: d.flats, frets: d.frets,
+    fb.set(U.fbState({ marks: d.marks, labels: demo0.kind === 'natural' ? 'note' : labelsMode, flats: d.flats, frets: d.frets, spell: d.spell,
       onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
     el.querySelector('[data-caption]').textContent = d.caption;
     el.querySelector('[data-legend]').innerHTML = U.legend(demo0.kind);
@@ -149,7 +149,7 @@ V.lesson = (el, id) => {
       lickHost.before(fbHost);
       fb = FB.create(fbHost);
       const d = U.buildDemo({ kind: 'lick', lick: lk.id });
-      fb.set(U.fbState({ marks: d.marks, labels: 'iv', flats: d.flats, frets: d.frets }));
+      fb.set(U.fbState({ marks: d.marks, labels: 'iv', flats: d.flats, frets: d.frets, spell: d.spell }));
     }
     const ownsFb = demo0.kind === 'lick' || !!widget;
     lp = U.lickPanel(lickHost, lk, fb, {
@@ -157,7 +157,8 @@ V.lesson = (el, id) => {
       onPlay(l) {
         if (!ownsFb) {
           const p = TAB.parse(l.src), mx = Math.max(0, ...p.events.flatMap(e => e.notes.map(o => o.f || 0)));
-          fb.set({ marks: TAB.marks(p, T.pcOf(l.key)), labels: labelsMode, frets: Math.min(22, Math.max(U.set().frets, mx + 1)) });
+          fb.set({ marks: TAB.marks(p, T.pcOf(l.key)), labels: labelsMode, frets: Math.min(24, Math.max(U.set().frets, mx + 1)),
+            spell: T.SCALES[l.scale] ? T.spellScale(T.pcOf(l.key), l.scale, T.parseName(l.key)).map : null });
         }
       },
     });

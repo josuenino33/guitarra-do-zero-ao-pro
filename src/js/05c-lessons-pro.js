@@ -11,7 +11,7 @@ MODULES.push(
       tasks:['Acerte 20 notas seguidas no exercício.','Depois de responder, toque a nota na guitarra.'] },
     { id:'primeira-posicao', title:'Notas na primeira posição', min:20,
       body:`<p>A <b>primeira posição</b> vai da corda solta até a casa 3 (ou 4), em todas as cordas. É onde se começa a ler partitura na guitarra, porque cada nota escrita tem um lugar só.</p>
-<p>As cordas graves ficam abaixo da pauta, com linhas suplementares: a corda 6 solta (Mi) está três linhas abaixo. A corda 1 solta (Mi) está no quarto espaço.</p>`,
+<p>As cordas graves ficam abaixo da pauta, com linhas suplementares: a corda 6 solta (Mi) fica logo abaixo da terceira linha suplementar. A corda 1 solta (Mi) está no quarto espaço da pauta.</p>`,
       demo:{ kind:'staff', mode:'quiz', set:'primeira' },
       tasks:['Acerte 20 notas seguidas.','Leia em voz alta as notas da corda 6 até a corda 1.'] },
     { id:'acidentes', title:'Sustenidos, bemóis e armadura', min:15,
@@ -28,7 +28,7 @@ MODULES.push(
   { id:'impro', level:5, order:2, title:'Improvisação avançada', tag:'Linguagem', lessons:[
     { id:'notas-alvo', title:'Solando nas mudanças: notas do acorde', min:20,
       body:`<p>Escala serve para todos os acordes do tom, mas quem dá direção ao solo são as <b>notas do acorde da vez</b>. O exercício profissional é ficar <b>numa região do braço</b> e trocar só as notas-alvo quando o acorde muda.</p>
-<p>Abaixo, a mesma região (casas 4 a 8) para Am7, D7 e G7M. Repare como só algumas notas mudam: a 3ª e a 7ª, que definem cada acorde. Mire nelas no tempo 1 de cada compasso.</p>`,
+<p>Abaixo, a mesma região (casas 4 a 8) para Am7, D7 e G7M. Várias notas são comuns entre os acordes; as que definem o som de cada um são a <b>3ª e a 7ª</b>, e elas mudam pouco de um acorde para o outro (a 7ª de um desce meio tom para a 3ª do seguinte). Mire nelas no tempo 1 de cada compasso.</p>`,
       demo:{ kind:'arp', root:'A', chord:'m7', lo:4, hi:8, views:[{ label:'Am7', root:'A', chord:'m7' },{ label:'D7', root:'D', chord:'dom7' },{ label:'G7M', root:'G', chord:'maj7' }] },
       tasks:['No Jam ii–V–I, toque só notas do acorde, uma por tempo.','Depois ligue as notas-alvo com notas da escala.'],
       links:[{ to:'jam', id:'iivi', label:'Jam: ii–V–I em Sol' }] },
@@ -40,7 +40,7 @@ MODULES.push(
     { id:'menor-melodica', title:'Menor melódica, lídio dominante e alterada', min:20,
       body:`<p>A <b>menor melódica</b> é a escala menor com 6ª e 7ª maiores. Dela saem dois modos muito usados:</p>
 <ul><li><b>Lídio dominante</b> (4º modo): maior com ♯4 e ♭7. Perfeito sobre acordes 7 que não resolvem (blues moderno, fusion).</li>
-<li><b>Alterada</b> (7º modo): todas as tensões do dominante (♭9, ♯9, ♭5, ♯5). Use sobre o V7 logo antes de resolver.</li></ul>
+<li><b>Alterada</b> (7º modo): todas as tensões do dominante (♭9, ♯9, ♭5 e ♯5, escrito como ♭13). Use sobre o V7 logo antes de resolver.</li></ul>
 <p>Regra prática: sobre E7 que vai para Am, toque a menor melódica de Fá (meio tom acima do E).</p>`,
       demo:{ kind:'scale', scale:'menor_mel', root:'A', pos:0, keySel:true, views:[{ label:'Menor melódica', scale:'menor_mel' },{ label:'Lídio dominante', scale:'lidio_dom' },{ label:'Alterada', scale:'alterada' }] },
       lick:'alt1',
@@ -64,7 +64,7 @@ MODULES.push(
       links:[{ to:'gravar', label:'Abrir o gravador' }] },
     { id:'jazz-fusion', title:'Linguagem de jazz e fusion', min:20,
       body:`<p>Duas ferramentas da linguagem do jazz para começar:</p>
-<ul><li><b>Arpejos nas mudanças</b>: cada acorde do ii–V–I com o seu arpejo, ligando a 7ª de um à 3ª do seguinte (elas ficam a meio tom ou um tom de distância).</li>
+<ul><li><b>Arpejos nas mudanças</b>: cada acorde do ii–V–I com o seu arpejo, ligando a 7ª de um à 3ª do seguinte, que fica meio tom abaixo (Dó → Si de Dm7 para G7, Fá → Mi de G7 para C7M).</li>
 <li><b>Enclosures</b>: cercar a nota-alvo por cima e por baixo antes de tocá-la.</li></ul>
 <p>A melhor fonte é <b>transcrever</b>: tirar de ouvido frases dos músicos que você admira e tocá-las em outros tons.</p>`,
       demo:{ kind:'lick', lick:'jazz1' }, lick:'jazz1',

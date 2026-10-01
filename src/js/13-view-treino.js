@@ -78,7 +78,7 @@ V.speed = (el, id) => {
   el.innerHTML = treinoTabs('speed') + `
     <section class="panel">
       <div class="ctrl-row"><label class="field grow">Exercício <select data-k="id" id="spd-ex">${groups}</select></label>
-        <span class="pill">${rec ? `Recorde: ${rec} BPM` : 'Sem recorde ainda'}</span><span class="small">Tom: ${T.rootName(T.pcOf(lick.key), U.set().latin)} (troque na aba Licks)</span></div>
+        <span class="pill">${rec ? `Recorde: ${rec} BPM` : 'Sem recorde ainda'}</span><span class="small">Tom: ${T.spellName(T.parseName(lick.key), U.set().latin)} (troque na aba Licks)</span></div>
       <div class="ctrl-row">
         <label class="field">Começar em <input type="number" min="30" max="260" value="${SPEED.start}" data-k="start" id="spd-start"> BPM</label>
         <label class="field">Meta <input type="number" min="30" max="300" value="${SPEED.target}" data-k="target" id="spd-target"> BPM</label>

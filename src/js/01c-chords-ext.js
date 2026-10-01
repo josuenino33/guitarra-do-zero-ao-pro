@@ -86,7 +86,7 @@ const QUAL_SUFFIX = { maior:'', menor:'m', dom7:'7', maj7:'7M', m7:'m7', m7b5:'m
 
 /** Campo harmônico: tríades e tétrades de cada grau. */
 function harmonize(rootPc, scaleKey) {
-  const iv = T.SCALES[scaleKey].iv, flats = T.useFlats(rootPc, T.SCALES[scaleKey].parent);
+  const iv = T.SCALES[scaleKey].iv, spelled = T.spellScale(rootPc, scaleKey).list;
   const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   const tri = { '4,7':'maior', '3,7':'menor', '3,6':'dim', '4,8':'aum' };
   const tet = { '4,7,11':'maj7', '3,7,10':'m7', '4,7,10':'dom7', '3,6,10':'m7b5', '3,6,9':'dim7', '3,7,11':'mmaj7', '4,8,11':'aummaj7' };
@@ -95,7 +95,7 @@ function harmonize(rootPc, scaleKey) {
     const t3 = tri[`${at(2)},${at(4)}`] || 'maior';
     const t4 = tet[`${at(2)},${at(4)},${at(6)}`] || 'm7';
     const pc = T.mod(rootPc + d);
-    const nm = (flats ? T.FLAT : T.SHARP)[pc];
+    const nm = T.spellAscii(spelled[i]);
     const minor = t3 === 'menor' || t3 === 'dim';
     let roman = ROMAN[i]; if (minor) roman = roman.toLowerCase();
     const acc = T.mod(d - T.SCALES.maior.iv[i]);

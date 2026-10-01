@@ -11,6 +11,12 @@ const STAFF = (() => {
     return { letter: nm[0], acc: nm[1] === '#' ? '♯' : nm[1] === 'b' ? '♭' : '', step: oct * 7 + LETTER[nm[0]] };
   }
 
+  /** Grafia vinda do contexto (tom/escala): letra e acidente já definidos (inclusive ♯♯ e ♭♭). */
+  function fromSpell(midiWritten, sp) {
+    const natural = midiWritten - sp.a, oct = Math.floor(natural / 12) - 1;
+    return { letter: T.LETTERS[sp.l], acc: ({ 1: '♯', 2: '𝄪', '-1': '♭', '-2': '𝄫' })[sp.a] || '', step: oct * 7 + sp.l };
+  }
+
   /**
    * notes: [{ midi (som real), d (tempos, opcional), rest? }]
    * o: { flats, width, per (tempos por compasso), unit }
@@ -38,7 +44,7 @@ const STAFF = (() => {
     items.forEach((n, i) => {
       if (n.barAfter && i < items.length - 1) p.push(`<line class="st-bar" x1="${n.barAfter}" x2="${n.barAfter}" y1="${top}" y2="${bottom}"/>`);
       if (n.rest) { p.push(`<text class="rn-rest st-rest" x="${n.x}" y="${top + SP * 2.9}" text-anchor="middle">${({ 4:'𝄻', 2:'𝄼', 1:'𝄽', 0.5:'𝄾', 0.25:'𝄿' })[n.d || 1] || '𝄽'}</text>`); return; }
-      const sp = spell(n.midi + 12, o.flats);
+      const sp = o.spell && o.spell[T.mod(n.midi)] ? fromSpell(n.midi + 12, o.spell[T.mod(n.midi)]) : spell(n.midi + 12, o.flats);
       const y = bottom - (sp.step - STEP_E4) * SP / 2;
       for (let st = STEP_E4 - 2; st >= sp.step; st -= 2) { const ly = bottom - (st - STEP_E4) * SP / 2; p.push(`<line class="st-ledger" x1="${n.x - 11}" x2="${n.x + 11}" y1="${ly}" y2="${ly}"/>`); }
       for (let st = STEP_E4 + 10; st <= sp.step; st += 2) { const ly = bottom - (st - STEP_E4) * SP / 2; p.push(`<line class="st-ledger" x1="${n.x - 11}" x2="${n.x + 11}" y1="${ly}" y2="${ly}"/>`); }

@@ -49,9 +49,9 @@ const CH = (() => {
     '5':'power', 'dim':'dim', '°':'dim', 'm7(b5)':'m7b5', 'm7b5':'m7b5', 'ø':'m7b5', '+':'aum', 'aug':'aum', 'add9':'add9' };
 
   function parse(name) {
-    const m = String(name).match(/^([A-G])([#b]?)(.*?)(?:\/([A-G][#b]?))?$/);
+    const m = String(name).match(/^([A-G])(##|bb|#|b)?(.*?)(?:\/([A-G](?:##|bb|#|b)?))?$/);
     if (!m) return null;
-    const root = T.pcOf(m[1] + m[2]);
+    const root = T.pcOf(m[1] + (m[2] || ''));
     const q = SUFFIX[m[3]] ?? null;
     return { root, q, suffix: m[3], bass: m[4] ? T.pcOf(m[4]) : null, name };
   }

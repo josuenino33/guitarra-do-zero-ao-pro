@@ -5,7 +5,9 @@ Object.assign(QUAL_SUFFIX, { mmaj7:'m(7M)', aummaj7:'+(7M)' });
 VOICINGS.mmaj7 = [{ k:'Corda 5', rs:1, o:[-9,0,2,1,1,0] }];
 VOICINGS.aummaj7 = [{ k:'Corda 5', rs:1, o:[-9,0,-1,-2,-3,-9] }];
 
-const prettyChord = n => String(n).replace(/^([A-G])#/, '$1♯').replace(/^([A-G])b/, '$1♭').replace('(b5)', '(♭5)').replace('(b9)', '(♭9)').replace('(#9)', '(♯9)');
+const prettyChord = n => String(n).replace(/^([A-G])(##|bb|#|b)?/, (m, l, a) => l + (a ? a.replace(/#/g, '♯').replace(/b/g, '♭') : ''))
+  .replace(/\/([A-G])(##|bb|#|b)/, (m, l, a) => '/' + l + a.replace(/#/g, '♯').replace(/b/g, '♭'))
+  .replace('(b5)', '(♭5)').replace('(b9)', '(♭9)').replace('(#9)', '(♯9)');
 const EXT_LABEL = { 1:'♭9', 2:'9', 3:'♯9', 9:'13' };
 function formula(q) {
   const ext = ['nine', 'm9', 'maj9', 'b9', 's9', 'thirteen'].includes(q);
@@ -25,12 +27,12 @@ W.dict = (host, cfg = {}) => {
     <div class="chord-row" data-voicings></div>`;
   const $ = s => host.querySelector(s);
   function paint() {
-    const flats = T.useFlats(root, T.CHORDS[q].iv.includes(3) ? 3 : 0);
-    const name = (flats ? T.FLAT : T.SHARP)[root] + (QUAL_SUFFIX[q] ?? '');
-    const ivs = T.CHORDS[q].iv, labels = formula(q);
-    $('[data-head]').innerHTML = `<h3>${prettyChord(name)}</h3><p class="small">${T.CHORDS[q].name}</p>
-      <div class="degrees">${ivs.map((iv, i) => `<div class="deg iv-${T.IV_ROLE[iv]}"><b>${T.noteName(root + iv, flats, U.set().latin)}</b><span>${labels[i]}</span></div>`).join('')}</div>`;
-    const vs = CH.voicings(root, q);
+    const sp = T.spellChord(root, q);
+    const name = T.spellAscii(sp.root) + (QUAL_SUFFIX[q] ?? '');
+    const roleOf = (lab) => lab === 'R' ? 'r' : lab.includes('♭5') ? 'b5' : ({ 2:'2', 9:'2', 3:'3', 4:'4', 11:'4', 5:'5', 6:'6', 13:'6', 7:'7' })[lab.replace(/[♭♯]/g, '')] || 'n';
+    $('[data-head]').innerHTML = `<h3>${prettyChord(name)}</h3><p class="small">${T.CHORDS[q].name} · fórmula ${sp.labels.join(' – ')}</p>
+      <div class="degrees">${sp.list.map((n, i) => `<div class="deg iv-${roleOf(sp.labels[i])}"><b>${T.spellName(n, U.set().latin)}</b><span>${sp.labels[i]}</span></div>`).join('')}</div>`;
+    const vs = CH.voicings(root, q).map(v => Object.assign({}, v, { name }));
     $('[data-voicings]').innerHTML = vs.length ? vs.map((v, i) => `<button type="button" class="chord-card" data-v="${i}"><b>${prettyChord(name)}</b><small>${v.k}</small>${CH.diagram(v)}</button>`).join('')
       : '<p class="small">Sem forma cadastrada para este acorde.</p>';
     paint.vs = vs;
@@ -116,7 +118,8 @@ W.staff = (host, cfg = {}) => {
       const flats = T.useFlats(T.pcOf(lk.key), T.SCALES[lk.scale]?.parent || 0);
       if (ids.length > 1) host.querySelector('[data-pieces]').innerHTML = U.chips('piece', ids.map((id, i) => ({ v: i, label: lickById(id).title })), cur);
       const box = host.querySelector('[data-melody]');
-      box.innerHTML = `${lk.credit ? `<p class="small">${U.esc(lk.credit)}</p>` : ''}<div class="staff-wrap" data-st>${STAFF.render(STAFF.fromTab(parsed), { flats, per: lk.meter || 4, pickup: lk.pickup || 0 })}</div>
+        const spell = T.SCALES[lk.scale] ? T.spellScale(T.pcOf(lk.key), lk.scale, T.parseName(lk.key)).map : null;
+      box.innerHTML = `${lk.credit ? `<p class="small">${U.esc(lk.credit)}</p>` : ''}<div class="staff-wrap" data-st>${STAFF.render(STAFF.fromTab(parsed), { flats, spell, per: lk.meter || 4, pickup: lk.pickup || 0 })}</div>
         <div class="tab-scroll" data-tab></div>
         <div class="ctrl-row"><button type="button" class="btn primary" data-act="play">▶ Tocar</button>
           <label class="check"><input type="checkbox" data-hide id="staff-hide-${cur}"> Esconder a tablatura</label></div>`;

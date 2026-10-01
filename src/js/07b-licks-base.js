@@ -2,7 +2,7 @@
 CH.OPEN['C/E'] = { f:[0,3,2,0,1,0], d:[0,3,2,0,1,0] };
 
 LICKS.push(
-  { id:'ex-soltas', style:'exercicio', title:'Cordas soltas com palhetada alternada', key:'E', scale:'maior', bpm:60, level:1, tech:'Palhetada alternada',
+  { id:'ex-soltas', style:'exercicio', title:'Cordas soltas com palhetada alternada', key:'E', scale:'menor', bpm:60, level:1, tech:'Palhetada alternada',
     src:'|e 6:0 6:0 6:0 6:0 5:0 5:0 5:0 5:0 4:0 4:0 4:0 4:0 3:0 3:0 3:0 3:0 2:0 2:0 2:0 2:0 1:0 1:0 1:0 1:0',
     tip:'Baixo, cima, baixo, cima em cada corda. Movimento pequeno, vindo do pulso, e a palheta mal passando da corda.' },
   { id:'ex-1234', style:'exercicio', title:'Um dedo por casa (1-2-3-4)', key:'A', scale:'maior', bpm:60, level:1, tech:'Mão esquerda',

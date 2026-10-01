@@ -37,7 +37,7 @@ V.licks = (el, id, opt = {}) => {
   function show() {
     panel && panel.stop();
     const d = U.buildDemo({ kind:'lick', lick: cur.id });
-    fb.set(U.fbState({ marks: d.marks, labels: 'iv', flats: d.flats, frets: d.frets,
+    fb.set(U.fbState({ marks: d.marks, labels: 'iv', flats: d.flats, frets: d.frets, spell: d.spell,
       onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
     el.querySelector('[data-legend]').innerHTML = U.legend('lick');
     const host = el.querySelector('[data-panel]');

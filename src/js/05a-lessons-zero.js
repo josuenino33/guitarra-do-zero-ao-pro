@@ -51,7 +51,7 @@ MODULES.push(
     { id:'afinar', title:'Afinando a guitarra', min:8,
       body:`<p>Toda vez que pegar a guitarra, <b>afine antes</b>. Uma guitarra desafinada faz até os acordes certos soarem errados.</p>
 <p>A afinação padrão é <b>Mi Lá Ré Sol Si Mi</b> (E A D G B E), da corda 6 para a 1. Use o afinador abaixo: toque uma corda solta, deixe soar e gire a tarraxa até o ponteiro ficar no centro.</p>
-<ul><li>Se a nota estiver <b>baixa</b> (ponteiro à esquerda), aperte a corda.</li>
+<ul><li>Se a nota estiver <b>baixa</b> (ponteiro à esquerda), estique a corda girando a tarraxa. Se estiver <b>alta</b>, afrouxe.</li>
 <li>Sempre chegue na nota <b>de baixo para cima</b>: se passou, afrouxe um pouco e suba de novo. Assim a corda segura a afinação.</li></ul>
 <p>Sem microfone? Use os tons de referência e afine de ouvido, comparando o som.</p>`,
       demo:{ kind:'tuner' },
@@ -60,7 +60,7 @@ MODULES.push(
     { id:'acordes-abertos', title:'Primeiros acordes: Em, E, Am, A, D e Dm', min:15,
       body:`<p>Como ler o diagrama: as linhas verticais são as cordas (a corda 6 fica à esquerda), as horizontais são os trastes. A bolinha mostra onde apertar e o número é o <b>dedo</b> (1 indicador, 2 médio, 3 anelar, 4 mínimo). <b>○</b> = corda solta, <b>×</b> = não tocar.</p>
 <p>Monte o acorde, toque <b>corda por corda</b> e ouça se cada uma soa limpa. Se alguma abafa, arqueie mais os dedos ou aproxime-os do traste. Clique em cada diagrama para ouvir como deve soar.</p>
-<p>Comece por <b>Em</b> e <b>E</b>: só dois ou três dedos e todas as cordas soando. Repare que de Em para E muda um dedo só. O mesmo vale para Am → A e Dm → D.</p>`,
+<p>Comece por <b>Em</b> e <b>E</b>: só dois ou três dedos e todas as cordas soando. Repare que de Em para E muda <b>uma nota só</b> (a da corda 3). Entre Am e A e entre Dm e D também muda só uma nota: a 3ª do acorde.</p>`,
       demo:{ kind:'chords', chords:['Em','E','Am','A','D','Dm'] },
       tasks:['Monte cada acorde e toque corda por corda até todas soarem.','Alterne Em ↔ E e Am ↔ A, quatro batidas cada.'],
       links:[{ to:'trocas', label:'Treino de trocas de acordes' }] },
@@ -177,7 +177,7 @@ MODULES.push(
       tasks:['Ouça cada ritmo e depois toque junto.','Toque os ritmos numa corda solta com palhetada para baixo.'] },
     { id:'leitura-ritmica', title:'Leitura rítmica com semicolcheias', min:20,
       body:`<p>Com semicolcheias, cada tempo se divide em 4: <b>1 i e a</b>. Para ler sem se perder, olhe o tempo inteiro como um bloco: as barras que ligam as notas mostram exatamente um tempo.</p>
-<p>Combinações comuns: <b>colcheia + duas semicolcheias</b> (galope invertido), <b>duas semicolcheias + colcheia</b> (galope) e <b>colcheia pontuada + semicolcheia</b>.</p>`,
+<p>Combinações comuns: <b>colcheia + duas semicolcheias</b> (o galope do metal), <b>duas semicolcheias + colcheia</b> (galope invertido) e <b>colcheia pontuada + semicolcheia</b>.</p>`,
       demo:{ kind:'rhythm', lv:[3] },
       tasks:['Leia cada ritmo falando “1 i e a” antes de tocar.','Toque junto até passar de 80% de precisão.'] },
   ]},

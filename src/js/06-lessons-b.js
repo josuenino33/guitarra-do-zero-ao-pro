@@ -10,14 +10,14 @@ MODULES.push(
       tasks:['Suba e desça a caixa 1 a 60 BPM, palhetada alternada.','Toque o lick de tercinas devagar e suba 5 BPM por dia.'],
       links:[{ to:'treino', id:'ex-pent', label:'Treino de velocidade da caixa 1' }] },
     { id:'pent5', title:'As cinco caixas', min:20,
-      body:`<p>A pentatônica tem <b>5 caixas</b>, uma começando em cada nota da escala na corda 6. A última nota de uma caixa é a primeira da seguinte, então elas se encaixam como peças e cobrem o braço todo.</p>
+      body:`<p>A pentatônica tem <b>5 caixas</b>, uma começando em cada nota da escala na corda 6. Em cada corda, a nota mais aguda de uma caixa é a nota mais grave da caixa seguinte, então elas se encaixam como peças e cobrem o braço todo.</p>
 <p>A forma mais rápida de ligar as caixas é pela <b>tônica</b>: ache a nota vermelha em cada desenho. As caixas 1 e 2 (casas 5 a 10 em Lá) são as mais usadas, e a caixa 4 aparece muito em solos clássicos na região da casa 12 e acima.</p>`,
       demo:{ kind:'scale', scale:'pent_menor', root:'A', pos:0, keySel:true, views:[{label:'Caixa 1', pos:0},{label:'Caixa 2', pos:1},{label:'Caixa 3', pos:2},{label:'Caixa 4', pos:3},{label:'Caixa 5', pos:4},{label:'Braço inteiro', pos:-1}] },
       tasks:['Aprenda uma caixa nova por semana.','Toque a caixa 1 e deslize para a caixa 2 sem parar.'],
       links:[{ to:'jam', id:'rock', label:'Improvisar sobre Am–G–F–G' }] },
     { id:'pentmaior', title:'Pentatônica maior e a relativa', min:12,
       body:`<p>A pentatônica maior (<b>R, 2, 3, 5, 6</b>) usa exatamente os <b>mesmos desenhos</b> da menor. Só muda qual nota é a tônica.</p>
-<p>Regra prática: a pentatônica menor de Lá tem as mesmas notas da pentatônica maior de Dó. Para achar a maior de um tom, recue <b>3 casas</b> a partir da tônica menor. Sol maior = Mi menor, que fica 3 casas abaixo.</p>
+<p>Regra prática: a pentatônica menor de Lá tem as mesmas notas da pentatônica maior de Dó. Para tocar a pentatônica <b>maior</b> de um tom, use o desenho da <b>menor</b> com a tônica <b>3 casas abaixo</b>. Sol maior = desenho de Mi menor (casa 3 → casa 0, ou casa 15 → casa 12).</p>
 <p>A pentatônica maior soa mais alegre, aberta e “country/gospel”. Em louvor e soul, ela aparece misturada com tríades e sextas.</p>`,
       demo:{ kind:'scale', scale:'pent_maior', root:'C', pos:4, keySel:true, views:[{label:'Dó maior', root:'C', scale:'pent_maior'},{label:'Lá menor', root:'A', scale:'pent_menor', pos:0}] },
       lick:'g4',

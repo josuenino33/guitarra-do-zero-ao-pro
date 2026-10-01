@@ -31,11 +31,8 @@ function parseChord(name) {
   const p = CH.parse(name);
   return { root: p.root, q: p.q || 'maior', name };
 }
-function transposeChord(name, shift, flats) {
-  const m = name.match(/^([A-G][b#]?)(.*)$/);
-  const pc = T.mod(T.pcOf(m[1]) + shift);
-  return (flats ? T.FLAT : T.SHARP)[pc] + m[2];
-}
+// tom do jam com a grafia de menos acidentes (Db maior, C# menor…)
+const jamKeyName = (jam, pc) => T.spellAscii(T.spellScale(pc, jam.minor ? 'menor' : 'maior').root);
 
 V.jam = (el, id) => {
   if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; JAM.key = null; } JAM.id = id; }
@@ -45,16 +42,16 @@ V.jam = (el, id) => {
   if (!JAM.bpm) JAM.bpm = jam.bpm;
   const baseKey = T.pcOf(jam.key);
   const keyPc = JAM.key == null ? baseKey : JAM.key;
-  const flats = T.useFlats(keyPc, jam.minor ? 3 : 0);
-  const chords = jam.chords.map(c => parseChord(transposeChord(c, keyPc - baseKey, flats)));
+  const keyName = jamKeyName(jam, keyPc);
+  const chords = jam.chords.map(c => parseChord(T.transposeName(c, jam.key, keyName)));
   const latin = U.set().latin;
 
   el.innerHTML = treinoTabs('jam') + `
     <section class="panel">
       <div class="ctrl-row">${U.chips('jam', JAMS.map(j => ({ v: j.id, label: j.title })), jam.id)}</div>
       <div class="ctrl-row">
-        <label class="field">Tom <select data-k="key" id="jam-key">${T.ROOTS.map((r, i) => `<option value="${i}" ${i === keyPc ? 'selected' : ''}>${T.rootName(i, latin)}${jam.minor ? 'm' : ''}</option>`).join('')}</select></label>
-        <label class="field">Escala <select data-k="scale" id="jam-scale">${jam.scales.map(s => `<option value="${s}" ${s === JAM.scale ? 'selected' : ''}>${T.SCALES[s].name} de ${T.rootName(keyPc, latin)}</option>`).join('')}</select></label>
+        <label class="field">Tom <select data-k="key" id="jam-key">${T.ROOTS.map((r, i) => `<option value="${i}" ${i === keyPc ? 'selected' : ''}>${T.spellName(T.parseName(jamKeyName(jam, i)), latin)}${jam.minor ? 'm' : ''}</option>`).join('')}</select></label>
+        <label class="field">Escala <select data-k="scale" id="jam-scale">${jam.scales.map(s => `<option value="${s}" ${s === JAM.scale ? 'selected' : ''}>${T.SCALES[s].name} de ${T.spellName(T.parseName(keyName), latin)}</option>`).join('')}</select></label>
         <label class="field">Andamento <input type="range" min="40" max="200" value="${JAM.bpm}" data-k="bpm" id="jam-bpm"> <b data-bpm>${JAM.bpm}</b> BPM</label>
       </div>
       <div class="ctrl-row">
@@ -85,7 +82,7 @@ V.jam = (el, id) => {
       if (civ.includes(pc)) marks.push(T.mark(s, f, c.root));
       else if (scalePcs.includes(pc)) marks.push(Object.assign(T.mark(s, f, keyPc), { small: true, role: 'n', label: '' }));
     }
-    fb.set(U.fbState({ marks, labels: JAM.labels, flats: sflats,
+    fb.set(U.fbState({ marks, labels: JAM.labels, flats: sflats, spell: T.spellChord(c.root, c.q, T.parseName(c.name)).map,
       onPick: (s, f) => { A.play(T.pitch(s, f), null, { dur: 1.2, string: s }); fb.setActive([s + ':' + f]); } }));
     el.querySelector('[data-now]').textContent = prettyChord(c.name);
     el.querySelector('[data-next]').textContent = prettyChord(chords[(ci + 1) % chords.length].name);

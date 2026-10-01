@@ -84,11 +84,12 @@ function quizRun(el, q) {
       const root = rnd(12), qual = pick(['maior', 'menor']), set = pick(T.STRING_SETS);
       const vs = T.triads(root, qual, set.s, 15);
       const v = pick(vs);
-      fb.set(U.fbState({ frets: 15, labels:'note', flats: T.useFlats(root, qual === 'menor' ? 3 : 0), marks: v.notes.map(n => Object.assign({}, n, { role:'q' })), onPick: null }));
+      const csp = T.spellChord(root, qual);
+      fb.set(U.fbState({ frets: 15, labels:'note', spell: csp.map, marks: v.notes.map(n => Object.assign({}, n, { role:'q', fixedRole: true })), onPick: null }));
       promptEl.textContent = `Que tríade é esta? (${set.label})`;
       ansEl.innerHTML = ['maior', 'menor'].flatMap(qq => [0, 1, 2].map(i => `<button type="button" class="btn ans" data-a="${qq}-${i}">${T.CHORDS[qq].name} · ${T.INV_NAME[i]}</button>`)).join('');
       v.notes.forEach((n, k) => A.play(T.pitch(n.s, n.f), A.now() + k * 0.03, { dur: 1.2, vel: 0.6 }));
-      return { answer: `${qual}-${v.inv}`, extra: `${T.chordName(root, qual, latin())}, ${T.INV_NAME[v.inv].toLowerCase()}`, reveal: () => fb.set({ marks: v.notes, labels:'iv' }) };
+      return { answer: `${qual}-${v.inv}`, extra: `${T.spellName(csp.root, latin())}${T.CHORDS[qual].sym}, ${T.INV_NAME[v.inv].toLowerCase()}`, reveal: () => fb.set({ marks: v.notes, labels:'iv' }) };
     },
     'ouvido'() {
       const ivs = [3, 4, 5, 7, 9, 10, 12];

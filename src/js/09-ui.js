@@ -5,7 +5,8 @@ const U = (() => {
   const set = () => S.get().settings;
 
   function rootOptions(selPc) {
-    return T.ROOTS.map((r, i) => `<option value="${i}" ${i === selPc ? 'selected' : ''}>${T.rootName(i, set().latin)}</option>`).join('');
+    // tecla preta mostra os dois nomes (C♯/D♭): a grafia certa depende do tom e da escala
+    return T.ROOTS.map((r, i) => `<option value="${i}" ${i === selPc ? 'selected' : ''}>${T.neutralName(i, set().latin)}</option>`).join('');
   }
   function chips(name, items, value) {
     return `<div class="chips" role="group" data-chips="${name}">${items.map(it =>
@@ -18,14 +19,16 @@ const U = (() => {
 
   function fbState(extra = {}) {
     const st = set();
-    return Object.assign({ frets: st.frets, lefty: st.lefty, latin: st.latin }, extra);
+    return Object.assign({ frets: st.frets, lefty: st.lefty, latin: st.latin, spell: null }, extra);
   }
 
-  /** Monta marcas para uma demonstração de aula/explorador. */
+  /** Monta marcas para uma demonstração de aula/explorador (com a grafia correta do contexto). */
+  const IV_LETTER = { 0:0, 1:1, 2:1, 3:2, 4:2, 5:3, 6:4, 7:4, 8:5, 9:5, 10:6, 11:6, 12:0, 16:2, 19:4 };
   function buildDemo(cfg) {
     const st = set(), N = Math.max(st.frets, cfg.minFrets || 0);
     const root = typeof cfg.root === 'number' ? cfg.root : T.pcOf(cfg.root || 'C');
-    let marks = [], caption = '', labels = cfg.labels || 'iv', flats = T.useFlats(root, 0), seq = null, frets = N;
+    const nm = sp => T.spellName(sp, st.latin);
+    let marks = [], caption = '', labels = cfg.labels || 'iv', flats = T.useFlats(root, 0), seq = null, frets = N, spell = null;
     switch (cfg.kind) {
       case 'natural': {
         const nat = [0, 2, 4, 5, 7, 9, 11];
@@ -40,94 +43,104 @@ const U = (() => {
       case 'note': {
         marks = T.pcPositions(root, N).map(p => T.mark(p.s, p.f, root));
         labels = 'note';
-        caption = `Todas as posições de ${T.rootName(root, st.latin)} até a casa ${N}.`;
+        caption = `Todas as posições de ${T.neutralName(root, st.latin)} até a casa ${N}.`;
         seq = 'run'; break;
       }
       case 'interval': {
-        const rp = T.pitch(cfg.s, cfg.f);
-        for (const iv of cfg.ivs) for (let s = cfg.s; s <= Math.min(5, cfg.s + 3); s++)
-          for (let f = Math.max(0, cfg.f - 3); f <= cfg.f + 4; f++)
-            if (T.pitch(s, f) === rp + iv && !(iv && s === cfg.s && f === cfg.f))
-              marks.push(T.mark(s, f, root, iv === 12 ? { label: '8' } : {}));
+        const rp = T.pitch(cfg.s, cfg.f), r = T.bestRoot(root, [0], [0]);
+        spell = {};
+        for (const iv of cfg.ivs) {
+          const lo = IV_LETTER[iv], sp = T.spellIn((r.l + lo) % 7, root + iv);
+          spell[T.mod(root + iv)] = { l: sp.l, a: sp.a, i: T.degLabel(iv % 12, lo % 7, false), role: ['r', '2', '3', '4', '5', '6', '7'][lo % 7] };
+          for (let s = cfg.s; s <= Math.min(5, cfg.s + 3); s++)
+            for (let f = Math.max(0, cfg.f - 3); f <= cfg.f + 4; f++)
+              if (T.pitch(s, f) === rp + iv && !(iv && s === cfg.s && f === cfg.f))
+                marks.push(T.mark(s, f, root, iv === 12 ? { label: '8' } : {}));
+        }
         marks.push(T.mark(cfg.s, cfg.f, root));
-        caption = `Tônica ${T.rootName(root, st.latin)} na ${T.stringLabel(cfg.s).toLowerCase()}, casa ${cfg.f}.`;
+        caption = `Tônica ${nm(r)} na ${T.stringLabel(cfg.s).toLowerCase()}, casa ${cfg.f}.`;
         seq = 'run'; break;
       }
       case 'power': {
-        const s = cfg.s || 0;
+        const s = cfg.s || 0, sp = T.spellChord(root, 'power');
+        spell = sp.map;
         for (let f = T.mod(root - T.TUNING[s]); f + 2 <= N; f += 12)
           marks.push(T.mark(s, f, root), T.mark(s + 1, f + 2, root), T.mark(s + 2, f + 2, root, { label: '8' }));
-        caption = `${T.rootName(root, st.latin)}5: tônica, 5ª e oitava.`;
+        caption = `${nm(sp.root)}5: tônica, 5ª e oitava.`;
         seq = 'strum'; break;
       }
       case 'scale': {
-        const sc = T.SCALES[cfg.scale];
-        flats = T.useFlats(root, sc.parent);
+        const sc = T.SCALES[cfg.scale], sp = T.spellScale(root, cfg.scale);
+        flats = T.useFlats(root, sc.parent); spell = sp.map;
         const pos = cfg.pos ?? 0;
         marks = T.scaleMarks(cfg.scale, root, pos, N);
         const posName = pos < 0 ? 'braço inteiro' : (sc.sys === 'box' ? `caixa ${pos + 1}` : `posição ${pos + 1}`);
-        caption = `${sc.name} de ${T.rootName(root, st.latin)}, ${posName}.`;
+        caption = `${sc.name} de ${nm(sp.root)}, ${posName}: ${sp.list.map(nm).join(' ')}.`;
         seq = 'run'; break;
       }
       case 'triad': {
         const set3 = T.STRING_SETS.find(x => x.id === (cfg.set || '123'));
-        const q = cfg.quality || 'maior';
-        flats = T.useFlats(root, q === 'menor' ? 3 : 0);
+        const q = cfg.quality || 'maior', sp = T.spellChord(root, q);
+        spell = sp.map;
         let vs = T.triads(root, q, set3.s, N);
         if (cfg.inv != null && cfg.inv >= 0) vs = vs.filter(v => v.inv === cfg.inv);
         vs.forEach(v => v.notes.forEach(n => marks.push(n)));
         seq = { groups: vs.map(v => v.notes) };
-        caption = `${T.chordName(root, q, st.latin)} nas ${set3.label.toLowerCase()}` + (cfg.inv >= 0 ? `, ${T.INV_NAME[cfg.inv].toLowerCase()}.` : ', três inversões.');
+        caption = `${nm(sp.root)}${T.CHORDS[q].sym} (${sp.list.map(nm).join(' ')}) nas ${set3.label.toLowerCase()}` + (cfg.inv >= 0 ? `, ${T.INV_NAME[cfg.inv].toLowerCase()}.` : ', três inversões.');
         break;
       }
       case 'caged': {
-        const q = cfg.quality || 'maior';
-        flats = T.useFlats(root, q === 'menor' ? 3 : 0);
+        const q = cfg.quality || 'maior', sp = T.spellChord(root, q);
+        spell = sp.map;
         const shapes = T.cagedAll(q, root, N);
         const chordIv = T.CHORDS[q].iv;
+        const cname = nm(sp.root) + T.CHORDS[q].sym;
         if (cfg.shape === 'all' || !cfg.shape) {
           const seen = new Set();
           shapes.forEach(sh => sh.notes.forEach(n => { const k = n.s + ':' + n.f; if (!seen.has(k)) { seen.add(k); marks.push(n); } }));
           seq = { groups: shapes.map(sh => sh.notes) };
-          caption = `${T.chordName(root, q, st.latin)} nas 5 formas: ` + shapes.map(sh => `${sh.k} (casa ${sh.lo})`).join(' → ');
+          caption = `${cname} nas 5 formas: ` + shapes.map(sh => `${sh.k} (casa ${sh.lo})`).join(' → ');
         } else {
           const sh = shapes.find(x => x.k === cfg.shape);
           const layer = cfg.layer || 'chord';
           if (layer === 'chord') { marks = sh.notes; seq = { groups: [sh.notes] }; }
           else {
             const lo = Math.max(0, sh.lo - (layer === 'pent' ? 1 : 0)), hi = sh.hi + 1;
-            const ivs = layer === 'arp' ? chordIv : (q === 'menor' ? T.SCALES.pent_menor.iv : T.SCALES.pent_maior.iv);
+            const pk = q === 'menor' ? 'pent_menor' : 'pent_maior';
+            const ivs = layer === 'arp' ? chordIv : T.SCALES[pk].iv;
+            if (layer === 'pent') spell = Object.assign({}, T.spellScale(root, pk, sp.root).map, sp.map);
             const shapeKeys = new Set(sh.notes.map(n => n.s + ':' + n.f));
             marks = T.allNotes(ivs, root, hi, lo).map(m => (layer === 'pent' && !chordIv.includes(m.iv)) ? Object.assign(m, { small: true }) : m);
             sh.notes.forEach(n => { if (!marks.some(m => m.s === n.s && m.f === n.f)) marks.push(n); });
-            marks.forEach(m => { if (layer !== 'chord' && !shapeKeys.has(m.s + ':' + m.f) && chordIv.includes(m.iv)) m.cls = 'ring'; });
+            marks.forEach(m => { if (!shapeKeys.has(m.s + ':' + m.f) && chordIv.includes(m.iv)) m.cls = 'ring'; });
             seq = 'run';
           }
-          caption = `Forma ${sh.k} de ${T.chordName(root, q, st.latin)}, casas ${sh.lo} a ${sh.hi}.`;
+          caption = `Forma ${sh.k} de ${cname}, casas ${sh.lo} a ${sh.hi}.`;
         }
         break;
       }
       case 'arp': {
-        const ch = T.CHORDS[cfg.chord];
-        flats = T.useFlats(root, ch.iv.includes(3) ? 3 : 0);
+        const ch = T.CHORDS[cfg.chord], sp = T.spellChord(root, cfg.chord);
+        flats = T.useFlats(root, ch.iv.includes(3) ? 3 : 0); spell = sp.map;
         const lo = cfg.lo ?? 0, hi = Math.min(cfg.hi ?? N, N);
         marks = T.allNotes(ch.iv, root, hi, lo);
-        caption = `Arpejo de ${T.chordName(root, cfg.chord, st.latin)} entre as casas ${lo} e ${hi}.`;
+        caption = `Arpejo de ${nm(sp.root)}${ch.sym} (${sp.list.map(nm).join(' ')}) entre as casas ${lo} e ${hi}.`;
         seq = 'run'; break;
       }
       case 'lick': {
-        const lk = lickById(cfg.lick);
+        const lk = lickInKey(lickById(cfg.lick), UIP.lickKey(cfg.lick));
         const p = TAB.parse(lk.src);
         const r = T.pcOf(lk.key);
         marks = TAB.marks(p, r);
         flats = T.useFlats(r, T.SCALES[lk.scale]?.parent || 0);
+        spell = T.SCALES[lk.scale] ? T.spellScale(r, lk.scale, T.parseName(lk.key)).map : null;
         const mx = Math.max(...marks.map(m => m.f));
-        frets = Math.min(22, Math.max(N, mx + 1));
+        frets = Math.min(24, Math.max(N, mx + 1));
         caption = `Notas do lick “${lk.title}”. Use o player abaixo.`;
         break;
       }
     }
-    return { marks, caption, labels, flats, seq, frets, root };
+    return { marks, caption, labels, flats, seq, frets, root, spell };
   }
 
   /** Toca o conteúdo de uma demonstração. */
@@ -161,8 +174,8 @@ const U = (() => {
     if (pc == null || T.mod(pc) === orig || !TAB.transposable(lick.src)) return lick;
     let d = T.mod(pc - orig); if (d > 6) d -= 12;
     const r = TAB.transpose(lick.src, d);
-    const flats = T.useFlats(T.mod(pc), T.SCALES[lick.scale]?.parent || 0);
-    return Object.assign({}, lick, { src: r.src, key: T.ROOTS[T.mod(pc)], chords: lick.chords && lick.chords.map(c => transposeChord(c, d, flats)) });
+    const key = T.SCALES[lick.scale] ? T.spellAscii(T.spellScale(T.mod(pc), lick.scale).root) : T.ROOTS[T.mod(pc)];
+    return Object.assign({}, lick, { src: r.src, key, chords: lick.chords && lick.chords.map(c => T.transposeName(c, lick.key, key)) });
   }
 
   /** Painel de lick: tablatura + controles, tom, trecho A-B e prática com microfone. Usa o braço `fb` informado. */
@@ -171,7 +184,8 @@ const U = (() => {
     let lick = canKey ? lickInKey(lick0, UIP.lickKey(lick0.id)) : lick0;
     let parsed = TAB.parse(lick.src);
     let root = T.pcOf(lick.key);
-    const origNote = () => lick !== lick0 ? `tom original: ${T.rootName(T.pcOf(lick0.key), set().latin)} (a dica fala desse tom)` : '';
+    const keyLabel = l => T.spellName(T.parseName(l.key), set().latin);
+    const origNote = () => lick !== lick0 ? `tom original: ${keyLabel(lick0)} (a dica fala desse tom)` : '';
     const chordsHtml = () => (lick.chords || []).map((c, i) => `<span>${i + 1}</span>${esc(prettyChord(c))}`).join('');
     const sc = T.SCALES[lick.scale];
     const level = '●'.repeat(lick.level) + '○'.repeat(5 - lick.level);
@@ -179,7 +193,7 @@ const U = (() => {
     host.innerHTML = `
       <div class="lick-head">
         <div><h3>${esc(lick.title)}</h3>${lick.credit ? `<p class="small">${esc(lick.credit)}</p>` : ''}
-          <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span>${canKey ? `<label class="field key-sel">Tom <select data-lkey id="lkey-${sfx}">${rootOptions(root)}</select></label><span class="orig" data-orig>${origNote()}</span>` : `<span>Tom: ${T.rootName(root, set().latin)}</span>`}<span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
+          <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span>${canKey ? `<label class="field key-sel">Tom <select data-lkey id="lkey-${sfx}">${rootOptions(root)}</select></label><span class="orig" data-orig>${origNote()}</span>` : `<span>Tom: ${keyLabel(lick)}</span>`}<span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
       </div>
       ${lick.chords ? `<p class="chords" data-chords>${chordsHtml()}</p>` : ''}
       <div class="tab-scroll" data-tab></div>
@@ -256,7 +270,7 @@ const U = (() => {
     }
     function targetAt(k) {
       const ev = mic.evs[k];
-      return ev.notes.filter(o => !o.dead).flatMap(o => [T.TUNING[o.s] + o.f].concat(o.bend ? [T.TUNING[o.s] + o.f + o.bend] : []));
+      return ev.notes.filter(o => !o.dead).flatMap(o => [TAB.soundingMidi(o)].concat(o.bend ? [T.TUNING[o.s] + o.f + o.bend] : []));
     }
     function showTarget() {
       const gi = mic.idx[mic.k];
@@ -295,7 +309,8 @@ const U = (() => {
     function paintFb() {
       if (!fb || opts.ownsFb === false) return;
       const mx = Math.max(0, ...parsed.events.flatMap(e => e.notes.map(o => o.f || 0)));
-      fb.set({ marks: TAB.marks(parsed, root), frets: Math.min(22, Math.max(set().frets, mx + 1)), flats: T.useFlats(root, sc?.parent || 0) });
+      fb.set({ marks: TAB.marks(parsed, root), frets: Math.min(24, Math.max(set().frets, mx + 1)), flats: T.useFlats(root, sc?.parent || 0),
+        spell: sc ? T.spellScale(root, lick.scale, T.parseName(lick.key)).map : null });
     }
     if (lick !== lick0) paintFb();
     host.querySelector('[data-lkey]')?.addEventListener('change', e => {

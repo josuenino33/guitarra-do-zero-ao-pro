@@ -32,11 +32,14 @@ const FB = (() => {
       host.querySelectorAll('.fb-note').forEach(n => n.classList.toggle('is-on', on.has(n.dataset.k)));
     };
 
+    // st.spell (opcional): grafia do contexto, classe de altura → { l, a, i, role }
+    const spOf = (m, st) => (st.spell && !m.noSpell) ? st.spell[m.pc] : null;
     function label(m, st) {
       if (m.label != null) return m.label;
-      if (st.labels === 'iv') return T.ivLabel(m.iv);
+      const sp = spOf(m, st);
+      if (st.labels === 'iv') return sp ? sp.i : T.ivLabel(m.iv);
       if (st.labels === 'none') return '';
-      return T.noteName(m.pc, st.flats, st.latin);
+      return sp ? T.spellName(sp, st.latin) : T.noteName(m.pc, st.flats, st.latin);
     }
 
     function render() {
@@ -81,7 +84,8 @@ const FB = (() => {
         const cx = X(g.nx(m.f)), cy = g.y(m.s);
         const txt = label(m, st);
         const fs = txt.length > 3 ? 8.5 : txt.length > 2 ? 9.5 : 11;
-        const cls = ['fb-note', 'iv-' + (m.role || 'n'), m.dim ? 'dim' : '', m.cls || ''].join(' ');
+        const sp = spOf(m, st);
+        const cls = ['fb-note', 'iv-' + ((sp && !m.fixedRole) ? sp.role : (m.role || 'n')), m.dim ? 'dim' : '', m.cls || ''].join(' ');
         const r = m.small ? 8 : 12;
         p.push(`<g class="${cls}" data-k="${m.s}:${m.f}" ${st.onPick ? `data-s="${m.s}" data-f="${m.f}"` : ''}>` +
           `<circle cx="${cx}" cy="${cy}" r="${r}"/>` +

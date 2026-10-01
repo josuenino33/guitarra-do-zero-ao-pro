@@ -76,6 +76,8 @@ As aulas ficam em `src/js/05*-lessons-*.js` e `src/js/06-lessons-b.js` (os níve
 - `x` no lugar da casa = nota abafada. `+` junta notas tocadas ao mesmo tempo. `-` = pausa.
 - No lick: `meter: 3` para compasso 3/4, `pickup: 1` para anacruse e `swing: true` para colcheias balançadas.
 
+Para conferir a teoria (caixas, posições, acordes, inversões, CAGED, campo harmônico, grafia das notas, licks e bases nos 12 tons), rode `node tools/auditoria.js`. Ele faz cerca de 18 mil verificações e deve terminar com 0 erros.
+
 Depois de editar, rode `bash build.sh` (no Windows, pelo Git Bash) e envie para o GitHub. O site se atualiza sozinho:
 
 ```bash

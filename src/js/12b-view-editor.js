@@ -58,7 +58,7 @@ V.editor = (el, id) => {
       const p = TAB.parse(src.value);
       err.textContent = `${p.events.length} notas · ${p.beats % 1 ? p.beats.toFixed(2) : p.beats} tempos${p.beats % 4 ? ' (o compasso ainda não fechou: faltam ' + +(4 - p.beats % 4).toFixed(2) + ' tempos)' : ''}`;
       const mx = Math.max(15, ...p.events.flatMap(e => e.notes.map(o => o.f || 0)).map(f => f + 1));
-      fb.set(U.fbState({ marks: TAB.marks(p, T.pcOf(L.key)), labels: 'iv', frets: Math.min(22, mx), onPick }));
+      fb.set(U.fbState({ marks: TAB.marks(p, T.pcOf(L.key)), labels: 'iv', frets: Math.min(22, mx), onPick, spell: T.spellScale(T.pcOf(L.key), L.scale, T.parseName(L.key)).map }));
       panel = U.lickPanel($('[data-preview]'), Object.assign({}, L, { src: src.value, title: L.title || 'Sem nome', tip: L.tip || '', tech: L.tech || 'Meu lick' }), fb, { idSuffix: '-ed', keySel: false });
     } catch (e) { err.textContent = 'Erro na notação: ' + e.message.replace('Token inválido', 'não entendi'); }
   }
