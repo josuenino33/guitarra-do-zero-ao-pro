@@ -25,24 +25,24 @@ const RH = (() => {
   }
 
   /** Toca um golpe de palheta no acorde. */
-  function hit(sym, chordName, t, slotDur, accent) {
+  function hit(sym, chordName, t, slotDur, accent, bus) {
     if (sym === '-') return;
     const sh = CH.get(chordName); if (!sh) return;
     const v = CH.voicing(sh);
     const vel = (accent ? 0.62 : 0.48);
     if (sym === 'X' || sym === 'x') {
       chuck(t, sym === 'X' ? 1 : 0.6);
-      v.slice(sym === 'X' ? 0 : 2).forEach((n, i) => A.play(n.midi, t + i * 0.006, { dur: 0.05, vel: 0.35, mute: true, string: n.s }));
+      v.slice(sym === 'X' ? 0 : 2).forEach((n, i) => A.play(n.midi, t + i * 0.006, { dur: 0.05, vel: 0.35, mute: true, string: bus ? 'bk' + n.s : n.s, bus }));
       return;
     }
     if (sym === 'B' || sym === 'b') {
       const n = sym === 'B' ? v[0] : (v[1] || v[0]);
-      A.play(n.midi, t, { dur: slotDur * 1.9, vel: 0.7, string: n.s });
+      A.play(n.midi, t, { dur: slotDur * 1.9, vel: 0.7, string: bus ? 'bk' + n.s : n.s, bus });
       return;
     }
     const notes = sym === 'U' ? v.slice(-4).reverse() : (sym === 'D' ? v : v);
     const ring = Math.max(0.25, slotDur * 2.2);
-    notes.forEach((n, i) => A.play(n.midi, t + i * (sym === 'U' ? 0.012 : 0.016), { dur: ring, vel: sym === 'U' ? vel * 0.82 : vel, string: n.s }));
+    notes.forEach((n, i) => A.play(n.midi, t + i * (sym === 'U' ? 0.012 : 0.016), { dur: ring, vel: sym === 'U' ? vel * 0.82 : vel, string: bus ? 'bk' + n.s : n.s, bus }));
   }
 
   /**

@@ -22,7 +22,7 @@ MODULES.push(
     { id:'ler-melodia', title:'Lendo uma melodia', min:20,
       body:`<p>Juntando ritmo e notas, você lê uma melodia. A tablatura embaixo serve de conferência, mas tente ler a pauta primeiro: o nome da nota, onde ela fica e quanto tempo dura.</p>
 <p>Dica: leia sempre um pouco à frente do que está tocando, como na leitura de texto.</p>`,
-      demo:{ kind:'staff', mode:'melody', lick:'ex-melodia' },
+      demo:{ kind:'staff', mode:'melody', lick:'ex-melodia', more:['pd-ode', 'pd-green', 'pd-minueto'] },
       tasks:['Leia a melodia falando o nome das notas.','Toque olhando só para a pauta.'] },
   ]},
   { id:'impro', level:5, order:2, title:'Improvisação avançada', tag:'Linguagem', lessons:[

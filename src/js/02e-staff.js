@@ -26,7 +26,8 @@ const STAFF = (() => {
       const w = timed ? Math.max(26, (n.d || 1) * unit) : 56;
       beat += n.d || 1;
       x += w;
-      if (timed && Math.abs(beat / per - Math.round(beat / per)) < 1e-6) { it.barAfter = x - w / 2 + 4 + (w / 2); x += 10; }
+      const rel = (beat - (o.pickup || 0)) / per;
+      if (timed && rel > 1e-6 && Math.abs(rel - Math.round(rel)) < 1e-6) { it.barAfter = x + 4; x += 10; }
       return it;
     });
     const W = Math.max(o.width || 0, x + 16), H = bottom + 46;

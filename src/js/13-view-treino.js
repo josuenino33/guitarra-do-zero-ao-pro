@@ -93,18 +93,18 @@ V.speed = (el, id) => {
       <p class="tip">${U.esc(lick.tip)} Regra de ouro: só suba quando tocar 4 vezes seguidas sem erro. Se travar, volte 10 BPM.</p>
     </section>`;
   const parsed = TAB.parse(lick.src);
-  const hl = TAB.render(el.querySelector('[data-tab]'), parsed);
+  const hl = TAB.render(el.querySelector('[data-tab]'), parsed, { meter: lick.meter || 4, pickup: lick.pickup || 0 });
   const beats = Math.ceil(parsed.beats);
   let bpm = SPEED.start, rep = 0, beatInRep = 0, repStart = 0, repBpm = bpm, raf = null;
   const curEl = el.querySelector('[data-cur]'), repEl = el.querySelector('[data-rep]'), progEl = el.querySelector('[data-prog]');
   const clock = A.Clock(() => bpm, 1, (i, t) => {
     if (beatInRep === 0) {
       repStart = t; repBpm = bpm;
-      if (SPEED.listen) TAB.scheduleNotes(parsed, t, bpm);
+      if (SPEED.listen) TAB.scheduleNotes(parsed, t, bpm, null, !!lick.swing);
       const shown = bpm, r = rep + 1;
       setTimeout(() => { curEl.textContent = shown; repEl.textContent = r; progEl.style.width = Math.min(100, (shown - SPEED.start) / Math.max(1, SPEED.target - SPEED.start) * 100) + '%'; }, Math.max(0, (t - A.ctx.currentTime) * 1000));
     }
-    A.click(t, beatInRep % 4 === 0);
+    A.click(t, beatInRep % (lick.meter || 4) === 0);
     beatInRep++;
     if (beatInRep >= beats) {
       beatInRep = 0; rep++;

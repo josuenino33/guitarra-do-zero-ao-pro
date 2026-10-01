@@ -56,26 +56,28 @@ const TAB = (() => {
     return t;
   }
 
-  function countLabel(beat) {
-    const r = Math.round(beat * 6) / 6;
-    if (Math.abs(r - Math.round(r)) < 1e-6) return String((Math.round(r) % 4) + 1);
+  function countLabel(beat, meter = 4, pickup = 0) {
+    const r = Math.round((beat - pickup) * 6) / 6;
+    if (Math.abs(r - Math.round(r)) < 1e-6) return String(T.mod(Math.round(r), meter) + 1);
     if (Math.abs(r - Math.floor(r) - 0.5) < 1e-6) return '&';
     return '';
   }
 
   /** Desenha a tablatura dentro de `host`; retorna função para destacar evento. */
-  function render(host, parsed, beatsPerBar = 4) {
+  function render(host, parsed, opt = 4) {
+    const beatsPerBar = typeof opt === 'number' ? opt : (opt.meter || 4), pickup = typeof opt === 'number' ? 0 : (opt.pickup || 0);
     const cols = [];
     const bar = () => cols.push(`<div class="tab-bar" aria-hidden="true"></div>`);
     bar();
     parsed.events.forEach((e, i) => {
-      if (i > 0 && Math.abs(e.beat / beatsPerBar - Math.round(e.beat / beatsPerBar)) < 1e-6) bar();
+      const rel = (e.beat - pickup) / beatsPerBar;
+      if (i > 0 && rel > 1e-6 && Math.abs(rel - Math.round(rel)) < 1e-6) bar();
       const rows = ['', '', '', '', '', ''];
       e.notes.forEach(o => { rows[o.n - 1] = noteLabel(o); });
       const maxLen = Math.max(1, ...rows.map(r => r.length));
       const w = Math.max(maxLen + 1.4, Math.round(e.d * 6) + 1);
       const pm = e.notes.some(o => o.pm) ? '<i>PM</i>' : '';
-      cols.push(`<div class="tab-col" data-i="${i}" style="--w:${w}"><span class="tab-top">${countLabel(e.beat)}${pm}</span>` +
+      cols.push(`<div class="tab-col" data-i="${i}" style="--w:${w}"><span class="tab-top">${countLabel(e.beat, beatsPerBar, pickup)}${pm}</span>` +
         rows.map(r => `<span class="tab-cell">${r ? `<b>${r.replace(/[<>\\]/g, c => ({ '<': '&lt;', '>': '&gt;', '\\': '&#92;' })[c])}</b>` : ''}</span>`).join('') + `</div>`);
     });
     bar();
@@ -110,10 +112,11 @@ const TAB = (() => {
   }
 
   /** Agenda as notas de uma tablatura a partir de t0. onEv(i, t) para cada evento. */
-  function scheduleNotes(parsed, t0, bpm, onEv) {
+  function scheduleNotes(parsed, t0, bpm, onEv, swing) {
     const spb = 60 / bpm;
     parsed.events.forEach((e, i) => {
-      const t = t0 + e.beat * spb;
+      const fr = e.beat - Math.floor(e.beat);
+      const t = t0 + (e.beat + (swing && Math.abs(fr - 0.5) < 1e-6 ? 1 / 6 : 0)) * spb;
       onEv && onEv(i, t);
       const isLast = i === parsed.events.length - 1;
       e.notes.forEach(o => {
@@ -136,10 +139,10 @@ const TAB = (() => {
     let raf = null, sched = [], tEnd = 0, opt = {}, parsed = null, playing = false, lastIdx = -1;
 
     function schedule(t0) {
-      scheduleNotes(parsed, t0, opt.bpm, (i, t) => sched.push({ i, t }));
+      scheduleNotes(parsed, t0, opt.bpm, (i, t) => sched.push({ i, t }), opt.swing);
       if (opt.click) {
-        const spb = 60 / opt.bpm, beats = Math.ceil(parsed.beats);
-        for (let b = 0; b < beats; b++) A.click(t0 + b * spb, b % 4 === 0);
+        const spb = 60 / opt.bpm, beats = Math.ceil(parsed.beats), m = opt.meter || 4, pk = opt.pickup || 0;
+        for (let b = 0; b < beats; b++) A.click(t0 + b * spb, T.mod(b - pk, m) === 0);
       }
       return t0 + parsed.beats * 60 / opt.bpm;
     }
@@ -164,7 +167,7 @@ const TAB = (() => {
       parsed = p; opt = Object.assign({ bpm: 90, loop: false, click: false, countIn: true }, o);
       const spb = 60 / opt.bpm;
       let t0 = A.now() + 0.12;
-      if (opt.countIn) { for (let b = 0; b < 4; b++) A.click(t0 + b * spb, b === 0); t0 += 4 * spb; }
+      if (opt.countIn) { const m = opt.meter || 4; for (let b = 0; b < m; b++) A.click(t0 + b * spb, b === 0); t0 += m * spb; }
       sched = []; lastIdx = -2; playing = true;
       tEnd = schedule(t0);
       raf = requestAnimationFrame(loop);

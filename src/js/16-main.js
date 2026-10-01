@@ -36,6 +36,8 @@ V.progresso = (el) => {
       <p class="small">Neste modo o progresso fica salvo só neste aparelho. Para levar para outro (do PC para o celular, por exemplo), exporte aqui e importe lá.</p>
       <div class="ctrl-row"><button type="button" class="btn" data-act="export">Exportar progresso</button>
         <label class="btn" for="import-file">Importar backup</label><input type="file" id="import-file" accept="application/json,.json" hidden></div></section>` : ''}
+    ${MOT.rankCard(st)}
+    <section class="panel"><p class="eyebrow">Conquistas · ${Object.keys(st.badges || {}).length} de ${MOT.BADGES.length}</p>${MOT.badgesGrid(st)}</section>
     <section class="danger"><button type="button" class="btn ghost" data-act="reset">Apagar meu progresso</button></section>`;
   const sync = () => { el.querySelector('[data-syncline]').textContent = S.mode === 'conta'
     ? 'Seu progresso fica salvo na sua conta e aparece igual no computador e no celular.'
@@ -75,6 +77,8 @@ const APP = (() => {
     if (pre('aula-') != null) return ['trilha', el => V.lesson(el, pre('aula-'))];
     if (h === 'licks' || pre('lick-') != null) return ['licks', el => V.licks(el, pre('lick-'))];
     if (h === 'editor' || pre('editor-') != null) return ['licks', el => V.editor(el, pre('editor-'))];
+    if (h === 'estudos') return ['licks', el => V.licks(el, null, { estudos: true })];
+    if (h === 'repertorio') return ['licks', el => V.repertorio(el)];
     if (h === 'treino') return ['treino', el => V.metronomo(el)];
     if (h === 'levadas' || pre('levadas-') != null) return ['treino', el => V.levadas(el, pre('levadas-'))];
     if (h === 'trocas') return ['treino', el => V.trocas(el)];

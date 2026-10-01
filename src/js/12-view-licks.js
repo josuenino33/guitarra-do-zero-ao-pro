@@ -1,16 +1,18 @@
 /* ===== Biblioteca de licks ===== */
 let LICK_FILTER = 'all';
 
-V.licks = (el, id) => {
-  let cur = lickById(id) || LICKS[0];
+V.licks = (el, id, opt = {}) => {
+  if (opt.estudos) LICK_FILTER = 'estudo';
+  else if (!id && LICK_FILTER === 'estudo') LICK_FILTER = 'all';
+  let cur = lickById(id) || (opt.estudos ? LICKS.find(l => l.style === 'estudo') : LICKS[0]);
   if (!lickById(id) && id) location.replace('#licks');
   if (id && LICK_FILTER !== 'all' && cur.style !== LICK_FILTER) LICK_FILTER = 'all';
   el.innerHTML = `
     <header class="page-head"><p class="eyebrow">Licks e solos</p><h1>Frases para tocar, ouvir e roubar</h1>
       <p class="lede">Cada frase tem tablatura, som e as notas no braço. Toque devagar primeiro: a velocidade fica no seletor.</p></header>
+    ${licksTabs(LICK_FILTER === 'estudo' ? 'estudos' : 'licks')}
     <div class="licks-layout">
       <aside class="lick-list">
-        <div class="ctrl-row"><a class="btn primary" href="#editor">＋ Criar meu lick</a></div>
         <div data-filter></div>
         <ul data-list></ul>
       </aside>

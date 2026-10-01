@@ -164,7 +164,7 @@ const U = (() => {
     const sfx = lick.id + (opts.idSuffix || '');
     host.innerHTML = `
       <div class="lick-head">
-        <div><h3>${esc(lick.title)}</h3>
+        <div><h3>${esc(lick.title)}</h3>${lick.credit ? `<p class="small">${esc(lick.credit)}</p>` : ''}
           <p class="meta"><span>${STYLES[lick.style] || 'Meus licks'}</span><span>Tom: ${T.rootName(root, set().latin)}</span><span>${sc ? sc.name : ''}</span><span>${lick.bpm} BPM</span><span title="Dificuldade">${level}</span></p></div>
       </div>
       ${lick.chords ? `<p class="chords">${lick.chords.map((c, i) => `<span>${i + 1}</span>${esc(c)}`).join('')}</p>` : ''}
@@ -182,7 +182,8 @@ const U = (() => {
       <p class="tu-msg" data-micmsg aria-live="polite" hidden></p>
       <p class="tip"><b>${esc(lick.tech)}.</b> ${esc(lick.tip)}</p>`;
     const tabHost = host.querySelector('[data-tab]');
-    const highlight = TAB.render(tabHost, parsed);
+    const meterOpt = { meter: lick.meter || 4, pickup: lick.pickup || 0 };
+    const highlight = TAB.render(tabHost, parsed, meterOpt);
     const btn = host.querySelector('[data-act="play"]');
     let A0 = null, B0 = null, offset = 0;
     const setActive = ev => fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
@@ -211,7 +212,9 @@ const U = (() => {
     function play() {
       opts.onPlay && opts.onPlay();
       const pct = +host.querySelector('[data-speed]').value;
-      player.play(sub(), { bpm: lick.bpm * pct / 100, loop: B0 != null || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked });
+      const ab = B0 != null;
+      player.play(sub(), { bpm: lick.bpm * pct / 100, loop: ab || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked,
+        meter: meterOpt.meter, pickup: ab ? 0 : meterOpt.pickup, swing: !!lick.swing });
       btn.textContent = '■ Parar'; btn.classList.add('on');
       S.practiced();
     }

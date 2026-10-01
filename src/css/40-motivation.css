@@ -1,0 +1,32 @@
+/* ===== patente, desafio e conquistas ===== */
+.rank-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.rank-name { font: 700 34px/1 var(--f-display); }
+.xp { font: 600 15px var(--f-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.rank .small { margin-top: 8px; }
+.challenge .ch-text { font-size: 18px; font-weight: 700; margin-bottom: 12px; max-width: 50ch; }
+.challenge.done { border-color: var(--ok); }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-block: 8px; }
+.badge { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--line); color: var(--muted); }
+.badge i { font: normal 700 18px/1 var(--f-display); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); margin-bottom: 4px; }
+.badge b { font-size: 14px; color: var(--muted); }
+.badge span { font-size: 12px; }
+.badge.on { border-style: solid; border-color: var(--line); color: var(--fg); }
+.badge.on i { background: var(--accent); color: var(--accent-ink); }
+.badge.on b { color: var(--fg); }
+
+/* ===== repertório ===== */
+details[data-formbox] > summary { list-style: none; display: inline-flex; }
+details[data-formbox] > summary::-webkit-details-marker { display: none; }
+.song-form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-top: 14px; }
+.song-form textarea { flex: 1 1 100%; }
+.song-form .field.block { flex: 1 1 100%; margin: 0; }
+.songs { list-style: none; margin: 4px 0 0; padding: 0; counter-reset: sg; }
+.songs li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.songs li .ctrl-row { margin: 0; }
+.sg-main { display: flex; flex-direction: column; min-width: 0; flex: 1 1 260px; }
+.sg-main b { font-size: 17px; }
+.sg-notes { font-style: italic; }
+.setlist li { counter-increment: sg; }
+.setlist li .sg-main b::before { content: counter(sg) '. '; color: var(--accent); }
+.empty p { max-width: 60ch; }
+.songs select { font-size: 14px; }

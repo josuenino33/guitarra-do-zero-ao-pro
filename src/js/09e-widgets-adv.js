@@ -107,19 +107,29 @@ W.campo = (host, cfg = {}) => {
 W.staff = (host, cfg = {}) => {
   const latin = () => U.set().latin;
   if (cfg.mode === 'melody') {
-    const lk = lickById(cfg.lick), parsed = TAB.parse(lk.src);
-    const flats = T.useFlats(T.pcOf(lk.key), T.SCALES[lk.scale]?.parent || 0);
-    host.innerHTML = `<div class="staff-wrap" data-st>${STAFF.render(STAFF.fromTab(parsed), { flats })}</div>
-      <div class="tab-scroll" data-tab></div>
-      <div class="ctrl-row"><button type="button" class="btn primary" data-act="play">▶ Tocar</button>
-        <label class="check"><input type="checkbox" data-hide id="staff-hide"> Esconder a tablatura</label></div>`;
-    const hl = TAB.render(host.querySelector('[data-tab]'), parsed);
-    const btn = host.querySelector('[data-act="play"]');
-    const pl = TAB.Player({ onEvent(i) { hl(i); host.querySelectorAll('.rn-head.on').forEach(h => h.classList.remove('on')); host.querySelector(`.rn-head[data-n="${i}"]`)?.classList.add('on'); },
-      onEnd() { btn.textContent = '▶ Tocar'; } });
-    btn.addEventListener('click', () => { if (pl.playing) { pl.stop(); btn.textContent = '▶ Tocar'; } else { pl.play(parsed, { bpm: lk.bpm, click: true }); btn.textContent = '■ Parar'; S.practiced(); } });
-    host.querySelector('[data-hide]').addEventListener('change', e => { host.querySelector('[data-tab]').hidden = e.target.checked; });
-    return () => pl.stop();
+    const ids = [cfg.lick].concat(cfg.more || []);
+    let cur = 0, pl = null;
+    host.innerHTML = `${ids.length > 1 ? `<div class="ctrl-row" data-pieces></div>` : ''}<div data-melody></div>`;
+    const paint = () => {
+      pl && pl.stop();
+      const lk = lickById(ids[cur]), parsed = TAB.parse(lk.src);
+      const flats = T.useFlats(T.pcOf(lk.key), T.SCALES[lk.scale]?.parent || 0);
+      if (ids.length > 1) host.querySelector('[data-pieces]').innerHTML = U.chips('piece', ids.map((id, i) => ({ v: i, label: lickById(id).title })), cur);
+      const box = host.querySelector('[data-melody]');
+      box.innerHTML = `${lk.credit ? `<p class="small">${U.esc(lk.credit)}</p>` : ''}<div class="staff-wrap" data-st>${STAFF.render(STAFF.fromTab(parsed), { flats, per: lk.meter || 4, pickup: lk.pickup || 0 })}</div>
+        <div class="tab-scroll" data-tab></div>
+        <div class="ctrl-row"><button type="button" class="btn primary" data-act="play">▶ Tocar</button>
+          <label class="check"><input type="checkbox" data-hide id="staff-hide-${cur}"> Esconder a tablatura</label></div>`;
+      const hl = TAB.render(box.querySelector('[data-tab]'), parsed, { meter: lk.meter || 4, pickup: lk.pickup || 0 });
+      const btn = box.querySelector('[data-act="play"]');
+      pl = TAB.Player({ onEvent(i) { hl(i); box.querySelectorAll('.rn-head.on').forEach(h => h.classList.remove('on')); box.querySelector(`.rn-head[data-n="${i}"]`)?.classList.add('on'); },
+        onEnd() { btn.textContent = '▶ Tocar'; } });
+      btn.addEventListener('click', () => { if (pl.playing) { pl.stop(); btn.textContent = '▶ Tocar'; } else { pl.play(parsed, { bpm: lk.bpm, click: true, meter: lk.meter || 4, pickup: lk.pickup || 0 }); btn.textContent = '■ Parar'; S.practiced(); } });
+      box.querySelector('[data-hide]').addEventListener('change', e => { box.querySelector('[data-tab]').hidden = e.target.checked; });
+    };
+    host.addEventListener('click', e => { const c = e.target.closest('[data-chips="piece"] .chip'); if (c) { cur = +c.dataset.v; paint(); } });
+    paint();
+    return () => pl && pl.stop();
   }
   const NAT = [0, 2, 4, 5, 7, 9, 11];
   const sets = { cordas123: [55, 67], primeira: [40, 67], acidentes: [40, 67] };
