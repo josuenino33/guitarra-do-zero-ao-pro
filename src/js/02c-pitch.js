@@ -64,7 +64,7 @@ const MIC = (() => {
 
   /** Mensagem amigável para falhas do microfone. */
   function errorText(e) {
-    if (!S.standalone) return 'O link do Claude não libera o microfone. Use o app em josuenino33.github.io/mapa-do-braco para esta função.';
+    if (!S.standalone) return 'O link do Claude não libera o microfone. Use o app em josuenino33.github.io/guitarra-do-zero-ao-pro para esta função.';
     if (e && e.name === 'NotAllowedError') return 'O microfone foi bloqueado. Libere o acesso nas permissões do navegador e tente de novo.';
     if (e && e.name === 'NotFoundError') return 'Nenhum microfone encontrado neste aparelho.';
     return 'Não consegui abrir o microfone neste navegador.';

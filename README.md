@@ -1,6 +1,6 @@
-# Mapa do Braço
+# Guitarra do zero ao pro
 
-Escola de guitarra interativa, do zero ao profissional. Funciona no navegador do PC e do celular, inclusive offline depois da primeira visita, e pode ser instalado como app na tela inicial.
+**Mapa do Braço** é uma escola de guitarra interativa, do zero ao profissional. Funciona no navegador do PC e do celular, inclusive offline depois da primeira visita, e pode ser instalado como app na tela inicial.
 
 ## O que tem
 
@@ -45,7 +45,7 @@ Abra `docs/index.html` com dois cliques. Tudo funciona, só o modo offline e a i
 
 ## Publicação
 
-O app fica em **https://josuenino33.github.io/mapa-do-braco/**.
+O app fica em **https://josuenino33.github.io/guitarra-do-zero-ao-pro/**.
 
 A publicação é automática: sempre que a pasta `docs/` muda na branch `main`, a automação em `.github/workflows/pages.yml` copia o conteúdo dela para a branch `gh-pages`, que é a que o GitHub Pages serve. Leva 1 ou 2 minutos para aparecer.
 
