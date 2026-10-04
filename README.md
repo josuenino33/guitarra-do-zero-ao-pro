@@ -16,9 +16,10 @@
 - **Repertório**: suas músicas com tom, BPM, afinação, link e status, e setlist ordenado.
 - **Treino**: metrônomo, treinador de levadas, trocas de acordes em 1 minuto, afinador, gravador e looper, treino de velocidade progressiva e Jam em qualquer tom com 11 estilos.
 - **Quiz**: notas no braço, intervalos, tríades, ouvido e quizzes com microfone (o app escuta a guitarra).
-- **Progresso**: aulas, recordes, calendário, conquistas e backup.
+- **Treino de ouvido** (aba dentro do Quiz): 6 exercícios em níveis, e cada rodada com 80% ou mais libera o próximo nível. São eles: intervalos (subindo, descendo e juntos), tipo de acorde (de maior/menor até tétrades), graus da escala com cadência, progressões, ouvir e achar a nota no braço e ditado melódico (clicando no braço ou tocando na guitarra com o microfone). O app guarda o que você mais erra, mostra esses pontos fracos e faz eles caírem mais vezes.
+- **Progresso**: aulas, recordes, níveis do treino de ouvido, calendário, conquistas e backup.
 
-Microfone (afinador, quizzes com microfone, prática de licks com microfone, gravador e looper) funciona na versão do site (https), não no link do Claude.
+Microfone (afinador, quizzes com microfone, ditado melódico tocando, prática de licks com microfone, gravador e looper) funciona na versão do site (https), não no link do Claude.
 
 ## Estrutura
 

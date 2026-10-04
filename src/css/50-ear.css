@@ -1,0 +1,30 @@
+/* treino de ouvido */
+.ear-next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.ear-next h2 { font: 700 26px/1.1 var(--f-display); }
+.ear-next .small { margin-top: 4px; }
+.ear-steps { display: flex; gap: 4px; width: 100%; }
+.ear-steps i { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-2); }
+.ear-steps i.ok { background: var(--ok); }
+.ear-steps i.cur { background: var(--accent); }
+.ear-levels { margin-top: 12px; }
+.ear-levels .chip[disabled] { opacity: .45; cursor: not-allowed; }
+.ear-levels .chip.passed:not(.on) { border-color: var(--ok); color: var(--ok); }
+.ear [data-lvdesc] { margin-top: 8px; }
+.ear [data-replay] { margin-top: 12px; }
+.ear-tip { display: block; margin-top: 4px; font-weight: 400; color: var(--muted); }
+.ear [data-after] { margin-top: 10px; }
+.ear [data-after]:empty { display: none; }
+.ear-unlock { font-weight: 700; color: var(--ok); }
+.ear-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; list-style: none; margin: 14px 0 0; padding: 0; }
+.ear-slots li { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); cursor: pointer; text-align: center; transition: background .15s; }
+.ear-slots li span { font: 600 11px var(--f-mono); color: var(--muted); }
+.ear-slots li b { font: 700 30px/1 var(--f-display); }
+.ear-slots li small { font: 600 12.5px/1.2 var(--f-mono); color: var(--muted); }
+.ear-slots li.cur { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.ear-slots li.play { background: var(--accent-soft); }
+.ear-slots li.ok { border-color: var(--ok); }
+.ear-slots li.ok b { color: var(--ok); }
+.ear-slots li.bad { border-color: var(--bad); }
+.ear-slots li.bad b { color: var(--bad); }
+.ear-keys { text-align: center; }
+@media (hover: none) { .ear-keys { display: none; } }

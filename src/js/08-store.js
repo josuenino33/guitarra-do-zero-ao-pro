@@ -2,7 +2,7 @@
 const S = (() => {
   const KEY = 'mapa-do-braco-v1';
   const DEF = () => ({ v:1, done:{}, bpm:{}, quiz:{}, days:[], changes:{}, goals:{},
-    minutes:{}, plan:null, myLicks:[], songs:[], badges:{}, challenges:{},
+    minutes:{}, plan:null, myLicks:[], songs:[], badges:{}, challenges:{}, ear:{},
     settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8 } });
   let state = DEF(), ref = null, mode = 'local', timer = null, writing = Promise.resolve();
   const subs = new Set();
@@ -28,6 +28,14 @@ const S = (() => {
     for (const src of [a.minutes || {}, b.minutes || {}]) for (const k in src) out.minutes[k] = Math.max(out.minutes[k] || 0, src[k]);
     out.badges = Object.assign({}, b.badges, a.badges);
     out.challenges = Object.assign({}, b.challenges, a.challenges);
+    // treino de ouvido: maior nível e melhor nota de cada lado; estatística do lado com mais tentativas
+    for (const src of [b.ear || {}, a.ear || {}]) for (const k in src) {
+      const x = src[k] || {}, cur = out.ear[k] || (out.ear[k] = { lv: 0, best: {}, stats: {} });
+      cur.lv = Math.max(cur.lv, x.lv || 0);
+      if (x.date && (!cur.date || x.date > cur.date)) cur.date = x.date;
+      for (const l in x.best || {}) cur.best[l] = Math.max(cur.best[l] || 0, x.best[l]);
+      for (const i in x.stats || {}) if (!cur.stats[i] || x.stats[i][1] > cur.stats[i][1]) cur.stats[i] = x.stats[i];
+    }
     const pa = a.plan, pb = b.plan;
     out.plan = !pa ? pb || null : !pb ? pa : pa.date !== pb.date ? (pa.date > pb.date ? pa : pb)
       : Object.assign({}, pb, pa, { done: Object.assign({}, pb.done, pa.done) });

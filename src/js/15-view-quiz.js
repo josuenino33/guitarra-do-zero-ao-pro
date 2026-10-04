@@ -4,7 +4,7 @@ const QUIZZES = [
   { id:'ache-nota', title:'Ache a nota', desc:'Clique na casa da nota pedida, na corda indicada.', scope:true },
   { id:'intervalo', title:'Que intervalo é esse?', desc:'Tônica em vermelho e outra nota. Diga a distância entre elas.' },
   { id:'triade', title:'Tríade e inversão', desc:'Três notas acesas. É maior ou menor? Qual inversão?' },
-  { id:'ouvido', title:'Treino de ouvido', desc:'Ouça duas notas e diga o intervalo, sem olhar o braço.' },
+  { id:'ouvido', title:'Intervalos de ouvido', desc:'Ouça duas notas e diga o intervalo. Para treinar por níveis, use a aba Treino de ouvido.' },
 ];
 const QZ = { scope:'65', rounds:10 };
 UIP.track('quiz', QZ);
@@ -21,6 +21,7 @@ function quizHome(el) {
   const best = S.get().quiz;
   el.innerHTML = `<header class="page-head"><p class="eyebrow">Quiz</p><h1>Decorar o braço jogando</h1>
     <p class="lede">Rodadas de ${QZ.rounds} perguntas. Seu melhor resultado fica salvo.</p></header>
+    ${quizTabs('quiz')}
     <div class="quiz-grid">${QUIZZES.map(z => `<a class="quiz-card" href="#quiz-${z.id}">
       <h2>${z.title}${z.mic ? ' <span class="pill mic">🎤 microfone</span>' : ''}</h2><p>${z.desc}</p>
       <span class="pill ${best[z.id] ? (best[z.id].best >= 90 ? 'ok' : '') : 'muted'}">${best[z.id] ? `Melhor: ${best[z.id].best}% · ${best[z.id].time}s` : 'Ainda não jogado'}</span></a>`).join('')}</div>`;

@@ -20,19 +20,20 @@ const PLAN = (() => {
       { id:'mapa', title:'Tríades e CAGED', desc:'Explorador do braço: um tom novo por dia.', href:'#braco', pct:.2 },
       { id:'tecnica', title:'Técnica', desc:'Licks com bend e vibrato, devagar e afinado.', href:'#treino-r2', pct:.2 },
       { id:'aula', title:'Aula da trilha', desc:'', href:'', pct:.2 },
-      { id:'impro', title:'Improviso', desc:'Blues em Lá: pergunta e resposta.', href:'#jam-blues', pct:.3 } ],
+      { id:'ouvido', title:'Ouvido', desc:'Treino de ouvido: continue do seu nível.', href:'#ouvido', pct:.1 },
+      { id:'impro', title:'Improviso', desc:'Blues em Lá: pergunta e resposta.', href:'#jam-blues', pct:.2 } ],
     4: [
       { id:'aquec', title:'Aquecimento', desc:'Sequência em grupos de 3.', href:'#treino-ex-seq3', pct:.1 },
       { id:'tecnica', title:'Velocidade', desc:'3 notas por corda com treino progressivo.', href:'#treino-ex-3nps', pct:.25 },
       { id:'aula', title:'Teoria e harmonia', desc:'', href:'', pct:.2 },
-      { id:'ouvido', title:'Ouvido', desc:'Treino de intervalos de ouvido.', href:'#quiz-ouvido', pct:.15 },
+      { id:'ouvido', title:'Ouvido', desc:'Treino de ouvido: graus da escala e progressões.', href:'#ouvido', pct:.15 },
       { id:'impro', title:'Improviso modal', desc:'Base dórica: destaque a 6ª maior.', href:'#jam-dorico', pct:.3 } ],
     5: [
       { id:'aquec', title:'Aquecimento', desc:'Legato e palhetada alternada.', href:'#treino-m4', pct:.1 },
       { id:'tecnica', title:'Técnica', desc:'O lick mais difícil do seu repertório, no treino progressivo.', href:'#treino-m3', pct:.2 },
       { id:'repert', title:'Repertório', desc:'Músicas do seu repertório, do começo ao fim.', href:'#repertorio', pct:.3 },
       { id:'impro', title:'Improviso com notas-alvo', desc:'Mire nas notas do acorde em cada troca.', href:'#jam-rock', pct:.25 },
-      { id:'ouvido', title:'Ouvido', desc:'Intervalos e frases de ouvido.', href:'#quiz-ouvido', pct:.15 } ],
+      { id:'ouvido', title:'Ouvido', desc:'Treino de ouvido: ditado melódico e progressões.', href:'#ouvido', pct:.15 } ],
   };
 
   function currentLevel(st = S.get()) {

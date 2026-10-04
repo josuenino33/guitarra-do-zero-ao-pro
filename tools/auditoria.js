@@ -199,4 +199,19 @@ sec('14. Ritmo');
 RH.PATTERNS.forEach(p => ok(p.p.length === p.beats * p.sub, `levada ${p.id}: tamanho`));
 RH.READING.forEach(r => ok(Math.abs(RH.parseRhythm(r.src).reduce((a, e) => a + e.d, 0) % 4) < 1e-9, `ritmo ${r.src}: compasso`));
 
+sec('15. Treino de ouvido: cadências, progressões e acordes nos 12 tons');
+for (let r = 0; r < 12; r++) {
+  const M = harmonize(r, 'maior'), m = harmonize(r, 'menor_harm');
+  ok([0, 3, 4].every(i => M[i].q3 === 'maior'), `cadência I–IV–V–I de ${r}: três acordes maiores`);
+  ok(m[0].q3 === 'menor' && m[3].q3 === 'menor' && m[4].q3 === 'maior', `cadência i–iv–V–i de ${r}: menor, menor, maior`);
+  for (const d of [...M.slice(0, 6), m[0], m[3], m[4]]) {
+    const sh = CH.get(d.triad);
+    ok(sh && CH.voicing(sh).every(n => T.CHORDS[d.q3].iv.includes(N(n.midi - d.pc))), `forma tocável de ${d.triad} (progressões e cadências)`);
+  }
+  for (const q of ['maior', 'menor', 'dim', 'aum', 'sus2', 'sus4', 'maj7', 'dom7', 'm7', 'm7b5', 'dim7']) {
+    const vs = CH.voicings(r, q, 15);
+    ok(vs.length > 0 && vs.every(v => v.f.every(f => f <= 15)), `tipo de acorde: forma de ${q} em ${r} até a casa 15`);
+  }
+}
+
 console.log(`\n${checks} verificações, ${errs} erro(s).`);

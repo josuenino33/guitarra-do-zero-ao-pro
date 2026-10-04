@@ -19,6 +19,7 @@ const MOT = (() => {
       'Desafios do dia': Object.keys(st.challenges || {}).length * 60,
       'Repertório': (st.songs || []).filter(s => !s.deleted && (s.status === 'pronta' || s.status === 'palco')).length * 40,
       'Licks criados': (st.myLicks || []).filter(l => !l.deleted).length * 20,
+      'Treino de ouvido': EAR.passed(st) * 40,
     };
     return { total: Object.values(parts).reduce((a, b) => a + b, 0), parts };
   }
@@ -70,6 +71,7 @@ const MOT = (() => {
     { lv:1, text:'Afine a guitarra sozinho e toque “Estrada de Terra”.', href:'#aula-primeira-musica' },
     { lv:1, text:'Acerte 8 de 10 no quiz “Qual é a nota?”.', href:'#quiz-qual-nota', test: st => st.quiz['qual-nota']?.date === S.today() && st.quiz['qual-nota'].best >= 80 },
     { lv:1, text:'Toque junto 3 ritmos da leitura rítmica com mais de 80%.', href:'#aula-pulso' },
+    { lv:1, text:'Faça uma rodada de intervalos no treino de ouvido com 80% ou mais.', href:'#ouvido-intervalos', test: st => st.ear?.intervalos?.date === S.today() },
     { lv:2, text:'Toque o riff de power chords a 100 BPM.', href:'#treino-r3' },
     { lv:2, text:'Toque a levada de funk por 2 minutos.', href:'#levadas-funk' },
     { lv:2, text:'Toque F e Bm limpos, 10 vezes cada.', href:'#aula-pestana-f' },
@@ -78,10 +80,12 @@ const MOT = (() => {
     { lv:3, text:'Toque as 3 inversões de Ré maior nas cordas 1-2-3.', href:'#aula-triade-123' },
     { lv:3, text:'Toque Dó maior nas 5 formas do CAGED.', href:'#aula-caged' },
     { lv:3, text:'Acerte 8 de 10 no quiz de tríades.', href:'#quiz-triade', test: st => st.quiz.triade?.date === S.today() && st.quiz.triade.best >= 80 },
+    { lv:3, text:'Faça uma rodada de graus da escala com 80% ou mais.', href:'#ouvido-graus', test: st => st.ear?.graus?.date === S.today() },
     { lv:4, text:'Toque o campo harmônico de Sol em tétrades.', href:'#campo' },
     { lv:4, text:'Suba 5 BPM no seu recorde de escala em 3 notas por corda.', href:'#treino-ex-3nps' },
     { lv:4, text:'Leia 20 notas seguidas na partitura.', href:'#aula-primeira-posicao' },
     { lv:4, text:'Improvise na base dórica destacando a 6ª maior.', href:'#jam-dorico' },
+    { lv:4, text:'Faça uma rodada de ditado melódico com 80% ou mais.', href:'#ouvido-ditado', test: st => st.ear?.ditado?.date === S.today() },
     { lv:5, text:'Toque um ii–V–I em 3 tons diferentes.', href:'#jam-iivi' },
     { lv:5, text:'Grave 2 minutos de improviso e escute com atenção.', href:'#gravar' },
     { lv:5, text:'Tire de ouvido uma frase e salve no editor.', href:'#editor' },
@@ -99,7 +103,7 @@ const MOT = (() => {
     return `<section class="panel rank"><p class="eyebrow">Sua patente</p>
       <div class="rank-row"><b class="rank-name">${r.cur.name}</b><span class="xp">${x.total.toLocaleString('pt-BR')} XP</span></div>
       <div class="bar wide"><i style="width:${Math.round(r.pct * 100)}%"></i></div>
-      <p class="small">${r.next ? `Faltam ${(r.next.xp - x.total).toLocaleString('pt-BR')} XP para <b>${r.next.name}</b>.` : 'Patente máxima!'} XP vem de aulas, metas, minutos, quizzes, recordes, desafios e repertório.</p></section>`;
+      <p class="small">${r.next ? `Faltam ${(r.next.xp - x.total).toLocaleString('pt-BR')} XP para <b>${r.next.name}</b>.` : 'Patente máxima!'} XP vem de aulas, metas, minutos, quizzes, treino de ouvido, recordes, desafios e repertório.</p></section>`;
   }
   function challengeCard(st) {
     const c = daily(), ok = (st.challenges || {})[S.today()];

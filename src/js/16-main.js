@@ -31,6 +31,7 @@ V.progresso = (el) => {
           : '<p class="small">Nenhum recorde ainda. No <a href="#treino-ex-pent">treino de velocidade</a>, toque limpo e clique em “Consegui limpo”.</p>'}</section>
       <section class="panel"><p class="eyebrow">Quizzes</p>
         <table class="tbl"><tbody>${QUIZZES.map(z => `<tr><td><a href="#quiz-${z.id}">${z.title}</a></td><td>${st.quiz[z.id] ? `<b>${st.quiz[z.id].best}%</b> · ${st.quiz[z.id].time}s` : '—'}</td></tr>`).join('')}</tbody></table></section>
+      ${EAR.panel(st)}
     </div>
     ${S.standalone ? `<section class="panel backup"><p class="eyebrow">Backup</p>
       <p class="small">Neste modo o progresso fica salvo só neste aparelho. Para levar para outro (do PC para o celular, por exemplo), exporte aqui e importe lá.</p>
@@ -88,6 +89,7 @@ const APP = (() => {
     if (pre('treino-') != null) return ['treino', el => V.speed(el, pre('treino-'))];
     if (h === 'jam' || pre('jam-') != null) return ['treino', el => V.jam(el, pre('jam-'))];
     if (h === 'quiz' || pre('quiz-') != null) return ['quiz', el => V.quiz(el, pre('quiz-'))];
+    if (h === 'ouvido' || pre('ouvido-') != null) return ['quiz', el => V.ouvido(el, pre('ouvido-'))];
     if (h === 'braco') return ['braco', el => V.braco(el)];
     if (h === 'acordes') return ['braco', el => V.acordes(el)];
     if (h === 'campo') return ['braco', el => V.campo(el)];
