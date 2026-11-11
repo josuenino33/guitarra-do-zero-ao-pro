@@ -96,4 +96,4 @@ git add . && git commit -m "Atualiza aulas" && git push
 ## Usar como app no celular
 
 - **Instalar pelo navegador (PWA)**: abra o site no Chrome do celular, menu ⋮ → **Instalar app** (ou **Adicionar à tela inicial**). Fica com ícone, abre em tela cheia e funciona sem internet. Atualiza sozinho quando o site muda.
-- **APK para Android**: a cada mudança em `docs/` na `main`, o GitHub Actions (`.github/workflows/android.yml`) gera o app com Capacitor e publica `MapaDoBraco.apk` em **Releases → App Android**. Para gerar no seu computador: `bash tools/android.sh` (precisa de Node 20, Java 21 e Android SDK).
+- **App Android (APK) e Play Store (AAB)**: a cada mudança em `docs/` na `main`, o GitHub Actions (`.github/workflows/android.yml`) gera o app com Capacitor (Android 16, nível 36) e publica em **Releases → App Android**: `MapaDoBraco.apk` para instalar direto e, com a chave de assinatura nos segredos do repositório, `MapaDoBraco.aab` para a Play Store. Passo a passo, textos e imagens da loja em `store/PLAY-STORE.md`. Para gerar no seu computador: `bash tools/android.sh` (Node 22, Java 21 e Android SDK).

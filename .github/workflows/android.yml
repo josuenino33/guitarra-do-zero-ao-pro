@@ -1,5 +1,8 @@
-# Gera o app Android (APK) a partir de docs/ e publica no release "android" do repositório.
-# Baixe no celular em: Releases > App Android > MapaDoBraco.apk
+# Gera o app Android a partir de docs/ e publica no release "android" do repositório.
+#   No celular: Releases > App Android > MapaDoBraco.apk (instalar direto)
+#   Para a Play Store: MapaDoBraco.aab (enviar no Play Console)
+# Com os segredos KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS e KEY_PASSWORD o app sai assinado
+# (pronto para a loja). Sem eles, sai um APK de teste que também instala no celular.
 name: App Android
 
 on:
@@ -16,26 +19,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  apk:
+  app:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
       - uses: android-actions/setup-android@v3
-      - name: Monta e compila o APK
+      - name: Chave de assinatura (se configurada)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          fi
+      - name: Monta e compila o app
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: bash tools/android.sh
-      - name: Publica o APK no release "android"
+      - name: Publica no release "android"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          FILES="build/MapaDoBraco.apk"; [ -f build/MapaDoBraco.aab ] && FILES="$FILES build/MapaDoBraco.aab"
           gh release delete android --cleanup-tag -y || true
-          gh release create android build/MapaDoBraco.apk \
-            --title "App Android" \
-            --notes "Versão para Android gerada automaticamente a partir do site ($(date -u +%Y-%m-%d)). No celular: baixe MapaDoBraco.apk, abra o arquivo e permita instalar apps desta fonte." \
+          gh release create android $FILES \
+            --title "App Android (versão 1.0.${{ github.run_number }})" \
+            --notes "Gerado automaticamente a partir do site em $(date -u +%Y-%m-%d). No celular: baixe MapaDoBraco.apk, abra o arquivo e permita instalar apps desta fonte. Para a Play Store, envie MapaDoBraco.aab no Play Console." \
             --latest=false
