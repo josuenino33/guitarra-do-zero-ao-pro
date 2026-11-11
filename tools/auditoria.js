@@ -243,12 +243,37 @@ for (const j of JAMS.filter(j => j.worship)) {
 for (let k = 0; k < 12; k++) for (const j of JAMS.filter(j => j.worship)) for (const ph of WV.PHRASES) for (const seed of [1, 7, 42]) {
   const r = WV.phrase(ph.id, k, j.degs, j.meter, j.sub, seed), p = TAB.parse(r.src), tag = `frase ${ph.id} ${j.id} em ${k} (${seed})`;
   ok(Math.abs(p.beats - j.degs.length * j.meter) < 1e-9, `${tag}: ocupa exatamente ${j.degs.length} compassos`);
-  ok(p.events.every(e => e.notes.every(o => [0, 2, 4, 7, 9].includes(N(T.TUNING[o.s] + o.f - k)) && o.f >= 0 && o.f <= 17)), `${tag}: pentatônica maior até a casa 17`);
   const H = harmonize(k, 'maior');
+  if (ph.id === 'triades') {
+    const bl = j.meter;
+    ok(p.events.every(e => { const d = j.degs[Math.floor(e.beat / bl + 1e-9)], tones = T.CHORDS[H[d].q3].iv.map(x => N(x + H[d].pc)); return e.notes.every(o => tones.includes(N(T.TUNING[o.s] + o.f)) && o.f <= 17); }), `${tag}: só notas da tríade de cada compasso`);
+    continue;
+  }
+  ok(p.events.every(e => e.notes.every(o => [0, 2, 4, 7, 9].includes(N(T.TUNING[o.s] + o.f - k)) && o.f >= 0 && o.f <= 17)), `${tag}: pentatônica maior até a casa 17`);
   j.degs.forEach((d, b) => { const e = p.events.find(x => !x.rest && Math.abs(x.beat - b * j.meter) < 1e-9);
     if (e && ph.id !== 'ostinato') ok(e.notes.every(o => T.CHORDS[H[d].q3].iv.map(x => N(x + H[d].pc)).includes(N(T.TUNING[o.s] + o.f)) || b === j.degs.length - 1 || [2, 7].includes(N(T.TUNING[o.s] + o.f - k))), `${tag}: compasso ${b + 1} começa em nota do acorde`); });
 }
 console.log('  Worship em G: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(7, d).name).join(' ') + ' | em E♭: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(3, d).name).join(' '));
+
+sec('18. Tríades: inversões e condução de vozes (12 tons, 3 grupos de cordas, 4 progressões)');
+{
+  const TRI = vm.runInContext('TRI', ctx);
+  for (let k = 0; k < 12; k++) for (const set of ['123', '234', '345']) for (const degs of [[0, 4, 5, 3], [5, 3, 0, 4], [3, 0, 4, 5], [0, 3, 5, 4], [1, 4, 0, 0]]) {
+    const H = harmonize(k, 'maior'), p = TRI.progPath(k, degs, set, 7), tag = `tríades ${k} ${set} ${degs.join('')}`;
+    ok(!!p && p.length === degs.length, `${tag}: caminho completo`);
+    if (!p) continue;
+    p.forEach((v, i) => {
+      const pcs = v.frets.map((f, n) => N(T.TUNING[v.strings[n]] + f)), want = T.CHORDS[H[degs[i]].q3].iv.map(x => N(x + H[degs[i]].pc));
+      ok(new Set(pcs).size === 3 && pcs.every(x => want.includes(x)), `${tag}: ${v.name} com as 3 notas da tríade`);
+      ok(N(pcs[0] - H[degs[i]].pc) === [0, want[1] === N(H[degs[i]].pc + 3) ? 3 : 4, 7][v.inv] || N(pcs[0] - H[degs[i]].pc) === T.CHORDS[H[degs[i]].q3].iv[v.inv], `${tag}: ${v.name} inversão pelo baixo`);
+      ok(v.hi - v.lo <= 5 && v.lo >= 0 && v.hi <= 15, `${tag}: ${v.name} tocável`);
+      ok(TRI.move(v, p[(i + 1) % p.length]) <= 7, `${tag}: troca ${v.name} → ${p[(i + 1) % p.length].name} sem salto`);
+    });
+    for (const mode of ['bloco', 'arpejo']) for (const [m, s] of [[4, 2], [2, 3]]) ok(Math.abs(TAB.parse(TRI.src(p, mode, m, s)).beats - degs.length * m) < 1e-9, `${tag}: tab ${mode} ${m}/${s} com ${degs.length} compassos`);
+  }
+  const g = TRI.progPath(7, [0, 4, 5, 3], '123', 7);
+  console.log('  G–D–Em–C nas cordas 1-2-3: ' + g.map(v => `${v.name} [${v.frets.join(' ')}] ${T.INV_NAME[v.inv]}`).join(' · ') + ` · movimento total ${TRI.totalMove(g)} casas`);
+}
 
 sec('17. Análise de áudio (música sintética G–D–Em–C, andamento fixo e acelerando)');
 {

@@ -1,6 +1,6 @@
 /* ===== Telas do Braço: dicionário de acordes e campo harmônico ===== */
 function bracoTabs(active) {
-  return `<nav class="subtabs">${[['exp', 'braco', 'Explorador'], ['dict', 'acordes', 'Dicionário de acordes'], ['campo', 'campo', 'Campo harmônico']]
+  return `<nav class="subtabs">${[['exp', 'braco', 'Explorador'], ['dict', 'acordes', 'Dicionário de acordes'], ['campo', 'campo', 'Campo harmônico'], ['tri', 'triades', 'Tríades']]
     .map(([k, h, l]) => `<a href="#${h}" class="${k === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
 }
 V.acordes = (el) => {

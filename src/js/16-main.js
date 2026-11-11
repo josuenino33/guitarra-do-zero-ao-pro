@@ -95,6 +95,7 @@ const APP = (() => {
     if (h === 'braco') return ['braco', el => V.braco(el)];
     if (h === 'acordes') return ['braco', el => V.acordes(el)];
     if (h === 'campo') return ['braco', el => V.campo(el)];
+    if (h === 'triades') return ['braco', el => V.triades(el)];
     if (h === 'progresso') return ['progresso', el => V.progresso(el)];
     return ['trilha', el => V.trilha(el)];
   }

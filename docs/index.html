@@ -530,6 +530,12 @@ body.palco-on .top, body.palco-on .nav { display: none; }
 .palco-empty, .palco-notes { font-size: 20px; text-align: center; }
 .palco-help { text-align: center; }
 
+/* Tríades: cartão tocando e treino */
+.chord-card.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.chord-card .small { display: block; margin: 2px 0 4px; }
+.tri-quiz { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.tri-quiz > .chord-card { cursor: pointer; }
+
 /* ===== dicionário de acordes ===== */
 .grp { min-width: 72px; font-weight: 700; }
 .dict-head { margin-block: 14px 10px; }
@@ -1404,6 +1410,7 @@ const WV = (() => {
     { id:'ostinato', name:'Ostinato com delay', tip:'Três notas repetindo. Com o delay pontilhado vira a cascata típica do worship. Toque leve e deixe o eco preencher.' },
     { id:'alvos', name:'Melodia de alvos', tip:'Cada compasso cai numa nota do acorde e as notas de passagem caminham até o próximo alvo.' },
     { id:'resposta', name:'Nota longa + resposta', tip:'Segura uma nota (como um swell de volume) e responde com uma frase curta descendo, como resposta à voz.' },
+    { id:'triades', name:'Tríades arpejadas', tip:'As três notas de cada acorde nas cordas 1-2-3, na inversão mais perto da anterior. A mão quase não anda e a nota de cima vira uma melodia.' },
     { id:'subida', name:'Subida pro refrão', tip:'Vai subindo a pentatônica e chega na tônica aguda no último compasso. Use antes do refrão.' },
   ];
   // padrões em "passos" (colcheias no 4/4, colcheias de tercina no 6/8)
@@ -1452,6 +1459,9 @@ const WV = (() => {
         for (let i = 0; i < P.alvos.length - 1; i++) { x = nx > t ? dn(x) : nx < t ? up(x) : (i % 2 ? nx : up(nx)); appr.unshift(x); }
         appr.forEach((m, i) => { ev.push({ st, n: P.alvos[i + 1], m }); st += P.alvos[i + 1]; });
       });
+    } else if (type === 'triades') {
+      const path = TRI.progPath(keyPc, degs, '123', 7 + Math.round(rnd() * 3)), pat = S === 6 ? [0, 1, 2, 1, 2, 1] : [0, 2, 1, 2, 0, 2, 1, 2];
+      path.forEach((v, b) => pat.forEach((k, i) => ev.push({ st: b * S + i, n: 1, m: T.TUNING[v.strings[k]] + v.frets[k], p: { s: v.strings[k], f: v.frets[k] } })));
     } else if (type === 'resposta') {
       let last = cl(pool, 69);
       degs.forEach((d, b) => {
@@ -1479,8 +1489,8 @@ const WV = (() => {
     const put = (beats, tok) => { const k = tokOf(beats); if (k !== cur) { toks.push('|' + k); cur = k; } toks.push(tok); };
     ev.sort((a, b) => a.st - b.st).forEach(e => {
       if (e.st > t) { put((e.st - t) / sub, '-'); t = e.st; }
-      let best = null, bc = 1e9;
-      for (let s = 0; s < 6; s++) {
+      let best = e.p || null, bc = e.p ? -1 : 1e9;
+      for (let s = 0; s < 6 && !e.p; s++) {
         const f = e.m - T.TUNING[s];
         if (f < 0 || f > 17) continue;
         const cost = Math.abs(f - c) + (f === 0 ? 1.5 : 0) + (s < 2 ? 2 : 0);
@@ -1681,6 +1691,87 @@ const MA = (() => {
   }
 
   return { mono, analyze, analyzeSync, DEGS };
+})();
+
+/* ===== Tríades worship: inversões por grupo de cordas e condução de vozes (a mão anda o mínimo) ===== */
+const TRI = (() => {
+  const MINOR = [false, true, true, false, false, true];
+  const TOP_NAME = { 0: 'tônica', 3: '3ª', 4: '3ª', 7: '5ª' };
+
+  /** Todas as tríades (fechadas) do acorde no grupo de cordas, até a casa maxFret. */
+  function options(rootPc, minor, setId = '123', maxFret = 15) {
+    const set = T.STRING_SETS.find(x => x.id === setId) || T.STRING_SETS[0];
+    return T.triads(rootPc, minor ? 'menor' : 'maior', set.s, maxFret).map(v => {
+      const f = [-1, -1, -1, -1, -1, -1];
+      v.notes.forEach(n => { f[n.s] = n.f; });
+      const frets = v.notes.map(n => n.f), top = v.notes[2];
+      return { inv: v.inv, f, frets, strings: set.s, lo: Math.min(...frets), hi: Math.max(...frets), root: rootPc, minor,
+        top: TOP_NAME[T.mod(T.TUNING[top.s] + top.f - rootPc)] };
+    });
+  }
+  const center = o => (o.lo + o.hi) / 2;
+  /** Quantas casas os três dedos andam de uma tríade para a outra. */
+  const move = (a, b) => a.frets.reduce((s, f, i) => s + Math.abs(f - b.frets[i]), 0);
+
+  /**
+   * Caminho de menor movimento para a sequência de acordes [{ root, minor }], perto da casa `near`.
+   * Com loop, também conta a volta do último para o primeiro (a progressão repete).
+   */
+  function path(chords, setId = '123', near = 7, loop = true) {
+    const opts = chords.map(c => options(c.root, c.minor, setId));
+    if (opts.some(o => !o.length)) return null;
+    let best = null, bestCost = Infinity;
+    opts[0].forEach((first, s0) => {
+      let cost = [Math.abs(center(first) - near) * 0.6];
+      const back = [];
+      let prevOpts = [first];
+      for (let i = 1; i < opts.length; i++) {
+        const c = [], b = [];
+        opts[i].forEach((o, j) => {
+          let bv = Infinity, bk = 0;
+          prevOpts.forEach((p, k) => { const v = cost[k] + move(p, o); if (v < bv) { bv = v; bk = k; } });
+          c[j] = bv + Math.abs(center(o) - near) * 0.15; b[j] = bk;
+        });
+        cost = c; back.push(b); prevOpts = opts[i];
+      }
+      cost.forEach((v, j) => {
+        const total = v + (loop && opts.length > 1 ? move(prevOpts[j], first) : 0);
+        if (total < bestCost) {
+          bestCost = total;
+          const seq = [j];
+          for (let i = back.length - 1; i >= 0; i--) seq.unshift(back[i][seq[0]]);
+          best = seq.map((k, i) => i === 0 ? first : opts[i][k]);
+        }
+      });
+    });
+    return best;
+  }
+
+  /** Caminho para os graus `degs` (0 = I … 5 = vi) do tom maior keyPc, com nomes. */
+  function progPath(keyPc, degs, setId = '123', near = 7) {
+    const H = harmonize(T.mod(keyPc), 'maior');
+    const p = path(degs.map(d => ({ root: H[d].pc, minor: MINOR[d] })), setId, near);
+    return p && p.map((v, i) => Object.assign({}, v, { name: H[degs[i]].triad, deg: degs[i] }));
+  }
+  const totalMove = p => p.reduce((s, v, i) => s + (i ? move(p[i - 1], v) : 0), 0);
+
+  /** Forma para diagrama, Jam e palhetada. */
+  const shape = v => ({ name: v.name || '', f: v.f, d: v.f.map(() => 0), k: 'Tríade' });
+
+  /** Tablatura do caminho: em bloco (3 notas juntas) ou arpejada. Um acorde por compasso. */
+  const ARP = { 8: [0, 2, 1, 2, 0, 2, 1, 2], 6: [0, 1, 2, 1, 2, 1] };
+  function src(p, mode = 'bloco', meter = 4, sub = 2) {
+    const note = (v, i) => `${6 - v.strings[i]}:${v.frets[i]}`;
+    if (mode === 'arpejo') {
+      const pat = ARP[meter * sub] || ARP[8], d = sub === 3 ? '|t' : '|e';
+      return d + ' ' + p.map(v => pat.map(i => note(v, i)).join(' ')).join(' ');
+    }
+    const blk = v => [0, 1, 2].map(i => note(v, i)).join('+');
+    if (meter * sub === 6) return p.map(v => `|q ${blk(v)} ${blk(v)}`).join(' ');
+    return p.map(v => `|q. ${blk(v)} |e ${blk(v)} |h ${blk(v)}~`).join(' ');
+  }
+
+  return { options, path, progPath, totalMove, move, shape, src, MINOR };
 })();
 
 /* ===== Áudio: corda sintetizada (Karplus-Strong), timbres, cliques e relógio ===== */
@@ -3440,6 +3531,15 @@ MODULES.push(
       demo:{ kind:'chords', chords:['G','Cadd9','Em7','Dsus4'] },
       tasks:['Toque G – Dsus4 – Em7 – Cadd9 sem tirar os dedos das cordas 1 e 2.','No Campo harmônico, ligue “✨ Worship” e toque o campo de outro tom.'],
       links:[{ to:'campo', label:'Campo harmônico' }] },
+    { id:'louvor-triades', title:'Tríades nas cordas agudas', min:12,
+      body:`<p>Na guitarra elétrica do louvor, o acorde de seis cordas aparece pouco. O que mais se ouve é a <b>tríade</b>: as três notas do acorde (tônica, 3ª e 5ª) em <b>três cordas vizinhas</b>, quase sempre nas cordas <b>1-2-3</b> ou <b>2-3-4</b>.</p>
+<ul><li>O violão e o teclado já fazem o acorde cheio. A tríade aguda soma brilho sem embolar.</li>
+<li>São só três dedos: sobra mão para trocar rápido, abafar e fazer swell.</li>
+<li>Com delay e reverb, uma tríade arpejada vira textura.</li></ul>
+<p>Comece com G – D – Em – C nas cordas 1-2-3 por volta da casa 7. Na aba <b>Tríades</b> do Braço o app mostra o desenho de cada acorde, toca em loop e muda para qualquer tom.</p>`,
+      demo:{ kind:'lick', lick:'w8' },
+      tasks:['Toque o lick “Tríades nas cordas 1-2-3” devagar, sem deixar uma corda de fora.','Na aba Tríades, troque o tom para D e para E e toque a mesma progressão.'],
+      links:[{ to:'triades', label:'Abrir a aba Tríades' }, { to:'jam', id:'w-cong', label:'Jam com base em tríades' }] },
     { id:'louvor-levadas', title:'Levadas do louvor: congregacional, balada e 6/8', min:12,
       body:`<p>Três levadas cobrem a maior parte do repertório:</p>
 <ul><li><b>Congregacional</b> (4/4, 68–80 BPM): uma palhetada longa no tempo 1 deixando soar, e um movimento leve no fim do compasso.</li>
@@ -3497,6 +3597,22 @@ MODULES.push(
 <p>Treine cantando você mesmo uma frase simples e respondendo com a guitarra.</p>`,
       demo:{ kind:'lick', lick:'w5' },
       tasks:['Toque o lick “Resposta à voz” e repare onde ficam os silêncios.','Cante uma frase e responda com 4 notas da pentatônica maior.'] },
+    { id:'louvor-inversoes', title:'Inversões: a mão que quase não anda', min:12,
+      body:`<p>Toda tríade tem três <b>inversões</b>, conforme a nota que fica embaixo:</p>
+<ul><li><b>Fundamental</b>: a tônica embaixo.</li><li><b>1ª inversão</b>: a 3ª embaixo.</li><li><b>2ª inversão</b>: a 5ª embaixo.</li></ul>
+<p>O segredo do louvor é <b>não pular pelo braço</b>. Na troca de acorde, escolha a inversão que está mais perto da anterior. Muitas vezes uma ou duas notas ficam paradas e só um dedo anda meia casa ou uma casa. Isso se chama <b>condução de vozes</b>.</p>
+<p>Resultado: a nota de cima de cada tríade forma uma <b>melodia</b> por si só. Escute a progressão prestando atenção só na nota mais aguda.</p>
+<p>A aba <b>Tríades</b> calcula esse caminho para qualquer tom, progressão e grupo de cordas, mostra quantas casas a mão anda e tem um treino rápido de reconhecer inversões.</p>`,
+      demo:{ kind:'lick', lick:'w9' },
+      tasks:['Na aba Tríades, toque I–V–vi–IV nas cordas 1-2-3 e depois nas 2-3-4.','Faça 20 acertos no treino “Qual inversão?”.','Cante a nota de cima de cada tríade enquanto toca.'],
+      links:[{ to:'triades', label:'Abrir a aba Tríades' }] },
+    { id:'louvor-triade-solta', title:'Tríades com corda solta soando', min:10,
+      body:`<p>Junte duas ideias desta trilha: a tríade aguda e a corda solta. Toque a tríade nas cordas <b>2-3-4</b> e deixe a corda <b>1 solta</b> soando junto, ou a tríade nas cordas 1-2-3 com a corda 4 solta embaixo.</p>
+<p>A nota solta não muda e cada acorde a “pinta” de um jeito: no tom de E, o Mi solto é a tônica no E, vira sus4 no B, é a 3ª menor no C♯m e a 5ª no A. Por isso tons como <b>E</b>, <b>D</b> e <b>A</b> são tão usados no louvor: as cordas soltas pertencem ao tom.</p>
+<p>Arpeje devagar e deixe tudo soar. Com delay pontilhado, o resultado é aquele “sino” que fica por cima da banda.</p>`,
+      demo:{ kind:'lick', lick:'w10' },
+      tasks:['Toque o lick “Tríades com a corda Mi solta” e deixe todas as notas soarem.','Invente um arpejo seu nos acordes E – B – C♯m – A usando a corda 1 solta.'],
+      links:[{ to:'licks', id:'w10', label:'Lick: Tríades com a corda Mi solta' }] },
     { id:'louvor-banda', title:'Tocar com a banda sem brigar com o teclado', min:10,
       body:`<p>Guitarra e teclado tocam nas mesmas alturas. Para não embolar:</p>
 <ul><li><b>Registro</b>: se o teclado faz acordes no meio, toque mais agudo (acima da casa 7, ou só cordas 1 a 3).</li>
@@ -3589,6 +3705,19 @@ const LICKS = [
     chords:['G','D','Em','C'],
     src:'|q. 1:10 1:7 |q 2:8 |q. 1:10 2:10 |q 2:7 |q. 1:12 1:7 |q 2:8 |q. 1:12 1:8 |q 2:8',
     tip:'Três notas por compasso no ritmo 3 + 3 + 2. Com o delay pontilhado as repetições caem entre as notas e o arpejo parece tocado em semicolcheias.' },
+  // tríades worship: a mesma condução de vozes que o app calcula na tela Tríades
+  { id:'w8', style:'worship', title:'Tríades nas cordas 1-2-3', key:'G', scale:'maior', bpm:72, level:1, tech:'Tríades, condução de vozes', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|q. 3:7+2:8+1:7 |e 3:7+2:8+1:7 |h 3:7+2:8+1:7~ |q. 3:7+2:7+1:5 |e 3:7+2:7+1:5 |h 3:7+2:7+1:5~ |q. 3:9+2:8+1:7 |e 3:9+2:8+1:7 |h 3:9+2:8+1:7~ |q. 3:9+2:8+1:8 |e 3:9+2:8+1:8 |h 3:9+2:8+1:8~',
+    tip:'G em 2ª inversão, D e Em na fundamental e C em 1ª inversão. Repare que a casa 8 da corda 2 fica parada em três dos quatro acordes: é isso que deixa a troca suave.' },
+  { id:'w9', style:'worship', title:'Tríades arpejadas com delay', key:'G', scale:'maior', bpm:76, level:2, tech:'Arpejo de tríades', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|e 3:7 1:7 2:8 1:7 3:7 1:7 2:8 1:7 3:7 1:5 2:7 1:5 3:7 1:5 2:7 1:5 3:9 1:7 2:8 1:7 3:9 1:7 2:8 1:7 3:9 1:8 2:8 1:8 3:9 1:8 2:8 1:8',
+    tip:'As mesmas tríades do lick anterior, uma nota de cada vez: grave, aguda, do meio, aguda. Deixe as notas soarem juntas, como se o acorde estivesse montado na mão.' },
+  { id:'w10', style:'worship', title:'Tríades com a corda Mi solta', key:'E', scale:'maior', bpm:74, level:2, tech:'Tríades 2-3-4 com corda solta', delay:true,
+    chords:['E','B','C#m','A'],
+    src:'|e 4:9 3:9 2:9 1:0 2:9 3:9 2:9 1:0 4:9 3:8 2:7 1:0 2:7 3:8 2:7 1:0 4:11 3:9 2:9 1:0 2:9 3:9 2:9 1:0 4:11 3:9 2:10 1:0 2:10 3:9 2:10 1:0',
+    tip:'Tríades nas cordas 2-3-4 e a corda 1 solta (Mi) soando em todos os acordes: em E é a tônica, em B vira sus4, em C♯m é a 3ª menor e em A é a 5ª. Esse “sino” por cima é muito usado no tom de E.' },
   { id:'m1', style:'metal', title:'Galope em Mi', key:'E', scale:'menor', bpm:120, level:2, tech:'Galope, palm mute',
     src:'|e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:3+5:5 |s 6:3+5:5 6:3+5:5 |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:5+5:7 |s 6:5+5:7 6:5+5:7 |e 6:6+5:8 |s 6:6+5:8 6:6+5:8',
     tip:'Ritmo de galope: uma colcheia e duas semicolcheias (baixo, baixo-cima). O último acorde, B♭5, forma o trítono com o Mi.' },
@@ -5249,7 +5378,7 @@ V.hoje = (el) => {
 
 /* ===== Telas do Braço: dicionário de acordes e campo harmônico ===== */
 function bracoTabs(active) {
-  return `<nav class="subtabs">${[['exp', 'braco', 'Explorador'], ['dict', 'acordes', 'Dicionário de acordes'], ['campo', 'campo', 'Campo harmônico']]
+  return `<nav class="subtabs">${[['exp', 'braco', 'Explorador'], ['dict', 'acordes', 'Dicionário de acordes'], ['campo', 'campo', 'Campo harmônico'], ['tri', 'triades', 'Tríades']]
     .map(([k, h, l]) => `<a href="#${h}" class="${k === active ? 'on' : ''}">${l}</a>`).join('')}</nav>`;
 }
 V.acordes = (el) => {
@@ -5259,6 +5388,131 @@ V.acordes = (el) => {
 V.campo = (el) => {
   el.innerHTML = `<header class="page-head"><p class="eyebrow">Braço</p><h1>Campo harmônico</h1></header>${bracoTabs('campo')}<section class="panel" data-w></section>`;
   return W.campo(el.querySelector('[data-w]'), { root: 'C', scale: 'maior', views: [{ label: 'Maior', scale: 'maior' }, { label: 'Menor natural', scale: 'menor' }, { label: 'Menor harmônica', scale: 'menor_harm' }] });
+};
+
+/* ===== Braço: tríades worship (inversões, condução de vozes, tocar em loop e treino) ===== */
+const TRI_UI = { key:7, prog:'1564', set:'123', near:7, mode:'bloco', bpm:72, dly:true, chord:0 };
+const TRI_PROGS = [
+  { id:'1564', label:'I–V–vi–IV', d:[0, 4, 5, 3] }, { id:'6415', label:'vi–IV–I–V', d:[5, 3, 0, 4] },
+  { id:'4156', label:'IV–I–V–vi', d:[3, 0, 4, 5] }, { id:'1465', label:'I–IV–vi–V', d:[0, 3, 5, 4] }, { id:'2511', label:'ii–V–I–I', d:[1, 4, 0, 0] },
+];
+
+V.triades = (el) => {
+  const st = TRI_UI;
+  const REG = [{ v:4, label:'Grave (casas 2–6)' }, { v:7, label:'Meio (5–10)' }, { v:11, label:'Agudo (9–14)' }];
+  el.innerHTML = `<header class="page-head"><p class="eyebrow">Braço</p><h1>Tríades</h1>
+      <p class="lede">Três notas em três cordas vizinhas: a base da guitarra no louvor. O app escolhe a inversão de cada acorde que deixa a mão andar o mínimo na troca.</p></header>
+    ${bracoTabs('tri')}
+    <section class="panel">
+      <div class="ctrl-row"><label class="field">Tom <select data-key id="tri-key">${U.rootOptions(st.key)}</select></label></div>
+      <div class="ctrl-row">${U.chips('prog', TRI_PROGS.map(p => ({ v: p.id, label: p.label })), st.prog)}</div>
+      <div class="ctrl-row">${U.chips('set', T.STRING_SETS.slice(0, 3).map(s => ({ v: s.id, label: s.label })), st.set)}</div>
+      <div class="ctrl-row">${U.chips('near', REG, st.near)}</div>
+      <div class="chord-row" data-cards></div>
+      <p class="small" data-move></p>
+      <div class="ctrl-row">
+        <button type="button" class="btn primary" data-act="play">▶ Tocar em loop</button>
+        ${U.chips('mode', [{ v:'bloco', label:'Em bloco' }, { v:'arpejo', label:'Arpejado' }], st.mode)}
+      </div>
+      <div class="ctrl-row">
+        <label class="field">Andamento <input type="range" min="50" max="120" value="${st.bpm}" data-bpm id="tri-bpm"> <b data-bpmv>${st.bpm}</b> BPM</label>
+        <label class="check"><input type="checkbox" data-dly id="tri-dly" ${st.dly ? 'checked' : ''}> Delay pontilhado</label>
+      </div>
+      <div class="tab-scroll" data-tab></div>
+    </section>
+    <section class="panel"><p class="eyebrow">Todas as inversões de um acorde</p>
+      <div class="ctrl-row" data-chordchips></div><div class="chord-row" data-all></div>
+      <p class="small">Fundamental: a tônica embaixo. 1ª inversão: a 3ª embaixo. 2ª inversão: a 5ª embaixo. As três soam o mesmo acorde; muda a nota de cima e o lugar da mão.</p></section>
+    <section class="panel"><p class="eyebrow">Treino: qual inversão?</p><div data-quiz></div></section>`;
+  const $ = s => el.querySelector(s);
+  let p = null, parsed = null, hl = () => {}, quiz = null, score = { ok: 0, n: 0 };
+  const player = TAB.Player({
+    onEvent(i) {
+      hl(i);
+      const bar = i < 0 ? -1 : Math.floor(parsed.events[i].beat / 4 + 1e-9);
+      el.querySelectorAll('[data-card]').forEach(c => c.classList.toggle('on', +c.dataset.card === bar));
+    },
+    onEnd() { $('[data-act="play"]').textContent = '▶ Tocar em loop'; A.setDelay(0); },
+  });
+  const prog = () => TRI_PROGS.find(x => x.id === st.prog) || TRI_PROGS[0];
+
+  function paint() {
+    p = TRI.progPath(st.key, prog().d, st.set, st.near);
+    if (!p) { $('[data-cards]').innerHTML = '<p class="small">Sem tríades nessa região.</p>'; return; }
+    $('[data-cards]').innerHTML = p.map((v, i) => `<button type="button" class="chord-card" data-card="${i}" aria-label="Ouvir ${v.name}">
+      <b>${prettyChord(v.name)}</b><span class="small">${T.INV_NAME[v.inv]} · em cima: ${v.top}</span>${CH.diagram(TRI.shape(v))}</button>`).join('');
+    const moves = p.map((v, i) => TRI.move(v, p[(i + 1) % p.length]));
+    $('[data-move]').innerHTML = `A mão anda <b>${TRI.totalMove(p)} casas</b> no total (somando os 3 dedos) por volta da progressão. Trocas: ${p.map((v, i) => `${prettyChord(v.name)} → ${prettyChord(p[(i + 1) % p.length].name)}: ${moves[i]}`).join(' · ')}.`;
+    parsed = TAB.parse(TRI.src(p, st.mode));
+    hl = TAB.render($('[data-tab]'), parsed, 4);
+    const uniq = []; p.forEach((v, i) => { if (!uniq.some(u => u.name === v.name)) uniq.push(Object.assign({ i }, v)); });
+    if (st.chord >= uniq.length) st.chord = 0;
+    $('[data-chordchips]').innerHTML = U.chips('chord', uniq.map((v, i) => ({ v: i, label: v.name })), st.chord);
+    const c = uniq[st.chord], all = TRI.options(c.root, c.minor, st.set);
+    $('[data-all]').innerHTML = all.map((v, i) => `<button type="button" class="chord-card" data-opt="${i}" aria-label="Ouvir"><b>${T.INV_NAME[v.inv]}</b><span class="small">casa ${v.lo} · em cima: ${v.top}</span>${CH.diagram(TRI.shape(v))}</button>`).join('');
+    $('[data-all]')._opts = all;
+  }
+
+  function play() {
+    A.setDelay(st.dly ? 45 / st.bpm : 0);
+    player.play(parsed, { bpm: st.bpm, loop: true, click: false, countIn: false });
+    $('[data-act="play"]').textContent = '■ Parar'; S.practiced();
+  }
+  function stop() { player.stop(); A.setDelay(0); $('[data-act="play"]').textContent = '▶ Tocar em loop'; }
+
+  /* treino: mostra uma tríade e pergunta a inversão */
+  function newQuiz() {
+    const k = Math.floor(Math.random() * 12), d = Math.floor(Math.random() * 6), set = ['123', '234', '345'][Math.floor(Math.random() * 3)];
+    const H = harmonize(k, 'maior'), opts = TRI.options(H[d].pc, TRI.MINOR[d], set, 12);
+    const v = opts[Math.floor(Math.random() * opts.length)];
+    quiz = Object.assign({ name: H[d].triad }, v);
+    $('[data-quiz]').innerHTML = `<div class="tri-quiz"><div class="chord-card"><b>${prettyChord(quiz.name)}</b><span class="small">${T.STRING_SETS.find(s => s.id === set).label}</span>${CH.diagram(TRI.shape(quiz))}</div>
+      <div><p>Qual é a inversão? Olhe a nota mais grave.</p>
+        <div class="ctrl-row">${T.INV_NAME.map((n, i) => `<button type="button" class="btn" data-ans="${i}">${n}</button>`).join('')}</div>
+        <p class="small" data-qmsg>${score.n ? `Acertos: ${score.ok} de ${score.n}` : 'Toque no desenho para ouvir.'}</p></div></div>`;
+  }
+  function answer(i) {
+    score.n++;
+    const right = i === quiz.inv;
+    if (right) { score.ok++; S.practiced(); }
+    WV.strum(TRI.shape(quiz));
+    el.querySelectorAll('[data-ans]').forEach(b => { b.disabled = true; b.classList.toggle('primary', +b.dataset.ans === quiz.inv); });
+    $('[data-qmsg]').innerHTML = `${right ? '✅ Isso!' : `❌ Era <b>${T.INV_NAME[quiz.inv]}</b>.`} A nota de baixo é a ${['tônica', '3ª', '5ª'][quiz.inv]} e em cima está a ${quiz.top}. Acertos: ${score.ok} de ${score.n}. <button type="button" class="linkbtn" data-act="nextq">Próxima →</button>`;
+  }
+
+  el.addEventListener('click', e => {
+    const chip = e.target.closest('[data-chips] .chip');
+    if (chip) {
+      const g = chip.parentElement.dataset.chips, v = chip.dataset.v;
+      if (g === 'prog') { st.prog = v; st.chord = 0; }
+      if (g === 'set') st.set = v;
+      if (g === 'near') st.near = +v;
+      if (g === 'mode') st.mode = v;
+      if (g === 'chord') st.chord = +v;
+      chip.parentElement.querySelectorAll('.chip').forEach(c => { c.classList.toggle('on', c === chip); c.setAttribute('aria-pressed', c === chip); });
+      const was = player.playing; if (was) player.stop();
+      paint(); if (was && g !== 'chord') play();
+      return;
+    }
+    const card = e.target.closest('[data-card]'); if (card) { WV.strum(TRI.shape(p[+card.dataset.card])); return; }
+    const opt = e.target.closest('[data-opt]'); if (opt) { WV.strum(TRI.shape($('[data-all]')._opts[+opt.dataset.opt])); return; }
+    const ans = e.target.closest('[data-ans]'); if (ans && !ans.disabled) { answer(+ans.dataset.ans); return; }
+    if (e.target.closest('[data-quiz] .chord-card')) { WV.strum(TRI.shape(quiz)); return; }
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'play') { if (player.playing) stop(); else play(); }
+    if (act === 'nextq') newQuiz();
+  });
+  el.addEventListener('change', e => {
+    if (e.target.matches('[data-key]')) { st.key = +e.target.value; const was = player.playing; if (was) player.stop(); paint(); if (was) play(); }
+    if (e.target.matches('[data-dly]')) { st.dly = e.target.checked; if (player.playing) A.setDelay(st.dly ? 45 / st.bpm : 0); }
+  });
+  el.addEventListener('input', e => {
+    if (!e.target.matches('[data-bpm]')) return;
+    st.bpm = +e.target.value; $('[data-bpmv]').textContent = st.bpm;
+  });
+  el.addEventListener('change', e => { if (e.target.matches('[data-bpm]') && player.playing) { player.stop(); play(); } });
+  paint(); newQuiz();
+  return () => { player.stop(); A.setDelay(0); };
 };
 
 /* ===== Biblioteca de licks ===== */
@@ -6189,7 +6443,7 @@ const JAMS = [
 ];
 const BUILD_LV = [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
 const BUILD_NAMES = ['Intro: só pad', 'Verso', 'Pré-refrão', 'Refrão'];
-const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, pad:true, labels:'iv', phr:'ostinato', lead:true, dly:true, seed:1 };
+const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, pad:true, labels:'iv', phr:'ostinato', lead:true, dly:true, seed:1, gtr:'open' };
 UIP.track('jam', JAM);
 
 function parseChord(name) {
@@ -6211,8 +6465,10 @@ V.jam = (el, id) => {
   const baseKey = T.pcOf(jam.key);
   const keyPc = JAM.key == null ? baseKey : JAM.key;
   const keyName = jamKeyName(jam, keyPc);
+  // guitarra base: acordes abertos coloridos (WV) ou tríades agudas com condução de vozes (TRI)
+  const triPath = jam.worship && JAM.gtr !== 'open' ? TRI.progPath(keyPc, jam.degs, JAM.gtr, 8) : null;
   const chords = jam.chords.map((c, i) => {
-    const sh = jam.worship ? WV.best(keyPc, jam.degs[i]) : null;
+    const sh = triPath ? TRI.shape(triPath[i]) : jam.worship ? WV.best(keyPc, jam.degs[i]) : null;
     const pc = parseChord(sh ? sh.name : T.transposeName(c, jam.key, keyName));
     pc.shape = sh; return pc;
   });
@@ -6234,7 +6490,8 @@ V.jam = (el, id) => {
         <span class="small">${jam.meter === 2 ? 'Compasso 6/8' : jam.meter + '/4'} · ${({ shuffle:'shuffle', jazz:'swing', funk:'semicolcheias', reggae:'one drop', bossa:'bossa', sixeight:'6/8', waltz:'valsa', metal:'metal', straight:'reto', worship:'worship', build:'crescendo', ambient:'ambiente' })[jam.feel]}</span>
       </div>
       ${jam.worship ? `<div class="worship-box">
-        <p class="small">Acordes coloridos com cordas soltas soando, escolhidos para o tom. Toque para ouvir. Delay do pedal: <b data-delay>${WV.dottedDelay(JAM.bpm, jam.sub)} ms</b> (${jam.sub === 3 ? 'duas colcheias do 6/8' : 'colcheia pontuada'}).${jam.build ? ' Parte: <b data-stage>' + BUILD_NAMES[0] + '</b>' : ''}</p>
+        <div class="ctrl-row"><span class="small">Guitarra base:</span>${U.chips('gtr', [{ v:'open', label:'Acordes abertos' }, { v:'123', label:'Tríades 1-2-3' }, { v:'234', label:'Tríades 2-3-4' }], JAM.gtr)}</div>
+        <p class="small">${triPath ? `Tríades na inversão mais perto da anterior: a mão anda ${TRI.totalMove(triPath)} casas por volta. A nota de cima de cada tríade forma uma melodia.` : 'Acordes coloridos com cordas soltas soando, escolhidos para o tom.'} Toque para ouvir. Delay do pedal: <b data-delay>${WV.dottedDelay(JAM.bpm, jam.sub)} ms</b> (${jam.sub === 3 ? 'duas colcheias do 6/8' : 'colcheia pontuada'}).${jam.build ? ' Parte: <b data-stage>' + BUILD_NAMES[0] + '</b>' : ''}</p>
         <div class="chord-row">${chords.filter((c, i, a) => c.shape && a.findIndex(x => x.name === c.name) === i).map(c => `<button type="button" class="chord-card" data-wv="${chords.indexOf(c)}" aria-label="Ouvir ${c.name}"><b>${prettyChord(c.name)}</b>${CH.diagram(c.shape)}</button>`).join('')}</div>
       </div>
       <div class="worship-box">
@@ -6391,6 +6648,8 @@ V.jam = (el, id) => {
   el.addEventListener('click', e => {
     const chip = e.target.closest('[data-chips="jam"] .chip');
     if (chip) { clock.stop(); A.stopAll(); location.hash = '#jam-' + chip.dataset.v; return; }
+    const gc = e.target.closest('[data-chips="gtr"] .chip');
+    if (gc) { JAM.gtr = gc.dataset.v; const running = clock.running; clock.stop(); A.stopAll(); A.setDelay(0); APP.rerender(); if (running) U.toast('Base alterada. Toque de novo.'); return; }
     const pc = e.target.closest('[data-chips="phr"] .chip');
     if (pc) { JAM.phr = pc.dataset.v; el.querySelectorAll('[data-chips="phr"] .chip').forEach(c => c.classList.toggle('on', c === pc)); paintPhrase(); return; }
     if (e.target.closest('[data-act="reroll"]')) { JAM.seed = 1 + Math.floor(Math.random() * 233000); paintPhrase(); return; }
@@ -7471,6 +7730,7 @@ const APP = (() => {
     if (h === 'braco') return ['braco', el => V.braco(el)];
     if (h === 'acordes') return ['braco', el => V.acordes(el)];
     if (h === 'campo') return ['braco', el => V.campo(el)];
+    if (h === 'triades') return ['braco', el => V.triades(el)];
     if (h === 'progresso') return ['progresso', el => V.progresso(el)];
     return ['trilha', el => V.trilha(el)];
   }

@@ -30,6 +30,15 @@ MODULES.push(
       demo:{ kind:'chords', chords:['G','Cadd9','Em7','Dsus4'] },
       tasks:['Toque G – Dsus4 – Em7 – Cadd9 sem tirar os dedos das cordas 1 e 2.','No Campo harmônico, ligue “✨ Worship” e toque o campo de outro tom.'],
       links:[{ to:'campo', label:'Campo harmônico' }] },
+    { id:'louvor-triades', title:'Tríades nas cordas agudas', min:12,
+      body:`<p>Na guitarra elétrica do louvor, o acorde de seis cordas aparece pouco. O que mais se ouve é a <b>tríade</b>: as três notas do acorde (tônica, 3ª e 5ª) em <b>três cordas vizinhas</b>, quase sempre nas cordas <b>1-2-3</b> ou <b>2-3-4</b>.</p>
+<ul><li>O violão e o teclado já fazem o acorde cheio. A tríade aguda soma brilho sem embolar.</li>
+<li>São só três dedos: sobra mão para trocar rápido, abafar e fazer swell.</li>
+<li>Com delay e reverb, uma tríade arpejada vira textura.</li></ul>
+<p>Comece com G – D – Em – C nas cordas 1-2-3 por volta da casa 7. Na aba <b>Tríades</b> do Braço o app mostra o desenho de cada acorde, toca em loop e muda para qualquer tom.</p>`,
+      demo:{ kind:'lick', lick:'w8' },
+      tasks:['Toque o lick “Tríades nas cordas 1-2-3” devagar, sem deixar uma corda de fora.','Na aba Tríades, troque o tom para D e para E e toque a mesma progressão.'],
+      links:[{ to:'triades', label:'Abrir a aba Tríades' }, { to:'jam', id:'w-cong', label:'Jam com base em tríades' }] },
     { id:'louvor-levadas', title:'Levadas do louvor: congregacional, balada e 6/8', min:12,
       body:`<p>Três levadas cobrem a maior parte do repertório:</p>
 <ul><li><b>Congregacional</b> (4/4, 68–80 BPM): uma palhetada longa no tempo 1 deixando soar, e um movimento leve no fim do compasso.</li>
@@ -87,6 +96,22 @@ MODULES.push(
 <p>Treine cantando você mesmo uma frase simples e respondendo com a guitarra.</p>`,
       demo:{ kind:'lick', lick:'w5' },
       tasks:['Toque o lick “Resposta à voz” e repare onde ficam os silêncios.','Cante uma frase e responda com 4 notas da pentatônica maior.'] },
+    { id:'louvor-inversoes', title:'Inversões: a mão que quase não anda', min:12,
+      body:`<p>Toda tríade tem três <b>inversões</b>, conforme a nota que fica embaixo:</p>
+<ul><li><b>Fundamental</b>: a tônica embaixo.</li><li><b>1ª inversão</b>: a 3ª embaixo.</li><li><b>2ª inversão</b>: a 5ª embaixo.</li></ul>
+<p>O segredo do louvor é <b>não pular pelo braço</b>. Na troca de acorde, escolha a inversão que está mais perto da anterior. Muitas vezes uma ou duas notas ficam paradas e só um dedo anda meia casa ou uma casa. Isso se chama <b>condução de vozes</b>.</p>
+<p>Resultado: a nota de cima de cada tríade forma uma <b>melodia</b> por si só. Escute a progressão prestando atenção só na nota mais aguda.</p>
+<p>A aba <b>Tríades</b> calcula esse caminho para qualquer tom, progressão e grupo de cordas, mostra quantas casas a mão anda e tem um treino rápido de reconhecer inversões.</p>`,
+      demo:{ kind:'lick', lick:'w9' },
+      tasks:['Na aba Tríades, toque I–V–vi–IV nas cordas 1-2-3 e depois nas 2-3-4.','Faça 20 acertos no treino “Qual inversão?”.','Cante a nota de cima de cada tríade enquanto toca.'],
+      links:[{ to:'triades', label:'Abrir a aba Tríades' }] },
+    { id:'louvor-triade-solta', title:'Tríades com corda solta soando', min:10,
+      body:`<p>Junte duas ideias desta trilha: a tríade aguda e a corda solta. Toque a tríade nas cordas <b>2-3-4</b> e deixe a corda <b>1 solta</b> soando junto, ou a tríade nas cordas 1-2-3 com a corda 4 solta embaixo.</p>
+<p>A nota solta não muda e cada acorde a “pinta” de um jeito: no tom de E, o Mi solto é a tônica no E, vira sus4 no B, é a 3ª menor no C♯m e a 5ª no A. Por isso tons como <b>E</b>, <b>D</b> e <b>A</b> são tão usados no louvor: as cordas soltas pertencem ao tom.</p>
+<p>Arpeje devagar e deixe tudo soar. Com delay pontilhado, o resultado é aquele “sino” que fica por cima da banda.</p>`,
+      demo:{ kind:'lick', lick:'w10' },
+      tasks:['Toque o lick “Tríades com a corda Mi solta” e deixe todas as notas soarem.','Invente um arpejo seu nos acordes E – B – C♯m – A usando a corda 1 solta.'],
+      links:[{ to:'licks', id:'w10', label:'Lick: Tríades com a corda Mi solta' }] },
     { id:'louvor-banda', title:'Tocar com a banda sem brigar com o teclado', min:10,
       body:`<p>Guitarra e teclado tocam nas mesmas alturas. Para não embolar:</p>
 <ul><li><b>Registro</b>: se o teclado faz acordes no meio, toque mais agudo (acima da casa 7, ou só cordas 1 a 3).</li>

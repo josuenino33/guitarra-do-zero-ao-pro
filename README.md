@@ -5,7 +5,7 @@
 ## O que tem
 
 - **Hoje**: plano de estudo diário montado pelo seu nível e pelo tempo disponível, cronômetro por bloco, minutos da semana, desafio do dia e patente de músico (XP).
-- **Trilha**: 91 aulas em 5 níveis (Iniciante, Básico, Intermediário, Avançado, Profissional), cada nível com prova prática.
+- **Trilha**: 94 aulas em 5 níveis (Iniciante, Básico, Intermediário, Avançado, Profissional), cada nível com prova prática.
   - Iniciante: guitarra e amplificador, postura, afinação, acordes abertos, trocas de acordes, primeira música, ritmo, tablatura e cifra.
   - Básico: mapa do braço, intervalos, power chords, pestana e formas móveis, levadas por estilo, leitura rítmica.
   - Intermediário: tríades e inversões, CAGED, pentatônica, blues e técnicas de expressão.
@@ -17,7 +17,8 @@
 - **Treino**: metrônomo, treinador de levadas, trocas de acordes em 1 minuto, afinador, gravador e looper, treino de velocidade progressiva e Jam em qualquer tom com 11 estilos.
 - **Quiz**: notas no braço, intervalos, tríades, ouvido e quizzes com microfone (o app escuta a guitarra).
 - **Treino de ouvido** (aba dentro do Quiz): 6 exercícios em níveis, e cada rodada com 80% ou mais libera o próximo nível. São eles: intervalos (subindo, descendo e juntos), tipo de acorde (de maior/menor até tétrades), graus da escala com cadência, progressões, ouvir e achar a nota no braço e ditado melódico (clicando no braço ou tocando na guitarra com o microfone). O app guarda o que você mais erra, mostra esses pontos fracos e faz eles caírem mais vezes.
-- **Worship / louvor**: trilha **Guitarra no louvor** com 12 aulas (papel da guitarra, capo e as 5 formas, acordes coloridos, levadas, dinâmica, pads e swells, delay pontilhado, pentatônica maior, notas-alvo, resposta à voz, tocar com a banda e números de Nashville).
+- **Tríades**: aba no Braço que monta qualquer progressão em tríades nas cordas 1-2-3, 2-3-4 ou 3-4-5, escolhendo a inversão que deixa a mão andar o mínimo (mostra quantas casas), toca em bloco ou arpejado com delay, lista as 3 inversões de cada acorde e tem o treino “Qual inversão?”. O Jam worship pode usar tríades agudas como guitarra base, e há a frase “Tríades arpejadas” e 3 licks de tríades.
+- **Worship / louvor**: trilha **Guitarra no louvor** com 15 aulas (papel da guitarra, capo e as 5 formas, acordes coloridos, tríades nas cordas agudas, inversões e condução de vozes, tríades com corda solta, levadas, dinâmica, pads e swells, delay pontilhado, pentatônica maior, notas-alvo, resposta à voz, tocar com a banda e números de Nashville).
 - **Worship / louvor**: em ⚙️ escolha o foco **Worship** e o app coloca o louvor na frente (Jam e Licks). O Jam ganhou 4 bases worship (congregacional, balada 6/8, crescendo com intro → verso → pré → refrão e ambiente só com pad), com pad de teclado, acordes coloridos gerados para o tom (7M(9), add9, m11, sus4…, com cordas soltas soando) e o tempo do delay de colcheia pontuada pelo andamento. No **Campo harmônico**, a opção **✨ Worship** mostra e toca essas formas em qualquer tom maior. Para solar: o Jam worship gera **frases** sobre a progressão no tom escolhido (ostinato com delay, melodia de alvos, nota longa + resposta e subida pro refrão), mostra a tablatura e toca junto com a base com **delay pontilhado** na guitarra. Em Licks, o estilo **Worship (frases)** traz 7 frases para estudar, também com o delay.
 - **Progresso**: aulas, recordes, níveis do treino de ouvido, calendário, conquistas e backup.
 

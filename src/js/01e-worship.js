@@ -121,6 +121,7 @@ const WV = (() => {
     { id:'ostinato', name:'Ostinato com delay', tip:'Três notas repetindo. Com o delay pontilhado vira a cascata típica do worship. Toque leve e deixe o eco preencher.' },
     { id:'alvos', name:'Melodia de alvos', tip:'Cada compasso cai numa nota do acorde e as notas de passagem caminham até o próximo alvo.' },
     { id:'resposta', name:'Nota longa + resposta', tip:'Segura uma nota (como um swell de volume) e responde com uma frase curta descendo, como resposta à voz.' },
+    { id:'triades', name:'Tríades arpejadas', tip:'As três notas de cada acorde nas cordas 1-2-3, na inversão mais perto da anterior. A mão quase não anda e a nota de cima vira uma melodia.' },
     { id:'subida', name:'Subida pro refrão', tip:'Vai subindo a pentatônica e chega na tônica aguda no último compasso. Use antes do refrão.' },
   ];
   // padrões em "passos" (colcheias no 4/4, colcheias de tercina no 6/8)
@@ -169,6 +170,9 @@ const WV = (() => {
         for (let i = 0; i < P.alvos.length - 1; i++) { x = nx > t ? dn(x) : nx < t ? up(x) : (i % 2 ? nx : up(nx)); appr.unshift(x); }
         appr.forEach((m, i) => { ev.push({ st, n: P.alvos[i + 1], m }); st += P.alvos[i + 1]; });
       });
+    } else if (type === 'triades') {
+      const path = TRI.progPath(keyPc, degs, '123', 7 + Math.round(rnd() * 3)), pat = S === 6 ? [0, 1, 2, 1, 2, 1] : [0, 2, 1, 2, 0, 2, 1, 2];
+      path.forEach((v, b) => pat.forEach((k, i) => ev.push({ st: b * S + i, n: 1, m: T.TUNING[v.strings[k]] + v.frets[k], p: { s: v.strings[k], f: v.frets[k] } })));
     } else if (type === 'resposta') {
       let last = cl(pool, 69);
       degs.forEach((d, b) => {
@@ -196,8 +200,8 @@ const WV = (() => {
     const put = (beats, tok) => { const k = tokOf(beats); if (k !== cur) { toks.push('|' + k); cur = k; } toks.push(tok); };
     ev.sort((a, b) => a.st - b.st).forEach(e => {
       if (e.st > t) { put((e.st - t) / sub, '-'); t = e.st; }
-      let best = null, bc = 1e9;
-      for (let s = 0; s < 6; s++) {
+      let best = e.p || null, bc = e.p ? -1 : 1e9;
+      for (let s = 0; s < 6 && !e.p; s++) {
         const f = e.m - T.TUNING[s];
         if (f < 0 || f > 17) continue;
         const cost = Math.abs(f - c) + (f === 0 ? 1.5 : 0) + (s < 2 ? 2 : 0);

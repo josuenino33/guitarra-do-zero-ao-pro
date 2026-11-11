@@ -35,7 +35,7 @@ const JAMS = [
 ];
 const BUILD_LV = [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
 const BUILD_NAMES = ['Intro: só pad', 'Verso', 'Pré-refrão', 'Refrão'];
-const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, pad:true, labels:'iv', phr:'ostinato', lead:true, dly:true, seed:1 };
+const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, pad:true, labels:'iv', phr:'ostinato', lead:true, dly:true, seed:1, gtr:'open' };
 UIP.track('jam', JAM);
 
 function parseChord(name) {
@@ -57,8 +57,10 @@ V.jam = (el, id) => {
   const baseKey = T.pcOf(jam.key);
   const keyPc = JAM.key == null ? baseKey : JAM.key;
   const keyName = jamKeyName(jam, keyPc);
+  // guitarra base: acordes abertos coloridos (WV) ou tríades agudas com condução de vozes (TRI)
+  const triPath = jam.worship && JAM.gtr !== 'open' ? TRI.progPath(keyPc, jam.degs, JAM.gtr, 8) : null;
   const chords = jam.chords.map((c, i) => {
-    const sh = jam.worship ? WV.best(keyPc, jam.degs[i]) : null;
+    const sh = triPath ? TRI.shape(triPath[i]) : jam.worship ? WV.best(keyPc, jam.degs[i]) : null;
     const pc = parseChord(sh ? sh.name : T.transposeName(c, jam.key, keyName));
     pc.shape = sh; return pc;
   });
@@ -80,7 +82,8 @@ V.jam = (el, id) => {
         <span class="small">${jam.meter === 2 ? 'Compasso 6/8' : jam.meter + '/4'} · ${({ shuffle:'shuffle', jazz:'swing', funk:'semicolcheias', reggae:'one drop', bossa:'bossa', sixeight:'6/8', waltz:'valsa', metal:'metal', straight:'reto', worship:'worship', build:'crescendo', ambient:'ambiente' })[jam.feel]}</span>
       </div>
       ${jam.worship ? `<div class="worship-box">
-        <p class="small">Acordes coloridos com cordas soltas soando, escolhidos para o tom. Toque para ouvir. Delay do pedal: <b data-delay>${WV.dottedDelay(JAM.bpm, jam.sub)} ms</b> (${jam.sub === 3 ? 'duas colcheias do 6/8' : 'colcheia pontuada'}).${jam.build ? ' Parte: <b data-stage>' + BUILD_NAMES[0] + '</b>' : ''}</p>
+        <div class="ctrl-row"><span class="small">Guitarra base:</span>${U.chips('gtr', [{ v:'open', label:'Acordes abertos' }, { v:'123', label:'Tríades 1-2-3' }, { v:'234', label:'Tríades 2-3-4' }], JAM.gtr)}</div>
+        <p class="small">${triPath ? `Tríades na inversão mais perto da anterior: a mão anda ${TRI.totalMove(triPath)} casas por volta. A nota de cima de cada tríade forma uma melodia.` : 'Acordes coloridos com cordas soltas soando, escolhidos para o tom.'} Toque para ouvir. Delay do pedal: <b data-delay>${WV.dottedDelay(JAM.bpm, jam.sub)} ms</b> (${jam.sub === 3 ? 'duas colcheias do 6/8' : 'colcheia pontuada'}).${jam.build ? ' Parte: <b data-stage>' + BUILD_NAMES[0] + '</b>' : ''}</p>
         <div class="chord-row">${chords.filter((c, i, a) => c.shape && a.findIndex(x => x.name === c.name) === i).map(c => `<button type="button" class="chord-card" data-wv="${chords.indexOf(c)}" aria-label="Ouvir ${c.name}"><b>${prettyChord(c.name)}</b>${CH.diagram(c.shape)}</button>`).join('')}</div>
       </div>
       <div class="worship-box">
@@ -237,6 +240,8 @@ V.jam = (el, id) => {
   el.addEventListener('click', e => {
     const chip = e.target.closest('[data-chips="jam"] .chip');
     if (chip) { clock.stop(); A.stopAll(); location.hash = '#jam-' + chip.dataset.v; return; }
+    const gc = e.target.closest('[data-chips="gtr"] .chip');
+    if (gc) { JAM.gtr = gc.dataset.v; const running = clock.running; clock.stop(); A.stopAll(); A.setDelay(0); APP.rerender(); if (running) U.toast('Base alterada. Toque de novo.'); return; }
     const pc = e.target.closest('[data-chips="phr"] .chip');
     if (pc) { JAM.phr = pc.dataset.v; el.querySelectorAll('[data-chips="phr"] .chip').forEach(c => c.classList.toggle('on', c === pc)); paintPhrase(); return; }
     if (e.target.closest('[data-act="reroll"]')) { JAM.seed = 1 + Math.floor(Math.random() * 233000); paintPhrase(); return; }
