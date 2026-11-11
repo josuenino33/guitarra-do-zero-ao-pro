@@ -1,6 +1,6 @@
 /* ===== Áudio: corda sintetizada (Karplus-Strong), timbres, cliques e relógio ===== */
 const A = (() => {
-  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus;
+  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus, padBus;
   const cache = new Map();
   const voices = {};
   let live = [];
@@ -52,6 +52,11 @@ const A = (() => {
     backBus = ctx.createGain(); backBus.gain.value = 0.55;
     const backLP = ctx.createBiquadFilter(); backLP.type = 'lowpass'; backLP.frequency.value = 3200;
     backBus.connect(backLP); backLP.connect(master); backLP.connect(revSend);
+    // pad (teclado de fundo do worship): escuro e com bastante reverb
+    padBus = ctx.createGain(); padBus.gain.value = 0.5;
+    const padLP = ctx.createBiquadFilter(); padLP.type = 'lowpass'; padLP.frequency.value = 1500; padLP.Q.value = 0.5;
+    const padRev = ctx.createGain(); padRev.gain.value = 1.6;
+    padBus.connect(padLP); padLP.connect(master); padLP.connect(padRev); padRev.connect(revSend);
     setTone(tone);
     return ctx;
   }
@@ -196,6 +201,25 @@ const A = (() => {
     else { f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 0.7; g.gain.setValueAtTime(0.5 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18); }
     s.connect(f); f.connect(g); g.connect(clickBus); s.start(t); s.stop(t + 0.25);
   }
+  /** Pad: notas longas com ataque e saída suaves (dois osciladores levemente desafinados por nota). */
+  function pad(midis, t, dur, vel = 0.5) {
+    init();
+    const att = Math.min(0.9, dur * 0.35), rel = 1.4;
+    midis.forEach(m => {
+      const f = 440 * Math.pow(2, (m - 69) / 12), g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.05 * vel, t + att);
+      g.gain.setValueAtTime(0.05 * vel, t + dur);
+      g.gain.linearRampToValueAtTime(0.0001, t + dur + rel);
+      g.connect(padBus);
+      [-7, 7].forEach(cents => {
+        const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = cents;
+        o.connect(g); o.start(t); o.stop(t + dur + rel + 0.05);
+        live.push({ src: o, g, end: t + dur + rel + 0.05 });
+      });
+    });
+    if (live.length > 120) live = live.filter(x => x.end > ctx.currentTime);
+  }
   function bass(midi, t, dur) {
     init();
     play(midi, t, { dur, vel: 1, bus: 'back', string: 'bass' });
@@ -233,5 +257,5 @@ const A = (() => {
   }
 
   const now = () => (init(), ctx.currentTime);
-  return { init, play, stopAll, click, tick, drum, bass, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
+  return { init, play, stopAll, click, tick, drum, bass, pad, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
 })();

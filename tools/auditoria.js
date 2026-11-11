@@ -5,10 +5,10 @@ const js = f => fs.readFileSync(path.join(root, 'src/js', f), 'utf8');
 const order = fs.readdirSync(path.join(root, 'src/js')).filter(f => /^(01|02b|04|05|06|07)/.test(f)).sort();
 const ctx = { console, S: { get: () => ({ myLicks: [] }) }, UIP: { lickKey: () => null } };
 vm.createContext(ctx);
-vm.runInContext(order.map(js).join('\n') + '\n;globalThis.o={T,CH,RH,TAB,MODULES,LEVELS,LICKS,SONGS,VOICINGS,QUAL_SUFFIX,harmonize};', ctx);
+vm.runInContext(order.map(js).join('\n') + '\n;globalThis.o={T,CH,RH,TAB,MODULES,LEVELS,LICKS,SONGS,VOICINGS,QUAL_SUFFIX,harmonize,WV};', ctx);
 vm.runInContext(js('09e-widgets-adv.js').split('const DICT_GROUPS')[0], ctx);
 const jamSrc = js('14-view-jam.js'); const JAMS = vm.runInContext('(' + jamSrc.slice(jamSrc.indexOf('[', jamSrc.indexOf('const JAMS')), jamSrc.indexOf('];', jamSrc.indexOf('const JAMS')) + 1) + ')', ctx);
-const { T, CH, RH, TAB, MODULES, LICKS, VOICINGS, harmonize } = ctx.o;
+const { T, CH, RH, TAB, MODULES, LICKS, VOICINGS, harmonize, WV } = ctx.o;
 
 let errs = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { errs++; if (errs <= 60) console.log('  ERRO:', msg); } };
@@ -213,5 +213,33 @@ for (let r = 0; r < 12; r++) {
     ok(vs.length > 0 && vs.every(v => v.f.every(f => f <= 15)), `tipo de acorde: forma de ${q} em ${r} até a casa 15`);
   }
 }
+
+sec('16. Worship: acordes coloridos gerados (12 tons, graus I a vi) e bases worship');
+for (let k = 0; k < 12; k++) {
+  const sc = T.SCALES.maior.iv.map(x => N(k + x)), H = harmonize(k, 'maior');
+  for (let d = 0; d < 6; d++) {
+    const vs = WV.list(k, d);
+    ok(vs.length >= 2, `worship ${k} grau ${d + 1}: precisa de pelo menos 2 formas`);
+    vs.forEach(v => {
+      const p = CH.parse(v.name), notes = CH.voicing(v), pcs = new Set(notes.map(n => N(n.midi - H[d].pc)));
+      const fr = v.f.filter(f => f > 0), tag = `worship ${v.name} [${v.f.join(' ')}]`;
+      ok(p && p.root === H[d].pc && p.q === v.q && !!T.CHORDS[p.q], `${tag}: cifra reconhecida com a tônica do grau`);
+      ok(N(notes[0].midi) === H[d].pc, `${tag}: baixo na tônica`);
+      ok(notes.every(n => sc.includes(N(n.midi))), `${tag}: só notas do tom`);
+      const want = new Set(T.CHORDS[v.q].iv.map(N)); if (v.q === 'm11') want.add(2);
+      ok([...pcs].every(x => want.has(x)), `${tag}: nota fora da cifra`);
+      ok(T.CHORDS[v.q].iv.filter(x => x !== 7 && x !== 2 && !(v.q === 'm11' && x === 10)).every(x => pcs.has(N(x))), `${tag}: falta nota que dá nome ao acorde`);
+      ok(notes.length >= 4 && fr.length >= 2 && fr.length <= 4 && Math.max(...fr) - Math.min(...fr) <= 3 && Math.max(...fr) <= 12, `${tag}: tocável (4+ cordas, 2 a 4 dedos, mão em até 4 casas)`);
+      ok(notes.filter((a, i) => notes.some((b, j) => j > i && Math.abs(a.midi - b.midi) === 1)).length <= 1, `${tag}: no máximo um choque de semitom`);
+    });
+  }
+}
+for (const j of JAMS.filter(j => j.worship)) {
+  const H = harmonize(T.pcOf(j.key), 'maior');
+  ok(j.degs.length === j.chords.length, `${j.id}: graus e acordes do mesmo tamanho`);
+  j.degs.forEach((d, i) => ok(CH.parse(j.chords[i]).root === H[d].pc && CH.parse(j.chords[i]).q === H[d].q3, `${j.id}: ${j.chords[i]} é o grau ${H[d].roman} de ${j.key}`));
+  (j.build ? j.comp : j.comp).forEach(c => ok(c.length === j.meter * j.sub, `${j.id}: levada ${c} do tamanho do compasso`));
+}
+console.log('  Worship em G: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(7, d).name).join(' ') + ' | em E♭: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(3, d).name).join(' '));
 
 console.log(`\n${checks} verificações, ${errs} erro(s).`);

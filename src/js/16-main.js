@@ -118,6 +118,7 @@ const APP = (() => {
     const st = S.get().settings;
     const sh = document.getElementById('settings');
     sh.querySelector('[data-body]').innerHTML = `
+      <div class="set-row"><span>Foco</span>${U.chips('focus', [{ v:'geral', label:'Geral' }, { v:'worship', label:'✨ Worship / louvor' }], st.focus || 'geral')}</div>
       <div class="set-row"><span>Nomes das notas</span>${U.chips('latin', [{ v:'0', label:'C D E' }, { v:'1', label:'Dó Ré Mi' }], st.latin ? '1' : '0')}</div>
       <div class="set-row"><span>Mão</span>${U.chips('lefty', [{ v:'0', label:'Destro' }, { v:'1', label:'Canhoto' }], st.lefty ? '1' : '0')}</div>
       <div class="set-row"><span>Casas visíveis</span>${U.chips('frets', [{ v:'12', label:'12' }, { v:'15', label:'15' }, { v:'22', label:'22' }], String(st.frets))}</div>

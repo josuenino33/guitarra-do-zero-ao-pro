@@ -3,7 +3,7 @@ const S = (() => {
   const KEY = 'mapa-do-braco-v1';
   const DEF = () => ({ v:1, done:{}, bpm:{}, quiz:{}, days:[], changes:{}, goals:{},
     minutes:{}, plan:null, myLicks:[], songs:[], badges:{}, challenges:{}, ear:{},
-    settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8 } });
+    settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8, focus:'geral' } });
   let state = DEF(), ref = null, mode = 'local', timer = null, writing = Promise.resolve();
   const subs = new Set();
 
