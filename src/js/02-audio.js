@@ -1,6 +1,6 @@
 /* ===== Áudio: corda sintetizada (Karplus-Strong), timbres, cliques e relógio ===== */
 const A = (() => {
-  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus, padBus;
+  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus, padBus, dlyNode, dlyWet;
   const cache = new Map();
   const voices = {};
   let live = [];
@@ -46,6 +46,14 @@ const A = (() => {
     const post = ctx.createGain(); post.gain.value = 0.22;
     gtrIn.connect(driveG); driveG.connect(hp); hp.connect(pre); pre.connect(sh); sh.connect(mid); mid.connect(cab); cab.connect(post);
     post.connect(master); post.connect(revSend);
+    // delay da guitarra (desligado até alguém pedir): ecos com realimentação, mais escuros a cada volta
+    dlyNode = ctx.createDelay(2); dlyNode.delayTime.value = 0.45;
+    const dlyFb = ctx.createGain(); dlyFb.gain.value = 0.38;
+    const dlyLP = ctx.createBiquadFilter(); dlyLP.type = 'lowpass'; dlyLP.frequency.value = 2800;
+    dlyWet = ctx.createGain(); dlyWet.gain.value = 0;
+    cleanLP.connect(dlyNode); post.connect(dlyNode);
+    dlyNode.connect(dlyLP); dlyLP.connect(dlyFb); dlyFb.connect(dlyNode);
+    dlyLP.connect(dlyWet); dlyWet.connect(master); dlyWet.connect(revSend);
 
     clickBus = ctx.createGain(); clickBus.gain.value = 0.9; clickBus.connect(master);
     // base do jam: sempre limpa, um pouco mais escura
@@ -66,6 +74,13 @@ const A = (() => {
     if (!ctx) return;
     cleanG.gain.value = t === 'clean' ? 1 : 0;
     driveG.gain.value = t === 'drive' ? 1 : 0;
+  }
+  /** Delay da guitarra: tempo em segundos e mistura (0 = desligado). */
+  function setDelay(sec, wet = 0.32) {
+    init();
+    const t = ctx.currentTime;
+    if (sec) dlyNode.delayTime.setTargetAtTime(Math.min(1.9, sec), t, 0.02);
+    dlyWet.gain.setTargetAtTime(sec ? wet : 0, t, 0.05);
   }
   function setVolume(v) { volume = v; if (master) master.gain.value = v; }
 
@@ -257,5 +272,5 @@ const A = (() => {
   }
 
   const now = () => (init(), ctx.currentTime);
-  return { init, play, stopAll, click, tick, drum, bass, pad, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
+  return { init, play, stopAll, click, tick, drum, bass, pad, setDelay, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
 })();

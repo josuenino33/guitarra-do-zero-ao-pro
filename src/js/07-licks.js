@@ -1,5 +1,5 @@
 /* ===== Licks, solos e exercícios ===== */
-const STYLES = { rock:'Rock', blues:'Blues', gospel:'Gospel / Louvor', metal:'Metal / Neoclássico', solo:'Solos completos', exercicio:'Exercícios' };
+const STYLES = { rock:'Rock', blues:'Blues', gospel:'Gospel / Louvor', worship:'Worship (frases)', metal:'Metal / Neoclássico', solo:'Solos completos', exercicio:'Exercícios' };
 
 const LICKS = [
   { id:'r1', style:'rock', title:'Tercinas descendentes', key:'A', scale:'pent_menor', bpm:90, level:2, tech:'Palhetada alternada',
@@ -38,6 +38,35 @@ const LICKS = [
   { id:'g4', style:'gospel', title:'Corrida na pentatônica maior', key:'G', scale:'pent_maior', bpm:76, level:2, tech:'Semicolcheias, slide',
     src:'|s 3:7 3:9 2:8 2:10 1:7 1:10 1:12/ 1:10 |e 1:7 2:10 2:8 3:9 |q 3:7 3:9/ |h 2:8~',
     tip:'Pentatônica maior de Sol entre as casas 7 e 12. Termina na tônica com vibrato largo.' },
+  // worship: frases pensadas para tocar com delay de colcheia pontuada (delay:true liga o efeito no player)
+  { id:'w1', style:'worship', title:'Ostinato pontilhado', key:'G', scale:'maior', bpm:76, level:2, tech:'Ostinato com delay', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|e 1:10 1:7 2:8 1:10 1:7 2:8 1:10 1:7 1:10 2:10 2:7 1:10 2:10 2:7 1:10 2:10 1:10 1:7 2:5 1:10 1:7 2:5 1:10 1:7 1:10 1:8 2:8 1:10 1:8 2:8 1:10 1:8',
+    tip:'O Ré da casa 10 fica parado no topo e só as notas de baixo mudam com o acorde. Toque leve, sem acentos: o delay pontilhado completa o ritmo.' },
+  { id:'w2', style:'worship', title:'Swells em notas longas', key:'G', scale:'maior', bpm:70, level:1, tech:'Swell de volume, vibrato', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|h 2:8 1:7~ |w 1:10~ |h 1:12 1:10 |w 1:8~',
+    tip:'Comece com o volume da guitarra no zero, palhete e suba o volume devagar (ou use um pedal de volume). A nota aparece sem ataque, como um violino ou um pad.' },
+  { id:'w3', style:'worship', title:'Pedal na corda Sol solta', key:'G', scale:'maior', bpm:80, level:2, tech:'Nota pedal, corda solta',
+    chords:['G','D','Em','C'],
+    src:'|e 2:3 3:0 2:5 3:0 2:7 3:0 2:8 3:0 2:10 3:0 2:8 3:0 2:7 3:0 2:5 3:0 2:5 3:0 2:7 3:0 2:8 3:0 2:10 3:0 2:12 3:0 2:10 3:0 2:8 3:0 |q 2:5~',
+    tip:'A melodia anda na corda Si e a corda Sol solta soa entre cada nota, como um sino. Deixe a corda solta tocar sempre, mesmo quando o acorde muda.' },
+  { id:'w4', style:'worship', title:'Terças nas cordas 3 e 2', key:'G', scale:'maior', bpm:72, level:2, tech:'Terças (double stops)', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|q 3:12+2:12 |e 3:11+2:10 3:9+2:8 |h 3:12+2:12 |q 3:11+2:10 |e 3:9+2:8 3:7+2:7 |h 3:11+2:10 |q 3:9+2:8 |e 3:7+2:7 3:9+2:8 |h 3:12+2:12 |q 3:9+2:8 |e 3:7+2:7 3:5+2:5 |h 3:5+2:5~',
+    tip:'Duas notas juntas, sempre uma terça da escala de Sol. Soa como duas vozes cantando. Use um dedo por corda e deslize a mão pelo braço.' },
+  { id:'w5', style:'worship', title:'Resposta à voz', key:'G', scale:'pent_maior', bpm:74, level:1, tech:'Pergunta e resposta', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|h - |e 1:7 1:10 1:12 1:10 |q. 1:10 |e 1:7 |h 2:10~ |h - |e 2:8 2:10 1:7 2:10 |q. 2:8 |e 2:5 |h 2:8~',
+    tip:'Os silêncios no começo dos compassos são o espaço da voz. A guitarra só responde quando o cantor respira. Esse é o papel do solo no louvor.' },
+  { id:'w6', style:'worship', title:'Subida pro refrão', key:'G', scale:'pent_maior', bpm:76, level:2, tech:'Pentatônica maior subindo',
+    chords:['C','D'],
+    src:'|e 4:5 4:7 3:4 3:7 2:5 2:8 1:5 1:7 |w 1:10~',
+    tip:'Pentatônica maior de Sol em uma subida só, para levar a banda do pré-refrão para o refrão. Cresça o volume da palhetada até a nota longa.' },
+  { id:'w7', style:'worship', title:'Arpejo em semínima pontuada', key:'G', scale:'maior', bpm:72, level:2, tech:'Ritmo pontuado com delay', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|q. 1:10 1:7 |q 2:8 |q. 1:10 2:10 |q 2:7 |q. 1:12 1:7 |q 2:8 |q. 1:12 1:8 |q 2:8',
+    tip:'Três notas por compasso no ritmo 3 + 3 + 2. Com o delay pontilhado as repetições caem entre as notas e o arpejo parece tocado em semicolcheias.' },
   { id:'m1', style:'metal', title:'Galope em Mi', key:'E', scale:'menor', bpm:120, level:2, tech:'Galope, palm mute',
     src:'|e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:3+5:5 |s 6:3+5:5 6:3+5:5 |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:5+5:7 |s 6:5+5:7 6:5+5:7 |e 6:6+5:8 |s 6:6+5:8 6:6+5:8',
     tip:'Ritmo de galope: uma colcheia e duas semicolcheias (baixo, baixo-cima). O último acorde, B♭5, forma o trítono com o Mi.' },

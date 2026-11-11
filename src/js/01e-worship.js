@@ -113,8 +113,103 @@ const WV = (() => {
     CH.voicing(shape).forEach((v, i) => A.play(v.midi, t + i * 0.024, { dur: o.dur ?? 2.6, vel: o.vel ?? 0.55, string: v.s, bus: o.bus }));
   }
 
-  /** Delay de colcheia pontuada (o eco "worship") em ms para um andamento. */
-  const dottedDelay = bpm => Math.round(60000 / bpm * 0.75);
+  /** Delay de colcheia pontuada (o eco "worship") em ms. Em 6/8 (sub 3) o tempo é a semínima pontuada: usa 2 colcheias. */
+  const dottedDelay = (bpm, sub = 2) => Math.round(60000 / bpm * (sub === 3 ? 2 / 3 : 0.75));
 
-  return { list, best, strum, qualify, dottedDelay, COLORS, MINOR, DEG_NAMES };
+  /* ---------- Gerador de frases sobre uma progressão (sai no formato de tablatura do app) ---------- */
+  const PHRASES = [
+    { id:'ostinato', name:'Ostinato com delay', tip:'Três notas repetindo. Com o delay pontilhado vira a cascata típica do worship. Toque leve e deixe o eco preencher.' },
+    { id:'alvos', name:'Melodia de alvos', tip:'Cada compasso cai numa nota do acorde e as notas de passagem caminham até o próximo alvo.' },
+    { id:'resposta', name:'Nota longa + resposta', tip:'Segura uma nota (como um swell de volume) e responde com uma frase curta descendo, como resposta à voz.' },
+    { id:'subida', name:'Subida pro refrão', tip:'Vai subindo a pentatônica e chega na tônica aguda no último compasso. Use antes do refrão.' },
+  ];
+  // padrões em "passos" (colcheias no 4/4, colcheias de tercina no 6/8)
+  const PAT = {
+    8: { alvos:[4, 2, 2], resp:{ rest:2, run:4, end:2 }, sub:[3, 3, 2] },
+    6: { alvos:[3, 1, 1, 1], resp:{ rest:0, run:3, end:3 }, sub:[3, 3] },
+  };
+  const TOK = [[1 / 6, 'x'], [0.25, 's'], [1 / 3, 't'], [0.5, 'e'], [1, 'q'], [1.5, 'q.'], [2, 'h'], [3, 'h.'], [4, 'w']];
+  const tokOf = beats => (TOK.find(([v]) => Math.abs(v - beats) < 1e-6) || [])[1];
+
+  /**
+   * Frase de solo sobre os graus `degs` (um por compasso) no tom maior `keyPc`.
+   * Notas da pentatônica maior; cai em notas do acorde nos tempos fortes. Retorna { src, beats }.
+   */
+  function phrase(type, keyPc, degs, meter = 4, sub = 2, seed = 1) {
+    let sd = seed;
+    const rnd = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
+    const S = meter * sub, P = PAT[S] || PAT[8], L = degs.length;
+    const pool = []; for (let m = 59; m <= 81; m++) if ([0, 2, 4, 7, 9].includes(T.mod(m - keyPc))) pool.push(m);
+    const roots = pool.filter(m => T.mod(m - keyPc) === 0);
+    const cl = (list, m, r = true) => { const s = list.slice().sort((a, b) => Math.abs(a - m) - Math.abs(b - m)); return r && s.length > 1 && rnd() < 0.3 ? s[1] : s[0]; };
+    const up = m => pool.find(x => x > m) ?? m;
+    const dn = m => { let r = m; for (const x of pool) if (x < m) r = x; return r; };
+    const safe = d => {
+      const r = T.mod(keyPc + T.SCALES.maior.iv[d]), t = [0, MINOR[d] ? 3 : 4, 7].map(i => T.mod(r + i));
+      const ct = pool.filter(m => t.includes(T.mod(m)));
+      return ct.length ? ct : pool;
+    };
+    const ev = [];   // { st: passo inicial, n: passos, m: nota }
+    if (type === 'ostinato') {
+      const r1 = cl(roots, 72, false), r5 = pool.find(m => m > r1 && T.mod(m - keyPc) === 7) ?? r1, r2 = pool.find(m => m > r1 && T.mod(m - keyPc) === 2) ?? r1;
+      degs.forEach((d, b) => {
+        const low = cl(safe(d).filter(m => m < r2), r1 - 2, false) ?? r1;
+        const cell = rnd() < 0.5 ? [r5, r2, low] : [r5, low, r2];
+        for (let i = 0; i < S; i++) ev.push({ st: b * S + i, n: 1, m: cell[i % 3] });
+      });
+    } else if (type === 'alvos') {
+      let cur = cl(pool, 70 + Math.round(rnd() * 5));
+      const tg = degs.map((d, b) => (cur = cl(b === L - 1 ? roots : safe(d), cur)));
+      tg.forEach((t, b) => {
+        let st = b * S;
+        if (b === L - 1) { ev.push({ st, n: S, m: t }); return; }
+        ev.push({ st, n: P.alvos[0], m: t }); st += P.alvos[0];
+        const nx = tg[b + 1], appr = [];
+        let x = nx;
+        for (let i = 0; i < P.alvos.length - 1; i++) { x = nx > t ? dn(x) : nx < t ? up(x) : (i % 2 ? nx : up(nx)); appr.unshift(x); }
+        appr.forEach((m, i) => { ev.push({ st, n: P.alvos[i + 1], m }); st += P.alvos[i + 1]; });
+      });
+    } else if (type === 'resposta') {
+      let last = cl(pool, 69);
+      degs.forEach((d, b) => {
+        let st = b * S;
+        if (b % 2 === 0 || b === L - 1) { last = cl(b === L - 1 ? roots : safe(d), last); ev.push({ st, n: S, m: last }); return; }
+        st += P.resp.rest;
+        let m = cl(safe(d), up(up(last)), false);   // a resposta começa numa nota do acorde
+        for (let i = 0; i < P.resp.run; i++) { ev.push({ st, n: 1, m }); st++; m = dn(m); }
+        last = cl(safe(d), m, false);
+        ev.push({ st, n: P.resp.end, m: last });
+      });
+    } else {
+      let m = cl(pool, 62 + Math.round(rnd() * 3), false);
+      degs.forEach((d, b) => {
+        let st = b * S;
+        if (b === L - 1) { ev.push({ st, n: S, m: roots.find(x => x > m) ?? roots[roots.length - 1] }); return; }
+        const s = safe(d).filter(x => x >= m); m = s.length ? s[0] : cl(safe(d), m, false);
+        P.sub.forEach(n => { ev.push({ st, n, m }); st += n; m = up(m); });
+      });
+    }
+    // posição no braço: perto da tônica na corda Si, a mão anda devagar
+    let c = T.mod(keyPc - T.TUNING[4]); if (c < 5) c += 12;
+    const toks = [];
+    let cur = null, t = 0;
+    const put = (beats, tok) => { const k = tokOf(beats); if (k !== cur) { toks.push('|' + k); cur = k; } toks.push(tok); };
+    ev.sort((a, b) => a.st - b.st).forEach(e => {
+      if (e.st > t) { put((e.st - t) / sub, '-'); t = e.st; }
+      let best = null, bc = 1e9;
+      for (let s = 0; s < 6; s++) {
+        const f = e.m - T.TUNING[s];
+        if (f < 0 || f > 17) continue;
+        const cost = Math.abs(f - c) + (f === 0 ? 1.5 : 0) + (s < 2 ? 2 : 0);
+        if (cost < bc) { bc = cost; best = { s, f }; }
+      }
+      c = 0.7 * c + 0.3 * best.f;
+      const beats = e.n / sub;
+      put(beats, `${6 - best.s}:${best.f}${beats >= 2 ? '~' : ''}`);
+      t = e.st + e.n;
+    });
+    return { src: toks.join(' '), beats: L * meter };
+  }
+
+  return { list, best, strum, qualify, dottedDelay, phrase, PHRASES, COLORS, MINOR, DEG_NAMES };
 })();

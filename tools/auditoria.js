@@ -240,6 +240,14 @@ for (const j of JAMS.filter(j => j.worship)) {
   j.degs.forEach((d, i) => ok(CH.parse(j.chords[i]).root === H[d].pc && CH.parse(j.chords[i]).q === H[d].q3, `${j.id}: ${j.chords[i]} é o grau ${H[d].roman} de ${j.key}`));
   (j.build ? j.comp : j.comp).forEach(c => ok(c.length === j.meter * j.sub, `${j.id}: levada ${c} do tamanho do compasso`));
 }
+for (let k = 0; k < 12; k++) for (const j of JAMS.filter(j => j.worship)) for (const ph of WV.PHRASES) for (const seed of [1, 7, 42]) {
+  const r = WV.phrase(ph.id, k, j.degs, j.meter, j.sub, seed), p = TAB.parse(r.src), tag = `frase ${ph.id} ${j.id} em ${k} (${seed})`;
+  ok(Math.abs(p.beats - j.degs.length * j.meter) < 1e-9, `${tag}: ocupa exatamente ${j.degs.length} compassos`);
+  ok(p.events.every(e => e.notes.every(o => [0, 2, 4, 7, 9].includes(N(T.TUNING[o.s] + o.f - k)) && o.f >= 0 && o.f <= 17)), `${tag}: pentatônica maior até a casa 17`);
+  const H = harmonize(k, 'maior');
+  j.degs.forEach((d, b) => { const e = p.events.find(x => !x.rest && Math.abs(x.beat - b * j.meter) < 1e-9);
+    if (e && ph.id !== 'ostinato') ok(e.notes.every(o => T.CHORDS[H[d].q3].iv.map(x => N(x + H[d].pc)).includes(N(T.TUNING[o.s] + o.f)) || b === j.degs.length - 1 || [2, 7].includes(N(T.TUNING[o.s] + o.f - k))), `${tag}: compasso ${b + 1} começa em nota do acorde`); });
+}
 console.log('  Worship em G: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(7, d).name).join(' ') + ' | em E♭: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(3, d).name).join(' '));
 
 console.log(`\n${checks} verificações, ${errs} erro(s).`);

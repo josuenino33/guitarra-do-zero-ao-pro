@@ -35,7 +35,7 @@ const JAMS = [
 ];
 const BUILD_LV = [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
 const BUILD_NAMES = ['Intro: só pad', 'Verso', 'Pré-refrão', 'Refrão'];
-const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, pad:true, labels:'iv' };
+const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, pad:true, labels:'iv', phr:'ostinato', lead:true, dly:true, seed:1 };
 UIP.track('jam', JAM);
 
 function parseChord(name) {
@@ -80,8 +80,18 @@ V.jam = (el, id) => {
         <span class="small">${jam.meter === 2 ? 'Compasso 6/8' : jam.meter + '/4'} · ${({ shuffle:'shuffle', jazz:'swing', funk:'semicolcheias', reggae:'one drop', bossa:'bossa', sixeight:'6/8', waltz:'valsa', metal:'metal', straight:'reto', worship:'worship', build:'crescendo', ambient:'ambiente' })[jam.feel]}</span>
       </div>
       ${jam.worship ? `<div class="worship-box">
-        <p class="small">Acordes coloridos com cordas soltas soando, escolhidos para o tom. Toque para ouvir. Delay do pedal: <b data-delay>${WV.dottedDelay(JAM.bpm)} ms</b> (colcheia pontuada).${jam.build ? ' Parte: <b data-stage>' + BUILD_NAMES[0] + '</b>' : ''}</p>
+        <p class="small">Acordes coloridos com cordas soltas soando, escolhidos para o tom. Toque para ouvir. Delay do pedal: <b data-delay>${WV.dottedDelay(JAM.bpm, jam.sub)} ms</b> (${jam.sub === 3 ? 'duas colcheias do 6/8' : 'colcheia pontuada'}).${jam.build ? ' Parte: <b data-stage>' + BUILD_NAMES[0] + '</b>' : ''}</p>
         <div class="chord-row">${chords.filter((c, i, a) => c.shape && a.findIndex(x => x.name === c.name) === i).map(c => `<button type="button" class="chord-card" data-wv="${chords.indexOf(c)}" aria-label="Ouvir ${c.name}"><b>${prettyChord(c.name)}</b>${CH.diagram(c.shape)}</button>`).join('')}</div>
+      </div>
+      <div class="worship-box">
+        <p class="eyebrow">Frases pra solar</p>
+        <div class="ctrl-row">${U.chips('phr', WV.PHRASES.map(p => ({ v: p.id, label: p.name })), JAM.phr)}<button type="button" class="btn" data-act="reroll">🎲 Outra versão</button></div>
+        <div class="ctrl-row">
+          <label class="check"><input type="checkbox" data-k="lead" id="jam-lead" ${JAM.lead ? 'checked' : ''}> Tocar a frase com a base</label>
+          <label class="check"><input type="checkbox" data-k="dly" id="jam-dly" ${JAM.dly ? 'checked' : ''}> Delay pontilhado na guitarra</label>
+        </div>
+        <div class="tab-scroll" data-ptab></div>
+        <p class="small" data-ptip></p>
       </div>` : ''}
       <div class="jam-now">
         <button type="button" class="btn primary big" data-act="go">▶ Tocar base</button>
@@ -117,6 +127,17 @@ V.jam = (el, id) => {
   const BOOGIE = [0, 4, 7, 9, 10, 9, 7, 4];
   const FUNK = { 0: 0, 3: 12, 6: 10, 8: 0, 10: 7, 14: 12 };
   const slots = jam.meter * jam.sub;
+  // frase de solo gerada para a progressão e o tom atuais
+  let phr = null, phrHl = () => {};
+  function paintPhrase() {
+    if (!jam.worship) return;
+    const box = el.querySelector('[data-ptab]'); if (!box) return;
+    phr = TAB.parse(WV.phrase(JAM.phr, keyPc, jam.degs, jam.meter, jam.sub, JAM.seed).src);
+    phrHl = TAB.render(box, phr, { meter: jam.meter });
+    el.querySelector('[data-ptip]').textContent = (WV.PHRASES.find(p => p.id === JAM.phr) || {}).tip || '';
+  }
+  paintPhrase();
+  const applyDelay = () => A.setDelay(jam.worship && JAM.dly && clock.running ? WV.dottedDelay(JAM.bpm, jam.sub) / 1000 : 0);
   let lvl = 2;
   // pad: tônica grave + notas do acorde uma oitava acima
   const padNotes = c => { const b = 43 + T.mod(c.root - 7); return [b, b + 12].concat(T.CHORDS[c.q].iv.filter(i => i).slice(0, 4).map(i => b + 12 + i)); };
@@ -128,6 +149,8 @@ V.jam = (el, id) => {
     const tt = swing ? t + spb / 6 : t;
     lvl = jam.build ? BUILD_LV[barN % BUILD_LV.length] : 2;
     if (pos === 0) setTimeout(() => { showChord(bar); const st = el.querySelector('[data-stage]'); if (st) st.textContent = BUILD_NAMES[lvl]; }, Math.max(0, (t - A.ctx.currentTime) * 1000));
+    if (jam.worship && JAM.lead && phr && i % (slots * chords.length) === 0)
+      TAB.scheduleNotes(phr, t, JAM.bpm, (k, tk) => setTimeout(() => phrHl(k), Math.max(0, (tk - A.ctx.currentTime) * 1000)));
     if (jam.worship && JAM.pad && pos === 0) A.pad(padNotes(c), t, spb * jam.meter + 0.25, jam.build ? 0.6 + lvl * 0.15 : 0.8);
     if (JAM.drums) drums(jam.feel, pos, beat, off, tt, barN);
     if (JAM.bass) bassLine(jam.bass, c, next, pos, beat, off, tt, spb, sd);
@@ -214,17 +237,20 @@ V.jam = (el, id) => {
   el.addEventListener('click', e => {
     const chip = e.target.closest('[data-chips="jam"] .chip');
     if (chip) { clock.stop(); A.stopAll(); location.hash = '#jam-' + chip.dataset.v; return; }
+    const pc = e.target.closest('[data-chips="phr"] .chip');
+    if (pc) { JAM.phr = pc.dataset.v; el.querySelectorAll('[data-chips="phr"] .chip').forEach(c => c.classList.toggle('on', c === pc)); paintPhrase(); return; }
+    if (e.target.closest('[data-act="reroll"]')) { JAM.seed = 1 + Math.floor(Math.random() * 233000); paintPhrase(); return; }
     const wv = e.target.closest('[data-wv]');
     if (wv) { WV.strum(chords[+wv.dataset.wv].shape); return; }
     const btn = e.target.closest('[data-act="go"]');
     if (btn) {
-      if (clock.running) { clock.stop(); A.stopAll(); btn.textContent = '▶ Tocar base'; showChord(0); }
-      else { clock.start(); btn.textContent = '■ Parar'; S.practiced(); }
+      if (clock.running) { clock.stop(); A.stopAll(); applyDelay(); phrHl(-1); btn.textContent = '▶ Tocar base'; showChord(0); }
+      else { clock.start(); applyDelay(); btn.textContent = '■ Parar'; S.practiced(); }
     }
   });
   el.addEventListener('input', e => {
     if (e.target.dataset.k === 'bpm') { JAM.bpm = +e.target.value; el.querySelector('[data-bpm]').textContent = JAM.bpm;
-      const dl = el.querySelector('[data-delay]'); if (dl) dl.textContent = WV.dottedDelay(JAM.bpm) + ' ms'; }
+      const dl = el.querySelector('[data-delay]'); if (dl) dl.textContent = WV.dottedDelay(JAM.bpm, jam.sub) + ' ms'; applyDelay(); }
   });
   el.addEventListener('change', e => {
     const k = e.target.dataset.k;
@@ -232,7 +258,7 @@ V.jam = (el, id) => {
       if (k === 'scale') JAM.scale = e.target.value; else JAM.key = +e.target.value;
       const running = clock.running; APP.rerender(); if (running) U.toast('Base alterada. Toque de novo.');
     }
-    if (['drums', 'bass', 'comp', 'pad'].includes(k)) JAM[k] = e.target.checked;
+    if (['drums', 'bass', 'comp', 'pad', 'lead', 'dly'].includes(k)) { JAM[k] = e.target.checked; if (k === 'dly') applyDelay(); }
   });
-  return () => { clock.stop(); A.stopAll(); };
+  return () => { clock.stop(); A.stopAll(); A.setDelay(0); };
 };
