@@ -80,6 +80,8 @@ const APP = (() => {
     if (h === 'editor' || pre('editor-') != null) return ['licks', el => V.editor(el, pre('editor-'))];
     if (h === 'estudos') return ['licks', el => V.licks(el, null, { estudos: true })];
     if (h === 'repertorio') return ['licks', el => V.repertorio(el)];
+    if (pre('musica-') != null) return ['licks', el => V.musica(el, pre('musica-'))];
+    if (pre('palco-') != null) return ['licks', el => V.palco(el, pre('palco-'))];
     if (h === 'treino') return ['treino', el => V.metronomo(el)];
     if (h === 'levadas' || pre('levadas-') != null) return ['treino', el => V.levadas(el, pre('levadas-'))];
     if (h === 'trocas') return ['treino', el => V.trocas(el)];

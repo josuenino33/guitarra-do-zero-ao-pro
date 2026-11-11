@@ -250,4 +250,21 @@ for (let k = 0; k < 12; k++) for (const j of JAMS.filter(j => j.worship)) for (c
 }
 console.log('  Worship em G: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(7, d).name).join(' ') + ' | em E♭: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(3, d).name).join(' '));
 
+sec('17. Análise de áudio (música sintética G–D–Em–C, andamento fixo e acelerando)');
+{
+  const MA = vm.runInContext('MA', ctx), sr = 11025, prog = [[43, 55, 59, 62, 67], [38, 50, 57, 62, 66], [40, 52, 55, 59, 64], [36, 48, 55, 60, 64]];
+  for (const [b0, b1] of [[80, 80], [76, 84]]) {
+    const bt = []; let t = 0.4; for (let i = 0; i < 64; i++) { bt.push(t); t += 60 / (b0 + (b1 - b0) * i / 64); }
+    const L = Math.floor((t + 1) * sr), x = new Float32Array(L);
+    bt.forEach((s0, i) => { const t0 = Math.floor(s0 * sr); for (const m of prog[Math.floor(i / 4) % 4]) { const f = 440 * 2 ** ((m - 69) / 12); for (let j = 0; j < 0.7 * sr && t0 + j < L; j++) x[t0 + j] += 0.1 * Math.exp(-j / sr * 3) * (Math.sin(2 * Math.PI * f * j / sr) + 0.5 * Math.sin(4 * Math.PI * f * j / sr)); } });
+    const r = MA.analyzeSync(x, sr), tag = `áudio ${b0}→${b1} BPM`;
+    ok(r.key === 7 && !r.minor, `${tag}: tom G maior (achou ${r.key}${r.minor ? ' menor' : ''})`);
+    ok(Math.abs(r.bpm - (b0 + b1) / 2) <= 3, `${tag}: andamento ${r.bpm}`);
+    const got = r.bars.filter(b => b[1] >= 0).slice(0, 16).map(b => b[1]).join(' ');
+    ok(got === '0 4 5 3 0 4 5 3 0 4 5 3 0 4 5 3', `${tag}: graus ${got}`);
+    const downs = bt.filter((_, i) => i % 4 === 0);
+    ok(r.bars.slice(0, 16).every(b => downs.some(d => Math.abs(d - b[0]) < 0.06)), `${tag}: compassos começam no tempo 1`);
+  }
+}
+
 console.log(`\n${checks} verificações, ${errs} erro(s).`);
