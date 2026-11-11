@@ -92,3 +92,8 @@ git add . && git commit -m "Atualiza aulas" && git push
 
 - iPhone sem som: confira o volume. Em iOS antigos, a chave de silencioso também corta o som do app.
 - O metrônomo, o treino de velocidade e o jam mantêm a tela acesa enquanto tocam.
+
+## Usar como app no celular
+
+- **Instalar pelo navegador (PWA)**: abra o site no Chrome do celular, menu ⋮ → **Instalar app** (ou **Adicionar à tela inicial**). Fica com ícone, abre em tela cheia e funciona sem internet. Atualiza sozinho quando o site muda.
+- **APK para Android**: a cada mudança em `docs/` na `main`, o GitHub Actions (`.github/workflows/android.yml`) gera o app com Capacitor e publica `MapaDoBraco.apk` em **Releases → App Android**. Para gerar no seu computador: `bash tools/android.sh` (precisa de Node 20, Java 21 e Android SDK).
