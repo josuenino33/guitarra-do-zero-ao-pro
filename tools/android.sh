@@ -32,12 +32,14 @@ MAN=android/app/src/main/AndroidManifest.xml
 # microfone (afinador, praticar com microfone, gravador) e áudio
 sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />#' "$MAN"
 grep -q RECORD_AUDIO "$MAN"
-# ícone: usa o ícone do PWA em todas as densidades (convert = ImageMagick)
+# ícone: usa o ícone do PWA em todas as densidades (ImageMagick: 'magick' na versão 7, 'convert' na 6)
+IM=$(command -v magick || command -v convert || true)
+if [ -z "$IM" ]; then sudo apt-get install -y -qq imagemagick >/dev/null 2>&1 || apt-get install -y -qq imagemagick >/dev/null 2>&1 || true; IM=$(command -v magick || command -v convert); fi
 RES=android/app/src/main/res
 rm -rf "$RES/mipmap-anydpi-v26"
 for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
   n=${d%%:*}; s=${d##*:}
-  convert "$ROOT/docs/icons/icon-512.png" -resize ${s}x${s} "$RES/mipmap-$n/ic_launcher.png"
+  "$IM" "$ROOT/docs/icons/icon-512.png" -resize ${s}x${s} "$RES/mipmap-$n/ic_launcher.png"
   cp "$RES/mipmap-$n/ic_launcher.png" "$RES/mipmap-$n/ic_launcher_round.png"
   rm -f "$RES/mipmap-$n/ic_launcher_foreground.png"
 done
