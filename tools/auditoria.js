@@ -244,6 +244,12 @@ for (let k = 0; k < 12; k++) for (const j of JAMS.filter(j => j.worship)) for (c
   const r = WV.phrase(ph.id, k, j.degs, j.meter, j.sub, seed), p = TAB.parse(r.src), tag = `frase ${ph.id} ${j.id} em ${k} (${seed})`;
   ok(Math.abs(p.beats - j.degs.length * j.meter) < 1e-9, `${tag}: ocupa exatamente ${j.degs.length} compassos`);
   const H = harmonize(k, 'maior');
+  if (ph.id === 'enfeites') {
+    const maj = T.SCALES.maior.iv.map(x => N(k + x));
+    ok(p.events.every(e => e.notes.every(o => maj.includes(N(T.TUNING[o.s] + o.f)) && o.f >= 0 && o.f <= 17)), `${tag}: só notas da escala maior até a casa 17`);
+    ok(p.events.filter(e => e.notes.length === 3).every(e => { const d = j.degs[Math.floor(e.beat / j.meter + 1e-9)], tones = T.CHORDS[H[d].q3].iv.map(x => N(x + H[d].pc)); return e.notes.every(o => tones.includes(N(T.TUNING[o.s] + o.f))); }), `${tag}: tríade de cada compasso certa`);
+    continue;
+  }
   if (ph.id === 'triades') {
     const bl = j.meter;
     ok(p.events.every(e => { const d = j.degs[Math.floor(e.beat / bl + 1e-9)], tones = T.CHORDS[H[d].q3].iv.map(x => N(x + H[d].pc)); return e.notes.every(o => tones.includes(N(T.TUNING[o.s] + o.f)) && o.f <= 17); }), `${tag}: só notas da tríade de cada compasso`);

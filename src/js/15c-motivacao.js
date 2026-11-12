@@ -32,7 +32,7 @@ const MOT = (() => {
   const done = st => Object.keys(st.done).length;
   const totalMin = st => sum(st.minutes);
   const bestQuiz = st => Math.max(0, ...Object.values(st.quiz).map(q => q.best));
-  const lvDone = (st, n) => typeof levelStats === 'function' && levelStats(n, st).pct >= 1;
+  const lvDone = (st, n) => typeof levelStats === 'function' && !!levelOf(n) && levelStats(n, st).pct >= 1;
   const BADGES = [
     { id:'primeira-aula', icon:'1', name:'Primeira aula', desc:'Concluiu a primeira aula.', test: st => done(st) >= 1 },
     { id:'dez-aulas', icon:'10', name:'Dez aulas', desc:'Concluiu 10 aulas.', test: st => done(st) >= 10 },
@@ -91,9 +91,26 @@ const MOT = (() => {
     { lv:5, text:'Tire de ouvido uma frase e salve no editor.', href:'#editor' },
     { lv:5, text:'Toque o seu setlist do começo ao fim.', href:'#repertorio' },
   ];
+  // edição worship: desafios só de louvor (os gerais continuam acima, guardados)
+  if (EDICAO.ativa) CHALLENGES.splice(0, CHALLENGES.length,
+    { lv:1, text:'Toque a base “Worship congregacional” do começo ao fim, três vezes.', href:'#jam-w-cong' },
+    { lv:1, text:'Faça 20 trocas de G para C em 1 minuto.', href:'#trocas', test: st => (st.changes['G-C'] || 0) >= 20 },
+    { lv:1, text:'Toque a levada balada por 3 minutos sem parar.', href:'#levadas-balada' },
+    { lv:1, text:'Faça uma rodada de intervalos no treino de ouvido com 80% ou mais.', href:'#ouvido-intervalos', test: st => st.ear?.intervalos?.date === S.today() },
+    { lv:2, text:'Acerte 10 seguidas no treino “Qual inversão?”.', href:'#triades' },
+    { lv:2, text:'Toque I–V–vi–IV em tríades nas cordas 2-3-4.', href:'#triades' },
+    { lv:2, text:'Toque o lick “Tríades em G–D–Em–C” a 80 BPM.', href:'#lick-g1' },
+    { lv:2, text:'Acerte 8 de 10 no quiz de tríades.', href:'#quiz-triade', test: st => st.quiz.triade?.date === S.today() && st.quiz.triade.best >= 80 },
+    { lv:3, text:'Toque o enfeite “Sus2 e sus4 resolvendo na 3ª” sem atrasar a base.', href:'#lick-e1' },
+    { lv:3, text:'Gere três frases no Jam worship e toque junto com o delay.', href:'#jam-w-cong' },
+    { lv:3, text:'Toque o lick “Resposta à voz” deixando os silêncios.', href:'#lick-w5' },
+    { lv:3, text:'Faça uma rodada de graus da escala com 80% ou mais.', href:'#ouvido-graus', test: st => st.ear?.graus?.date === S.today() },
+    { lv:4, text:'Toque o campo harmônico “✨ Worship” em dois tons.', href:'#campo' },
+    { lv:4, text:'Monte o álbum de uma música e toque no Modo Palco.', href:'#repertorio' },
+    { lv:4, text:'Faça uma rodada de ditado melódico com 80% ou mais.', href:'#ouvido-ditado', test: st => st.ear?.ditado?.date === S.today() });
   function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
   function daily() {
-    const lv = PLAN.currentLevel(), pool = CHALLENGES.filter(c => c.lv <= lv && c.lv >= lv - 1);
+    const lv = PLAN.currentLevel(), pool = CHALLENGES.filter(c => c.lv <= lv && c.lv >= lv - 1 && EDICAO.hrefOk(c.href));
     return pool[hash(S.today()) % pool.length];
   }
   function completeToday() { S.update(s => { s.challenges = s.challenges || {}; s.challenges[S.today()] = true; }); S.practiced(); U.toast('Desafio do dia cumprido! +60 XP'); }

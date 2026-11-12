@@ -4,7 +4,7 @@ UIP.track('lickFilter', () => LICK_FILTER, v => { if (typeof v === 'string') LIC
 
 V.licks = (el, id, opt = {}) => {
   if (opt.estudos) LICK_FILTER = 'estudo';
-  else if (!id && U.set().focus === 'worship' && LICK_FILTER === 'all' && !V.licks.wDone) { LICK_FILTER = 'worship'; V.licks.wDone = true; }
+  else if (!id && (EDICAO.ativa || U.set().focus === 'worship') && LICK_FILTER === 'all' && !V.licks.wDone) { LICK_FILTER = 'worship'; V.licks.wDone = true; }
   else if (!id && LICK_FILTER === 'estudo') LICK_FILTER = 'all';
   let cur = lickById(id) || (opt.estudos ? LICKS.find(l => l.style === 'estudo') : LICKS[0]);
   if (!lickById(id) && id) location.replace('#licks');

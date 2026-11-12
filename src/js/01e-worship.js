@@ -121,6 +121,7 @@ const WV = (() => {
     { id:'ostinato', name:'Ostinato com delay', tip:'Três notas repetindo. Com o delay pontilhado vira a cascata típica do worship. Toque leve e deixe o eco preencher.' },
     { id:'alvos', name:'Melodia de alvos', tip:'Cada compasso cai numa nota do acorde e as notas de passagem caminham até o próximo alvo.' },
     { id:'resposta', name:'Nota longa + resposta', tip:'Segura uma nota (como um swell de volume) e responde com uma frase curta descendo, como resposta à voz.' },
+    { id:'enfeites', name:'Enfeites nas trocas', tip:'A tríade soa e, no fim do compasso, duas notas da escala caminham até a nota de cima do próximo acorde. É o “arremate” que avisa a troca.' },
     { id:'triades', name:'Tríades arpejadas', tip:'As três notas de cada acorde nas cordas 1-2-3, na inversão mais perto da anterior. A mão quase não anda e a nota de cima vira uma melodia.' },
     { id:'subida', name:'Subida pro refrão', tip:'Vai subindo a pentatônica e chega na tônica aguda no último compasso. Use antes do refrão.' },
   ];
@@ -170,6 +171,20 @@ const WV = (() => {
         for (let i = 0; i < P.alvos.length - 1; i++) { x = nx > t ? dn(x) : nx < t ? up(x) : (i % 2 ? nx : up(nx)); appr.unshift(x); }
         appr.forEach((m, i) => { ev.push({ st, n: P.alvos[i + 1], m }); st += P.alvos[i + 1]; });
       });
+    } else if (type === 'enfeites') {
+      // tríade em bloco + duas notas de passagem (escala maior) até a nota de cima do próximo acorde
+      const path = TRI.progPath(keyPc, degs, '123', 7 + Math.round(rnd() * 2)), maj = T.SCALES.maior.iv.map(x => T.mod(keyPc + x));
+      const step = (m, d) => { let x = m + d; while (!maj.includes(T.mod(x))) x += d; return x; };
+      const top = v => T.TUNING[v.strings[2]] + v.frets[2];
+      const pos = m => (m - 64 >= 0 && m - 64 <= 17 ? { s: 5, f: m - 64 } : { s: 4, f: m - 59 });
+      const blk = S === 6 ? 3 : 4, gap = S === 6 ? 1 : 2;
+      path.forEach((v, b) => {
+        const st = b * S;
+        [0, 1, 2].forEach(k => ev.push({ st, n: blk, m: T.TUNING[v.strings[k]] + v.frets[k], p: { s: v.strings[k], f: v.frets[k] } }));
+        const nx = top(path[(b + 1) % path.length]), here = top(v), dir = nx >= here ? -1 : 1;
+        const a2 = step(nx, dir), a1 = step(a2, dir);
+        [a1, a2].forEach((m, i) => ev.push({ st: st + blk + gap + i, n: 1, m, p: pos(m) }));
+      });
     } else if (type === 'triades') {
       const path = TRI.progPath(keyPc, degs, '123', 7 + Math.round(rnd() * 3)), pat = S === 6 ? [0, 1, 2, 1, 2, 1] : [0, 2, 1, 2, 0, 2, 1, 2];
       path.forEach((v, b) => pat.forEach((k, i) => ev.push({ st: b * S + i, n: 1, m: T.TUNING[v.strings[k]] + v.frets[k], p: { s: v.strings[k], f: v.frets[k] } })));
@@ -198,7 +213,15 @@ const WV = (() => {
     const toks = [];
     let cur = null, t = 0;
     const put = (beats, tok) => { const k = tokOf(beats); if (k !== cur) { toks.push('|' + k); cur = k; } toks.push(tok); };
+    let prev = null;
     ev.sort((a, b) => a.st - b.st).forEach(e => {
+      // notas que começam juntas (acorde/tríade em bloco) viram um token só com "+"
+      if (prev && e.st === prev.st && e.n === prev.n && e.p) {
+        const last = toks.pop().replace(/~$/, '');
+        toks.push(`${last}+${6 - e.p.s}:${e.p.f}${e.n / sub >= 2 ? '~' : ''}`);
+        return;
+      }
+      prev = e;
       if (e.st > t) { put((e.st - t) / sub, '-'); t = e.st; }
       let best = e.p || null, bc = e.p ? -1 : 1e9;
       for (let s = 0; s < 6 && !e.p; s++) {

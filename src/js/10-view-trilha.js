@@ -12,6 +12,7 @@ function linkHref(l) {
 }
 
 function levelStats(n, st) {
+  if (!levelOf(n)) return { ls: [], done: 0, goals: 0, total: 0, pct: 0 };   // nível que não existe nesta edição
   const ls = ALL_LESSONS().filter(l => l.mod.level === n);
   const lv = levelOf(n);
   const done = ls.filter(l => st.done[l.id]).length, goals = lv.goals.filter(g => (st.goals || {})[g.id]).length;

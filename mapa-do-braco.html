@@ -1395,6 +1395,7 @@ const WV = (() => {
     { id:'ostinato', name:'Ostinato com delay', tip:'Três notas repetindo. Com o delay pontilhado vira a cascata típica do worship. Toque leve e deixe o eco preencher.' },
     { id:'alvos', name:'Melodia de alvos', tip:'Cada compasso cai numa nota do acorde e as notas de passagem caminham até o próximo alvo.' },
     { id:'resposta', name:'Nota longa + resposta', tip:'Segura uma nota (como um swell de volume) e responde com uma frase curta descendo, como resposta à voz.' },
+    { id:'enfeites', name:'Enfeites nas trocas', tip:'A tríade soa e, no fim do compasso, duas notas da escala caminham até a nota de cima do próximo acorde. É o “arremate” que avisa a troca.' },
     { id:'triades', name:'Tríades arpejadas', tip:'As três notas de cada acorde nas cordas 1-2-3, na inversão mais perto da anterior. A mão quase não anda e a nota de cima vira uma melodia.' },
     { id:'subida', name:'Subida pro refrão', tip:'Vai subindo a pentatônica e chega na tônica aguda no último compasso. Use antes do refrão.' },
   ];
@@ -1444,6 +1445,20 @@ const WV = (() => {
         for (let i = 0; i < P.alvos.length - 1; i++) { x = nx > t ? dn(x) : nx < t ? up(x) : (i % 2 ? nx : up(nx)); appr.unshift(x); }
         appr.forEach((m, i) => { ev.push({ st, n: P.alvos[i + 1], m }); st += P.alvos[i + 1]; });
       });
+    } else if (type === 'enfeites') {
+      // tríade em bloco + duas notas de passagem (escala maior) até a nota de cima do próximo acorde
+      const path = TRI.progPath(keyPc, degs, '123', 7 + Math.round(rnd() * 2)), maj = T.SCALES.maior.iv.map(x => T.mod(keyPc + x));
+      const step = (m, d) => { let x = m + d; while (!maj.includes(T.mod(x))) x += d; return x; };
+      const top = v => T.TUNING[v.strings[2]] + v.frets[2];
+      const pos = m => (m - 64 >= 0 && m - 64 <= 17 ? { s: 5, f: m - 64 } : { s: 4, f: m - 59 });
+      const blk = S === 6 ? 3 : 4, gap = S === 6 ? 1 : 2;
+      path.forEach((v, b) => {
+        const st = b * S;
+        [0, 1, 2].forEach(k => ev.push({ st, n: blk, m: T.TUNING[v.strings[k]] + v.frets[k], p: { s: v.strings[k], f: v.frets[k] } }));
+        const nx = top(path[(b + 1) % path.length]), here = top(v), dir = nx >= here ? -1 : 1;
+        const a2 = step(nx, dir), a1 = step(a2, dir);
+        [a1, a2].forEach((m, i) => ev.push({ st: st + blk + gap + i, n: 1, m, p: pos(m) }));
+      });
     } else if (type === 'triades') {
       const path = TRI.progPath(keyPc, degs, '123', 7 + Math.round(rnd() * 3)), pat = S === 6 ? [0, 1, 2, 1, 2, 1] : [0, 2, 1, 2, 0, 2, 1, 2];
       path.forEach((v, b) => pat.forEach((k, i) => ev.push({ st: b * S + i, n: 1, m: T.TUNING[v.strings[k]] + v.frets[k], p: { s: v.strings[k], f: v.frets[k] } })));
@@ -1472,7 +1487,15 @@ const WV = (() => {
     const toks = [];
     let cur = null, t = 0;
     const put = (beats, tok) => { const k = tokOf(beats); if (k !== cur) { toks.push('|' + k); cur = k; } toks.push(tok); };
+    let prev = null;
     ev.sort((a, b) => a.st - b.st).forEach(e => {
+      // notas que começam juntas (acorde/tríade em bloco) viram um token só com "+"
+      if (prev && e.st === prev.st && e.n === prev.n && e.p) {
+        const last = toks.pop().replace(/~$/, '');
+        toks.push(`${last}+${6 - e.p.s}:${e.p.f}${e.n / sub >= 2 ? '~' : ''}`);
+        return;
+      }
+      prev = e;
       if (e.st > t) { put((e.st - t) / sub, '-'); t = e.st; }
       let best = e.p || null, bc = e.p ? -1 : 1e9;
       for (let s = 0; s < 6 && !e.p; s++) {
@@ -1761,7 +1784,7 @@ const TRI = (() => {
 
 /* ===== Áudio: corda sintetizada (Karplus-Strong), timbres, cliques e relógio ===== */
 const A = (() => {
-  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus, padBus, dlyNode, dlyWet;
+  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus, padBus, dlyNode, dlyWet, hallSend, amb = 0.35;
   const cache = new Map();
   const voices = {};
   let live = [];
@@ -1788,12 +1811,19 @@ const A = (() => {
     conv.buffer = ir;
     revSend = ctx.createGain(); revSend.gain.value = 0.16;
     revSend.connect(conv); conv.connect(master);
+    // ambiência: reverb longo (salão de igreja) só para a guitarra, com nível ajustável
+    const hall = ctx.createConvolver(), hl = Math.floor(ctx.sampleRate * 3.6), hir = ctx.createBuffer(2, hl, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = hir.getChannelData(c); for (let i = 0; i < hl; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / hl, 2.2) * (i < 400 ? i / 400 : 1); }
+    hall.buffer = hir;
+    const hallLP = ctx.createBiquadFilter(); hallLP.type = 'lowpass'; hallLP.frequency.value = 4500;
+    hallSend = ctx.createGain(); hallSend.gain.value = amb * 0.55;
+    hallSend.connect(hall); hall.connect(hallLP); hallLP.connect(master);
 
     gtrIn = ctx.createGain();
     // limpo
     cleanG = ctx.createGain();
     const cleanLP = ctx.createBiquadFilter(); cleanLP.type = 'lowpass'; cleanLP.frequency.value = 6500;
-    gtrIn.connect(cleanG); cleanG.connect(cleanLP); cleanLP.connect(master); cleanLP.connect(revSend);
+    gtrIn.connect(cleanG); cleanG.connect(cleanLP); cleanLP.connect(master); cleanLP.connect(revSend); cleanLP.connect(hallSend);
     // drive: ganho -> saturação -> falante
     driveG = ctx.createGain();
     const pre = ctx.createGain(); pre.gain.value = 9;
@@ -1806,7 +1836,7 @@ const A = (() => {
     const cab = ctx.createBiquadFilter(); cab.type = 'lowpass'; cab.frequency.value = 3600; cab.Q.value = 0.9;
     const post = ctx.createGain(); post.gain.value = 0.22;
     gtrIn.connect(driveG); driveG.connect(hp); hp.connect(pre); pre.connect(sh); sh.connect(mid); mid.connect(cab); cab.connect(post);
-    post.connect(master); post.connect(revSend);
+    post.connect(master); post.connect(revSend); post.connect(hallSend);
     // delay da guitarra (desligado até alguém pedir): ecos com realimentação, mais escuros a cada volta
     dlyNode = ctx.createDelay(2); dlyNode.delayTime.value = 0.45;
     const dlyFb = ctx.createGain(); dlyFb.gain.value = 0.38;
@@ -1814,7 +1844,7 @@ const A = (() => {
     dlyWet = ctx.createGain(); dlyWet.gain.value = 0;
     cleanLP.connect(dlyNode); post.connect(dlyNode);
     dlyNode.connect(dlyLP); dlyLP.connect(dlyFb); dlyFb.connect(dlyNode);
-    dlyLP.connect(dlyWet); dlyWet.connect(master); dlyWet.connect(revSend);
+    dlyLP.connect(dlyWet); dlyWet.connect(master); dlyWet.connect(revSend); dlyWet.connect(hallSend);
 
     clickBus = ctx.createGain(); clickBus.gain.value = 0.9; clickBus.connect(master);
     // base do jam: sempre limpa, um pouco mais escura
@@ -1843,6 +1873,8 @@ const A = (() => {
     if (sec) dlyNode.delayTime.setTargetAtTime(Math.min(1.9, sec), t, 0.02);
     dlyWet.gain.setTargetAtTime(sec ? wet : 0, t, 0.05);
   }
+  /** Ambiência (reverb longo da guitarra): 0 = seco, 1 = salão grande. */
+  function setAmbience(v) { amb = Math.max(0, Math.min(1, v)); if (hallSend) hallSend.gain.setTargetAtTime(amb * 0.55, ctx.currentTime, 0.05); }
   function setVolume(v) { volume = v; if (master) master.gain.value = v; }
 
   function buffer(midi) {
@@ -2033,7 +2065,7 @@ const A = (() => {
   }
 
   const now = () => (init(), ctx.currentTime);
-  return { init, play, stopAll, click, tick, drum, bass, pad, setDelay, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
+  return { init, play, stopAll, click, tick, drum, bass, pad, setDelay, setAmbience, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
 })();
 
 /* ===== Ritmo: levadas, palhetada de acordes e escrita rítmica ===== */
@@ -3622,7 +3654,7 @@ Object.entries({ m1:[2, 1], m2:[2, 2], m3:[3, 1], m4:[3, 2], m5:[3, 3], m6:[4, 2
   .forEach(([id, [lv, o]]) => { const m = MODULES.find(x => x.id === id); if (m) { m.level = lv; m.order = o; } });
 
 /* ===== Licks, solos e exercícios ===== */
-const STYLES = { rock:'Rock', blues:'Blues', gospel:'Gospel / Louvor', worship:'Worship (frases)', metal:'Metal / Neoclássico', solo:'Solos completos', exercicio:'Exercícios' };
+const STYLES = { rock:'Rock', blues:'Blues', gospel:'Gospel / Louvor', worship:'Worship (frases)', enfeite:'Enfeites', metal:'Metal / Neoclássico', solo:'Solos completos', exercicio:'Exercícios' };
 
 const LICKS = [
   { id:'r1', style:'rock', title:'Tercinas descendentes', key:'A', scale:'pent_menor', bpm:90, level:2, tech:'Palhetada alternada',
@@ -3703,6 +3735,19 @@ const LICKS = [
     chords:['E','B','C#m','A'],
     src:'|e 4:9 3:9 2:9 1:0 2:9 3:9 2:9 1:0 4:9 3:8 2:7 1:0 2:7 3:8 2:7 1:0 4:11 3:9 2:9 1:0 2:9 3:9 2:9 1:0 4:11 3:9 2:10 1:0 2:10 3:9 2:10 1:0',
     tip:'Tríades nas cordas 2-3-4 e a corda 1 solta (Mi) soando em todos os acordes: em E é a tônica, em B vira sus4, em C♯m é a 3ª menor e em A é a 5ª. Esse “sino” por cima é muito usado no tom de E.' },
+  // enfeites: pequenos detalhes nas trocas de acorde, por cima da base
+  { id:'e1', style:'enfeite', title:'Sus2 e sus4 resolvendo na 3ª', key:'G', scale:'maior', bpm:72, level:1, tech:'Hammer-on e pull-off na tríade', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|q. 3:7+2:8+1:5 |e 1:7h |h 3:7+2:8+1:7~ |q. 3:7+2:8+1:5 |e 2:7p |h 3:7+2:7+1:5~ |q. 3:9+2:7+1:7 |e 2:8h |h 3:9+2:8+1:7~ |q. 3:7+2:8+1:8 |e 3:9h |h 3:9+2:8+1:8~',
+    tip:'Monte a tríade com uma nota “emprestada” (a 2ª ou a 4ª) e resolva na 3ª com um ligado. G: Lá → Si. D: Sol → Fá♯. Em: Fá♯ → Sol. C: Ré → Mi. É o enfeite mais usado no louvor.' },
+  { id:'e2', style:'enfeite', title:'Melodia com a corda Si solta', key:'G', scale:'maior', bpm:76, level:2, tech:'Nota pedal em corda solta', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|e 3:4 2:0 3:7 2:0 3:9 2:0 3:7 2:0 3:7 2:0 3:9 2:0 3:11 2:0 3:9 2:0 3:9 2:0 3:11 2:0 3:12 2:0 3:11 2:0 3:12 2:0 3:11 2:0 3:9 2:0 |q 3:9+2:0~',
+    tip:'A melodia anda na corda Sol e a corda Si solta toca entre cada nota. Com delay pontilhado vira uma cascata. Deixe a corda solta soar sempre.' },
+  { id:'e3', style:'enfeite', title:'Arremate no fim do compasso', key:'G', scale:'maior', bpm:72, level:1, tech:'Notas de passagem até o próximo acorde', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|h 3:7+2:8+1:7~ |q - |e 1:8 1:7 |h 3:7+2:7+1:5~ |q - |e 1:3 1:5 |h 3:9+2:8+1:7~ |q - |e 1:5 1:7 |h 3:9+2:8+1:8~ |q - |e 1:10 1:8',
+    tip:'A tríade soa meio compasso, você espera um tempo e toca duas notas que caminham até a nota de cima do próximo acorde. O ouvido sente a troca chegando.' },
   { id:'m1', style:'metal', title:'Galope em Mi', key:'E', scale:'menor', bpm:120, level:2, tech:'Galope, palm mute',
     src:'|e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:3+5:5 |s 6:3+5:5 6:3+5:5 |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:5+5:7 |s 6:5+5:7 6:5+5:7 |e 6:6+5:8 |s 6:6+5:8 6:6+5:8',
     tip:'Ritmo de galope: uma colcheia e duas semicolcheias (baixo, baixo-cima). O último acorde, B♭5, forma o trítono com o Mi.' },
@@ -3851,12 +3896,84 @@ STYLES.estudo = 'Estudos e peças';
   );
 })();
 
+/* ===== Edição Worship: o app mostra só o que serve ao louvor =====
+   O conteúdo geral (rock, blues, metal, jazz, CAGED, modos, leitura, vida profissional…) continua
+   no código, só não aparece. Para voltar ao app completo: EDICAO_ATIVA = false. */
+const EDICAO_ATIVA = true;
+const EDICAO = (() => {
+  // módulos que ficam, com [nível, ordem] na edição worship
+  const MODS = { louvor1:[1, 1], m3:[2, 1], m5:[2, 2], m6:[2, 3], louvor2:[3, 1], tec:[3, 2], harm:[4, 1] };
+  const TITLES = { m3:'Tríades', m5:'Pentatônica e técnicas para solar', m6:'Escalas mais usadas: maior, menor e modos', tec:'Técnicas de expressão' };
+  const HIDE_LESSONS = ['blues', 'blues12', 'tapping', 'hibrida', 'economica', 'skipping', 'legato-avancado'];
+  const STYLES_OK = ['worship', 'enfeite', 'gospel', 'tecnica', 'exercicio'];
+  const LICKS_TEC_OK = ['harm1'];          // de “técnica”, só os harmônicos
+  const JAMS_OK = ['w-cong', 'w-68', 'w-build', 'w-amb', 'pop', 'seisoito'];
+  const LEVADAS_OK = ['semi', 'colcheias', 'pop', 'balada', 'chuck', 'seisoito'];
+  const DEMO_SWAP = { b2:'w2', r2:'g3', r1:'ex-pent' };   // exemplos de rock/blues trocados por frases de louvor
+  const W_LEVELS = [
+    { n:1, title:'Base no louvor', sub:'Capotraste, acordes coloridos, levadas e dinâmica', goals:[
+      { id:'w1-capo', text:'Escolho o capotraste certo para o tom do ministro', href:'#repertorio' },
+      { id:'w1-cores', text:'Toco G – Dsus4 – Em7 – Cadd9 sem tirar os dedos das cordas 1 e 2', href:'#aula-louvor-cores' },
+      { id:'w1-base', text:'Acompanho a base “Worship congregacional” do começo ao fim', href:'#jam-w-cong' },
+      { id:'w1-swell', text:'Faço swells de volume no tempo da música', href:'#aula-louvor-pad' } ] },
+    { n:2, title:'Tríades e escalas', sub:'Tríades nas cordas agudas, pentatônicas, escala maior, menor e modos', goals:[
+      { id:'w2-inv', text:'Acerto 20 no treino “Qual inversão?”', href:'#triades' },
+      { id:'w2-tri', text:'Toco I – V – vi – IV em tríades nas cordas 1-2-3 em três tons', href:'#triades' },
+      { id:'w2-penta', text:'Toco a pentatônica maior de G da casa 7 à 12, subindo e descendo', href:'#aula-pentmaior' },
+      { id:'w2-maior', text:'Toco a escala maior de G em duas posições e a menor natural de Em', href:'#aula-maior3nps' } ] },
+    { n:3, title:'Solos e enfeites', sub:'Delay pontilhado, notas-alvo, respostas e enfeites', goals:[
+      { id:'w3-delay', text:'Calculo o delay pontilhado de qualquer música', href:'#aula-louvor-delay' },
+      { id:'w3-frases', text:'Toco três frases do Jam worship junto com a base', href:'#jam-w-cong' },
+      { id:'w3-enfeite', text:'Faço enfeites nas trocas de acorde sem atrasar a base', href:'#lick-e1' },
+      { id:'w3-resposta', text:'Toco o lick “Resposta à voz” com delay', href:'#lick-w5' } ] },
+    { n:4, title:'Harmonia e ouvido', sub:'Campo harmônico, funções e tocar de ouvido', goals:[
+      { id:'w4-numeros', text:'Escrevo três músicas do repertório em números', href:'#aula-louvor-numeros' },
+      { id:'w4-palco', text:'Monto o álbum de uma música e toco no Modo Palco', href:'#repertorio' },
+      { id:'w4-ouvido', text:'Reconheço I, IV, V e vi de ouvido', href:'#ouvido' } ] },
+  ];
+
+  if (EDICAO_ATIVA) {
+    for (let i = MODULES.length - 1; i >= 0; i--) {
+      const m = MODULES[i];
+      if (!MODS[m.id]) { MODULES.splice(i, 1); continue; }
+      [m.level, m.order] = MODS[m.id];
+      if (TITLES[m.id]) m.title = TITLES[m.id];
+      m.lessons = m.lessons.filter(l => !HIDE_LESSONS.includes(l.id));
+    }
+    for (let i = LICKS.length - 1; i >= 0; i--) {
+      const l = LICKS[i];
+      if (!STYLES_OK.includes(l.style) || (l.style === 'tecnica' && !LICKS_TEC_OK.includes(l.id))) LICKS.splice(i, 1);
+    }
+    Object.keys(STYLES).forEach(k => { if (!STYLES_OK.includes(k)) delete STYLES[k]; });
+    if (RH.PATTERNS) for (let i = RH.PATTERNS.length - 1; i >= 0; i--) if (!LEVADAS_OK.includes(RH.PATTERNS[i].id)) RH.PATTERNS.splice(i, 1);
+    const lessonIds = new Set(); MODULES.forEach(m => m.lessons.forEach(l => lessonIds.add(l.id)));
+    const lickIds = new Set(LICKS.map(l => l.id));
+    MODULES.forEach(m => m.lessons.forEach(l => {
+      if (l.demo && l.demo.kind === 'lick' && !lickIds.has(l.demo.lick) && DEMO_SWAP[l.demo.lick]) l.demo = Object.assign({}, l.demo, { lick: DEMO_SWAP[l.demo.lick] });
+      if (l.lick && !lickIds.has(l.lick)) { if (DEMO_SWAP[l.lick]) l.lick = DEMO_SWAP[l.lick]; else delete l.lick; }
+      if (l.links) l.links = l.links.filter(k => !((k.to === 'aula' && !lessonIds.has(k.id)) || (k.to === 'licks' && k.id && !lickIds.has(k.id)) || (k.to === 'jam' && k.id && !JAMS_OK.includes(k.id))));
+    }));
+    LEVELS.splice(0, LEVELS.length, ...W_LEVELS);
+  }
+
+  /** Um link interno (#aula-x, #lick-x, #jam-x) ainda existe nesta edição? */
+  function hrefOk(href) {
+    if (!EDICAO_ATIVA || !href) return true;
+    const m = String(href).match(/^#(aula|lick|jam)-(.+)$/);
+    if (!m) return true;
+    if (m[1] === 'aula') return MODULES.some(mod => mod.lessons.some(l => l.id === m[2]));
+    if (m[1] === 'lick') return LICKS.some(l => l.id === m[2]);
+    return JAMS_OK.includes(m[2]);
+  }
+  return { ativa: EDICAO_ATIVA, jamOk: id => !EDICAO_ATIVA || JAMS_OK.includes(id), hrefOk, JAMS_OK };
+})();
+
 /* ===== Progresso: conta (db) com cópia local ===== */
 const S = (() => {
   const KEY = 'mapa-do-braco-v1';
   const DEF = () => ({ v:1, done:{}, bpm:{}, quiz:{}, days:[], changes:{}, goals:{},
     minutes:{}, plan:null, myLicks:[], songs:[], badges:{}, challenges:{}, ear:{},
-    settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8, focus:'geral' } });
+    settings:{ latin:false, lefty:false, frets:15, tone:'clean', volume:0.8, focus:'geral', amb:0.35 } });
   let state = DEF(), ref = null, mode = 'local', timer = null, writing = Promise.resolve();
   const subs = new Set();
 
@@ -4998,6 +5115,38 @@ W.staff = (host, cfg = {}) => {
 };
 
 
+/* ===== Edição Worship: plano do dia só com louvor (4 níveis) ===== */
+if (EDICAO.ativa) {
+  const B = PLAN.BLOCKS;
+  Object.keys(B).forEach(k => delete B[k]);
+  Object.assign(B, {
+    1: [
+      { id:'aquec', title:'Aquecimento', desc:'Cordas soltas com palhetada alternada.', href:'#treino-ex-soltas', pct:.1 },
+      { id:'trocas', title:'Trocas de acordes', desc:'G, Cadd9, Em7 e Dsus4: 1 minuto cada par.', href:'#trocas', pct:.2 },
+      { id:'base', title:'Base worship', desc:'Acompanhe a base congregacional com os acordes coloridos.', href:'#jam-w-cong', pct:.3 },
+      { id:'aula', title:'Aula da trilha', desc:'', href:'', pct:.25 },
+      { id:'repert', title:'Repertório', desc:'Uma música do culto do começo ao fim.', href:'#repertorio', pct:.15 } ],
+    2: [
+      { id:'aquec', title:'Aquecimento', desc:'Pentatônica, subindo e descendo devagar.', href:'#treino-ex-pent', pct:.1 },
+      { id:'tri', title:'Tríades', desc:'Uma progressão nova em tríades e o treino “Qual inversão?”.', href:'#triades', pct:.25 },
+      { id:'aula', title:'Aula da trilha', desc:'', href:'', pct:.2 },
+      { id:'base', title:'Base com tríades', desc:'Base 6/8 com a guitarra em tríades agudas.', href:'#jam-w-68', pct:.3 },
+      { id:'ouvido', title:'Ouvido', desc:'Treino de ouvido: continue do seu nível.', href:'#ouvido', pct:.15 } ],
+    3: [
+      { id:'aquec', title:'Aquecimento', desc:'Um dedo por casa, com metrônomo.', href:'#treino-ex-1234', pct:.1 },
+      { id:'enfeites', title:'Enfeites', desc:'Sus resolvendo na 3ª e arremates nas trocas.', href:'#licks', pct:.2 },
+      { id:'aula', title:'Aula da trilha', desc:'', href:'', pct:.2 },
+      { id:'frases', title:'Frases com delay', desc:'Gere frases no Jam worship e toque junto.', href:'#jam-w-cong', pct:.3 },
+      { id:'repert', title:'Repertório', desc:'Solos e enfeites numa música do culto.', href:'#repertorio', pct:.2 } ],
+    4: [
+      { id:'aquec', title:'Aquecimento', desc:'Pentatônica, subindo e descendo devagar.', href:'#treino-ex-pent', pct:.1 },
+      { id:'campo', title:'Campo harmônico', desc:'Um tom novo no campo “✨ Worship”, dizendo os números.', href:'#campo', pct:.2 },
+      { id:'aula', title:'Harmonia', desc:'', href:'', pct:.2 },
+      { id:'ouvido', title:'Ouvido', desc:'Graus da escala e progressões.', href:'#ouvido', pct:.2 },
+      { id:'palco', title:'Modo Palco', desc:'Uma música do repertório no Modo Palco, do começo ao fim.', href:'#repertorio', pct:.3 } ],
+  });
+}
+
 /* ===== Trilha (por níveis) e aula ===== */
 const V = {};
 const MODS = () => MODULES.slice().sort((a, b) => (a.level || 9) - (b.level || 9) || (a.order || 0) - (b.order || 0));
@@ -5012,6 +5161,7 @@ function linkHref(l) {
 }
 
 function levelStats(n, st) {
+  if (!levelOf(n)) return { ls: [], done: 0, goals: 0, total: 0, pct: 0 };   // nível que não existe nesta edição
   const ls = ALL_LESSONS().filter(l => l.mod.level === n);
   const lv = levelOf(n);
   const done = ls.filter(l => st.done[l.id]).length, goals = lv.goals.filter(g => (st.goals || {})[g.id]).length;
@@ -5506,7 +5656,7 @@ UIP.track('lickFilter', () => LICK_FILTER, v => { if (typeof v === 'string') LIC
 
 V.licks = (el, id, opt = {}) => {
   if (opt.estudos) LICK_FILTER = 'estudo';
-  else if (!id && U.set().focus === 'worship' && LICK_FILTER === 'all' && !V.licks.wDone) { LICK_FILTER = 'worship'; V.licks.wDone = true; }
+  else if (!id && (EDICAO.ativa || U.set().focus === 'worship') && LICK_FILTER === 'all' && !V.licks.wDone) { LICK_FILTER = 'worship'; V.licks.wDone = true; }
   else if (!id && LICK_FILTER === 'estudo') LICK_FILTER = 'all';
   let cur = lickById(id) || (opt.estudos ? LICKS.find(l => l.style === 'estudo') : LICKS[0]);
   if (!lickById(id) && id) location.replace('#licks');
@@ -6441,9 +6591,10 @@ const jamKeyName = (jam, pc) => T.spellAscii(T.spellScale(pc, jam.minor ? 'menor
 V.jam = (el, id) => {
   if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; JAM.key = null; } JAM.id = id; }
   if (!JAMS.some(j => j.id === JAM.id)) JAM.id = 'blues';
-  const focusW = U.set().focus === 'worship';
-  if (focusW && !id && JAM.id === 'blues') { JAM.id = 'w-cong'; JAM.scale = null; JAM.bpm = null; JAM.key = null; }
-  const order = focusW ? JAMS.filter(j => j.worship).concat(JAMS.filter(j => !j.worship)) : JAMS;
+  const focusW = EDICAO.ativa || U.set().focus === 'worship';
+  if (!EDICAO.jamOk(JAM.id) || (focusW && !id && JAM.id === 'blues')) { JAM.id = 'w-cong'; JAM.scale = null; JAM.bpm = null; JAM.key = null; }
+  const visiveis = JAMS.filter(j => EDICAO.jamOk(j.id));
+  const order = focusW ? visiveis.filter(j => j.worship).concat(visiveis.filter(j => !j.worship)) : visiveis;
   const jam = JAMS.find(j => j.id === JAM.id);
   if (!JAM.scale || !jam.scales.includes(JAM.scale)) JAM.scale = jam.scales[0];
   if (!JAM.bpm) JAM.bpm = jam.bpm;
@@ -6485,6 +6636,7 @@ V.jam = (el, id) => {
         <div class="ctrl-row">
           <label class="check"><input type="checkbox" data-k="lead" id="jam-lead" ${JAM.lead ? 'checked' : ''}> Tocar a frase com a base</label>
           <label class="check"><input type="checkbox" data-k="dly" id="jam-dly" ${JAM.dly ? 'checked' : ''}> Delay pontilhado na guitarra</label>
+          <label class="field">Reverb <input type="range" min="0" max="1" step="0.05" value="${U.set().amb ?? 0.35}" data-amb id="jam-amb"></label>
         </div>
         <div class="tab-scroll" data-ptab></div>
         <p class="small" data-ptip></p>
@@ -6647,6 +6799,7 @@ V.jam = (el, id) => {
     }
   });
   el.addEventListener('input', e => {
+    if (e.target.matches('[data-amb]')) { A.setAmbience(+e.target.value); S.update(s => { s.settings.amb = +e.target.value; }); return; }
     if (e.target.dataset.k === 'bpm') { JAM.bpm = +e.target.value; el.querySelector('[data-bpm]').textContent = JAM.bpm;
       const dl = el.querySelector('[data-delay]'); if (dl) dl.textContent = WV.dottedDelay(JAM.bpm, jam.sub) + ' ms'; applyDelay(); }
   });
@@ -6967,7 +7120,7 @@ const MOT = (() => {
   const done = st => Object.keys(st.done).length;
   const totalMin = st => sum(st.minutes);
   const bestQuiz = st => Math.max(0, ...Object.values(st.quiz).map(q => q.best));
-  const lvDone = (st, n) => typeof levelStats === 'function' && levelStats(n, st).pct >= 1;
+  const lvDone = (st, n) => typeof levelStats === 'function' && !!levelOf(n) && levelStats(n, st).pct >= 1;
   const BADGES = [
     { id:'primeira-aula', icon:'1', name:'Primeira aula', desc:'Concluiu a primeira aula.', test: st => done(st) >= 1 },
     { id:'dez-aulas', icon:'10', name:'Dez aulas', desc:'Concluiu 10 aulas.', test: st => done(st) >= 10 },
@@ -7026,9 +7179,26 @@ const MOT = (() => {
     { lv:5, text:'Tire de ouvido uma frase e salve no editor.', href:'#editor' },
     { lv:5, text:'Toque o seu setlist do começo ao fim.', href:'#repertorio' },
   ];
+  // edição worship: desafios só de louvor (os gerais continuam acima, guardados)
+  if (EDICAO.ativa) CHALLENGES.splice(0, CHALLENGES.length,
+    { lv:1, text:'Toque a base “Worship congregacional” do começo ao fim, três vezes.', href:'#jam-w-cong' },
+    { lv:1, text:'Faça 20 trocas de G para C em 1 minuto.', href:'#trocas', test: st => (st.changes['G-C'] || 0) >= 20 },
+    { lv:1, text:'Toque a levada balada por 3 minutos sem parar.', href:'#levadas-balada' },
+    { lv:1, text:'Faça uma rodada de intervalos no treino de ouvido com 80% ou mais.', href:'#ouvido-intervalos', test: st => st.ear?.intervalos?.date === S.today() },
+    { lv:2, text:'Acerte 10 seguidas no treino “Qual inversão?”.', href:'#triades' },
+    { lv:2, text:'Toque I–V–vi–IV em tríades nas cordas 2-3-4.', href:'#triades' },
+    { lv:2, text:'Toque o lick “Tríades em G–D–Em–C” a 80 BPM.', href:'#lick-g1' },
+    { lv:2, text:'Acerte 8 de 10 no quiz de tríades.', href:'#quiz-triade', test: st => st.quiz.triade?.date === S.today() && st.quiz.triade.best >= 80 },
+    { lv:3, text:'Toque o enfeite “Sus2 e sus4 resolvendo na 3ª” sem atrasar a base.', href:'#lick-e1' },
+    { lv:3, text:'Gere três frases no Jam worship e toque junto com o delay.', href:'#jam-w-cong' },
+    { lv:3, text:'Toque o lick “Resposta à voz” deixando os silêncios.', href:'#lick-w5' },
+    { lv:3, text:'Faça uma rodada de graus da escala com 80% ou mais.', href:'#ouvido-graus', test: st => st.ear?.graus?.date === S.today() },
+    { lv:4, text:'Toque o campo harmônico “✨ Worship” em dois tons.', href:'#campo' },
+    { lv:4, text:'Monte o álbum de uma música e toque no Modo Palco.', href:'#repertorio' },
+    { lv:4, text:'Faça uma rodada de ditado melódico com 80% ou mais.', href:'#ouvido-ditado', test: st => st.ear?.ditado?.date === S.today() });
   function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
   function daily() {
-    const lv = PLAN.currentLevel(), pool = CHALLENGES.filter(c => c.lv <= lv && c.lv >= lv - 1);
+    const lv = PLAN.currentLevel(), pool = CHALLENGES.filter(c => c.lv <= lv && c.lv >= lv - 1 && EDICAO.hrefOk(c.href));
     return pool[hash(S.today()) % pool.length];
   }
   function completeToday() { S.update(s => { s.challenges = s.challenges || {}; s.challenges[S.today()] = true; }); S.practiced(); U.toast('Desafio do dia cumprido! +60 XP'); }
@@ -7741,18 +7911,19 @@ const APP = (() => {
     const st = S.get().settings;
     const sh = document.getElementById('settings');
     sh.querySelector('[data-body]').innerHTML = `
-      <div class="set-row"><span>Foco</span>${U.chips('focus', [{ v:'geral', label:'Geral' }, { v:'worship', label:'✨ Worship / louvor' }], st.focus || 'geral')}</div>
+      ${EDICAO.ativa ? '' : `<div class="set-row"><span>Foco</span>${U.chips('focus', [{ v:'geral', label:'Geral' }, { v:'worship', label:'✨ Worship / louvor' }], st.focus || 'geral')}</div>`}
       <div class="set-row"><span>Nomes das notas</span>${U.chips('latin', [{ v:'0', label:'C D E' }, { v:'1', label:'Dó Ré Mi' }], st.latin ? '1' : '0')}</div>
       <div class="set-row"><span>Mão</span>${U.chips('lefty', [{ v:'0', label:'Destro' }, { v:'1', label:'Canhoto' }], st.lefty ? '1' : '0')}</div>
       <div class="set-row"><span>Casas visíveis</span>${U.chips('frets', [{ v:'12', label:'12' }, { v:'15', label:'15' }, { v:'22', label:'22' }], String(st.frets))}</div>
       <div class="set-row"><span>Timbre</span>${U.chips('tone', [{ v:'clean', label:'Limpo' }, { v:'drive', label:'Drive' }], st.tone)}</div>
+      <div class="set-row"><label for="set-amb">Ambiência (reverb)</label><input type="range" id="set-amb" min="0" max="1" step="0.05" value="${st.amb ?? 0.35}"></div>
       <div class="set-row"><label for="set-vol">Volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05" value="${st.volume}"></div>
       <p class="small">Toque qualquer casa do braço para ouvir a nota.</p>`;
   }
 
   function init() {
     const st = S.get().settings;
-    A.setTone(st.tone); A.setVolume(st.volume);
+    A.setTone(st.tone); A.setVolume(st.volume); A.setAmbience(st.amb ?? 0.35);
     window.addEventListener('hashchange', render);
     const sh = document.getElementById('settings');
     const open = () => { settingsSheet(); sh.hidden = false; sh.querySelector('.chip')?.focus(); };
@@ -7771,7 +7942,10 @@ const APP = (() => {
       settingsSheet();
       if (k !== 'tone') render();
     });
-    sh.addEventListener('input', e => { if (e.target.id === 'set-vol') { A.setVolume(+e.target.value); S.update(s => { s.settings.volume = +e.target.value; }); } });
+    sh.addEventListener('input', e => {
+      if (e.target.id === 'set-vol') { A.setVolume(+e.target.value); S.update(s => { s.settings.volume = +e.target.value; }); }
+      if (e.target.id === 'set-amb') { A.setAmbience(+e.target.value); S.update(s => { s.settings.amb = +e.target.value; }); }
+    });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sh.hidden) close(); });
 
     const syncEl = document.getElementById('sync');
