@@ -48,9 +48,10 @@ const jamKeyName = (jam, pc) => T.spellAscii(T.spellScale(pc, jam.minor ? 'menor
 V.jam = (el, id) => {
   if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; JAM.key = null; } JAM.id = id; }
   if (!JAMS.some(j => j.id === JAM.id)) JAM.id = 'blues';
-  const focusW = U.set().focus === 'worship';
-  if (focusW && !id && JAM.id === 'blues') { JAM.id = 'w-cong'; JAM.scale = null; JAM.bpm = null; JAM.key = null; }
-  const order = focusW ? JAMS.filter(j => j.worship).concat(JAMS.filter(j => !j.worship)) : JAMS;
+  const focusW = EDICAO.ativa || U.set().focus === 'worship';
+  if (!EDICAO.jamOk(JAM.id) || (focusW && !id && JAM.id === 'blues')) { JAM.id = 'w-cong'; JAM.scale = null; JAM.bpm = null; JAM.key = null; }
+  const visiveis = JAMS.filter(j => EDICAO.jamOk(j.id));
+  const order = focusW ? visiveis.filter(j => j.worship).concat(visiveis.filter(j => !j.worship)) : visiveis;
   const jam = JAMS.find(j => j.id === JAM.id);
   if (!JAM.scale || !jam.scales.includes(JAM.scale)) JAM.scale = jam.scales[0];
   if (!JAM.bpm) JAM.bpm = jam.bpm;
@@ -92,6 +93,7 @@ V.jam = (el, id) => {
         <div class="ctrl-row">
           <label class="check"><input type="checkbox" data-k="lead" id="jam-lead" ${JAM.lead ? 'checked' : ''}> Tocar a frase com a base</label>
           <label class="check"><input type="checkbox" data-k="dly" id="jam-dly" ${JAM.dly ? 'checked' : ''}> Delay pontilhado na guitarra</label>
+          <label class="field">Reverb <input type="range" min="0" max="1" step="0.05" value="${U.set().amb ?? 0.35}" data-amb id="jam-amb"></label>
         </div>
         <div class="tab-scroll" data-ptab></div>
         <p class="small" data-ptip></p>
@@ -254,6 +256,7 @@ V.jam = (el, id) => {
     }
   });
   el.addEventListener('input', e => {
+    if (e.target.matches('[data-amb]')) { A.setAmbience(+e.target.value); S.update(s => { s.settings.amb = +e.target.value; }); return; }
     if (e.target.dataset.k === 'bpm') { JAM.bpm = +e.target.value; el.querySelector('[data-bpm]').textContent = JAM.bpm;
       const dl = el.querySelector('[data-delay]'); if (dl) dl.textContent = WV.dottedDelay(JAM.bpm, jam.sub) + ' ms'; applyDelay(); }
   });

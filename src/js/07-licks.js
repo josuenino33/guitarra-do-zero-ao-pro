@@ -1,5 +1,5 @@
 /* ===== Licks, solos e exercícios ===== */
-const STYLES = { rock:'Rock', blues:'Blues', gospel:'Gospel / Louvor', worship:'Worship (frases)', metal:'Metal / Neoclássico', solo:'Solos completos', exercicio:'Exercícios' };
+const STYLES = { rock:'Rock', blues:'Blues', gospel:'Gospel / Louvor', worship:'Worship (frases)', enfeite:'Enfeites', metal:'Metal / Neoclássico', solo:'Solos completos', exercicio:'Exercícios' };
 
 const LICKS = [
   { id:'r1', style:'rock', title:'Tercinas descendentes', key:'A', scale:'pent_menor', bpm:90, level:2, tech:'Palhetada alternada',
@@ -80,6 +80,19 @@ const LICKS = [
     chords:['E','B','C#m','A'],
     src:'|e 4:9 3:9 2:9 1:0 2:9 3:9 2:9 1:0 4:9 3:8 2:7 1:0 2:7 3:8 2:7 1:0 4:11 3:9 2:9 1:0 2:9 3:9 2:9 1:0 4:11 3:9 2:10 1:0 2:10 3:9 2:10 1:0',
     tip:'Tríades nas cordas 2-3-4 e a corda 1 solta (Mi) soando em todos os acordes: em E é a tônica, em B vira sus4, em C♯m é a 3ª menor e em A é a 5ª. Esse “sino” por cima é muito usado no tom de E.' },
+  // enfeites: pequenos detalhes nas trocas de acorde, por cima da base
+  { id:'e1', style:'enfeite', title:'Sus2 e sus4 resolvendo na 3ª', key:'G', scale:'maior', bpm:72, level:1, tech:'Hammer-on e pull-off na tríade', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|q. 3:7+2:8+1:5 |e 1:7h |h 3:7+2:8+1:7~ |q. 3:7+2:8+1:5 |e 2:7p |h 3:7+2:7+1:5~ |q. 3:9+2:7+1:7 |e 2:8h |h 3:9+2:8+1:7~ |q. 3:7+2:8+1:8 |e 3:9h |h 3:9+2:8+1:8~',
+    tip:'Monte a tríade com uma nota “emprestada” (a 2ª ou a 4ª) e resolva na 3ª com um ligado. G: Lá → Si. D: Sol → Fá♯. Em: Fá♯ → Sol. C: Ré → Mi. É o enfeite mais usado no louvor.' },
+  { id:'e2', style:'enfeite', title:'Melodia com a corda Si solta', key:'G', scale:'maior', bpm:76, level:2, tech:'Nota pedal em corda solta', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|e 3:4 2:0 3:7 2:0 3:9 2:0 3:7 2:0 3:7 2:0 3:9 2:0 3:11 2:0 3:9 2:0 3:9 2:0 3:11 2:0 3:12 2:0 3:11 2:0 3:12 2:0 3:11 2:0 3:9 2:0 |q 3:9+2:0~',
+    tip:'A melodia anda na corda Sol e a corda Si solta toca entre cada nota. Com delay pontilhado vira uma cascata. Deixe a corda solta soar sempre.' },
+  { id:'e3', style:'enfeite', title:'Arremate no fim do compasso', key:'G', scale:'maior', bpm:72, level:1, tech:'Notas de passagem até o próximo acorde', delay:true,
+    chords:['G','D','Em','C'],
+    src:'|h 3:7+2:8+1:7~ |q - |e 1:8 1:7 |h 3:7+2:7+1:5~ |q - |e 1:3 1:5 |h 3:9+2:8+1:7~ |q - |e 1:5 1:7 |h 3:9+2:8+1:8~ |q - |e 1:10 1:8',
+    tip:'A tríade soa meio compasso, você espera um tempo e toca duas notas que caminham até a nota de cima do próximo acorde. O ouvido sente a troca chegando.' },
   { id:'m1', style:'metal', title:'Galope em Mi', key:'E', scale:'menor', bpm:120, level:2, tech:'Galope, palm mute',
     src:'|e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:3+5:5 |s 6:3+5:5 6:3+5:5 |e 6:0m |s 6:0m 6:0m |e 6:0m |s 6:0m 6:0m |e 6:5+5:7 |s 6:5+5:7 6:5+5:7 |e 6:6+5:8 |s 6:6+5:8 6:6+5:8',
     tip:'Ritmo de galope: uma colcheia e duas semicolcheias (baixo, baixo-cima). O último acorde, B♭5, forma o trítono com o Mi.' },

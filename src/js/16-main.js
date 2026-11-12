@@ -121,18 +121,19 @@ const APP = (() => {
     const st = S.get().settings;
     const sh = document.getElementById('settings');
     sh.querySelector('[data-body]').innerHTML = `
-      <div class="set-row"><span>Foco</span>${U.chips('focus', [{ v:'geral', label:'Geral' }, { v:'worship', label:'✨ Worship / louvor' }], st.focus || 'geral')}</div>
+      ${EDICAO.ativa ? '' : `<div class="set-row"><span>Foco</span>${U.chips('focus', [{ v:'geral', label:'Geral' }, { v:'worship', label:'✨ Worship / louvor' }], st.focus || 'geral')}</div>`}
       <div class="set-row"><span>Nomes das notas</span>${U.chips('latin', [{ v:'0', label:'C D E' }, { v:'1', label:'Dó Ré Mi' }], st.latin ? '1' : '0')}</div>
       <div class="set-row"><span>Mão</span>${U.chips('lefty', [{ v:'0', label:'Destro' }, { v:'1', label:'Canhoto' }], st.lefty ? '1' : '0')}</div>
       <div class="set-row"><span>Casas visíveis</span>${U.chips('frets', [{ v:'12', label:'12' }, { v:'15', label:'15' }, { v:'22', label:'22' }], String(st.frets))}</div>
       <div class="set-row"><span>Timbre</span>${U.chips('tone', [{ v:'clean', label:'Limpo' }, { v:'drive', label:'Drive' }], st.tone)}</div>
+      <div class="set-row"><label for="set-amb">Ambiência (reverb)</label><input type="range" id="set-amb" min="0" max="1" step="0.05" value="${st.amb ?? 0.35}"></div>
       <div class="set-row"><label for="set-vol">Volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05" value="${st.volume}"></div>
       <p class="small">Toque qualquer casa do braço para ouvir a nota.</p>`;
   }
 
   function init() {
     const st = S.get().settings;
-    A.setTone(st.tone); A.setVolume(st.volume);
+    A.setTone(st.tone); A.setVolume(st.volume); A.setAmbience(st.amb ?? 0.35);
     window.addEventListener('hashchange', render);
     const sh = document.getElementById('settings');
     const open = () => { settingsSheet(); sh.hidden = false; sh.querySelector('.chip')?.focus(); };
@@ -151,7 +152,10 @@ const APP = (() => {
       settingsSheet();
       if (k !== 'tone') render();
     });
-    sh.addEventListener('input', e => { if (e.target.id === 'set-vol') { A.setVolume(+e.target.value); S.update(s => { s.settings.volume = +e.target.value; }); } });
+    sh.addEventListener('input', e => {
+      if (e.target.id === 'set-vol') { A.setVolume(+e.target.value); S.update(s => { s.settings.volume = +e.target.value; }); }
+      if (e.target.id === 'set-amb') { A.setAmbience(+e.target.value); S.update(s => { s.settings.amb = +e.target.value; }); }
+    });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sh.hidden) close(); });
 
     const syncEl = document.getElementById('sync');

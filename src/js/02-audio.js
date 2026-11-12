@@ -1,6 +1,6 @@
 /* ===== Áudio: corda sintetizada (Karplus-Strong), timbres, cliques e relógio ===== */
 const A = (() => {
-  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus, padBus, dlyNode, dlyWet;
+  let ctx = null, master, gtrIn, cleanG, driveG, revSend, clickBus, backBus, padBus, dlyNode, dlyWet, hallSend, amb = 0.35;
   const cache = new Map();
   const voices = {};
   let live = [];
@@ -27,12 +27,19 @@ const A = (() => {
     conv.buffer = ir;
     revSend = ctx.createGain(); revSend.gain.value = 0.16;
     revSend.connect(conv); conv.connect(master);
+    // ambiência: reverb longo (salão de igreja) só para a guitarra, com nível ajustável
+    const hall = ctx.createConvolver(), hl = Math.floor(ctx.sampleRate * 3.6), hir = ctx.createBuffer(2, hl, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = hir.getChannelData(c); for (let i = 0; i < hl; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / hl, 2.2) * (i < 400 ? i / 400 : 1); }
+    hall.buffer = hir;
+    const hallLP = ctx.createBiquadFilter(); hallLP.type = 'lowpass'; hallLP.frequency.value = 4500;
+    hallSend = ctx.createGain(); hallSend.gain.value = amb * 0.55;
+    hallSend.connect(hall); hall.connect(hallLP); hallLP.connect(master);
 
     gtrIn = ctx.createGain();
     // limpo
     cleanG = ctx.createGain();
     const cleanLP = ctx.createBiquadFilter(); cleanLP.type = 'lowpass'; cleanLP.frequency.value = 6500;
-    gtrIn.connect(cleanG); cleanG.connect(cleanLP); cleanLP.connect(master); cleanLP.connect(revSend);
+    gtrIn.connect(cleanG); cleanG.connect(cleanLP); cleanLP.connect(master); cleanLP.connect(revSend); cleanLP.connect(hallSend);
     // drive: ganho -> saturação -> falante
     driveG = ctx.createGain();
     const pre = ctx.createGain(); pre.gain.value = 9;
@@ -45,7 +52,7 @@ const A = (() => {
     const cab = ctx.createBiquadFilter(); cab.type = 'lowpass'; cab.frequency.value = 3600; cab.Q.value = 0.9;
     const post = ctx.createGain(); post.gain.value = 0.22;
     gtrIn.connect(driveG); driveG.connect(hp); hp.connect(pre); pre.connect(sh); sh.connect(mid); mid.connect(cab); cab.connect(post);
-    post.connect(master); post.connect(revSend);
+    post.connect(master); post.connect(revSend); post.connect(hallSend);
     // delay da guitarra (desligado até alguém pedir): ecos com realimentação, mais escuros a cada volta
     dlyNode = ctx.createDelay(2); dlyNode.delayTime.value = 0.45;
     const dlyFb = ctx.createGain(); dlyFb.gain.value = 0.38;
@@ -53,7 +60,7 @@ const A = (() => {
     dlyWet = ctx.createGain(); dlyWet.gain.value = 0;
     cleanLP.connect(dlyNode); post.connect(dlyNode);
     dlyNode.connect(dlyLP); dlyLP.connect(dlyFb); dlyFb.connect(dlyNode);
-    dlyLP.connect(dlyWet); dlyWet.connect(master); dlyWet.connect(revSend);
+    dlyLP.connect(dlyWet); dlyWet.connect(master); dlyWet.connect(revSend); dlyWet.connect(hallSend);
 
     clickBus = ctx.createGain(); clickBus.gain.value = 0.9; clickBus.connect(master);
     // base do jam: sempre limpa, um pouco mais escura
@@ -82,6 +89,8 @@ const A = (() => {
     if (sec) dlyNode.delayTime.setTargetAtTime(Math.min(1.9, sec), t, 0.02);
     dlyWet.gain.setTargetAtTime(sec ? wet : 0, t, 0.05);
   }
+  /** Ambiência (reverb longo da guitarra): 0 = seco, 1 = salão grande. */
+  function setAmbience(v) { amb = Math.max(0, Math.min(1, v)); if (hallSend) hallSend.gain.setTargetAtTime(amb * 0.55, ctx.currentTime, 0.05); }
   function setVolume(v) { volume = v; if (master) master.gain.value = v; }
 
   function buffer(midi) {
@@ -272,5 +281,5 @@ const A = (() => {
   }
 
   const now = () => (init(), ctx.currentTime);
-  return { init, play, stopAll, click, tick, drum, bass, pad, setDelay, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
+  return { init, play, stopAll, click, tick, drum, bass, pad, setDelay, setAmbience, setTone, setVolume, Clock, now, get ctx() { return ctx; } };
 })();
