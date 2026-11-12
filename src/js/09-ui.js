@@ -205,6 +205,7 @@ const U = (() => {
         </select></label>
         <label class="check"><input type="checkbox" data-loop id="loop-${sfx}"> Repetir</label>
         <label class="check"><input type="checkbox" data-click id="clk-${sfx}" ${opts.click ? 'checked' : ''}> Metrônomo</label>
+        <label class="check" title="Eco de colcheia pontuada no tempo do lick"><input type="checkbox" data-dly id="dly-${sfx}" ${lick.delay ? 'checked' : ''}> Delay pontilhado</label>
         <button type="button" class="btn" data-act="mic">🎤 Praticar com microfone</button>
       </div>
       <p class="tu-msg" data-micmsg aria-live="polite" hidden></p>
@@ -217,7 +218,7 @@ const U = (() => {
     const setActive = ev => fb && fb.setActive(ev ? ev.notes.filter(o => !o.dead).map(o => o.s + ':' + o.f) : []);
     const player = TAB.Player({
       onEvent(i) { const gi = i < 0 ? -1 : i + offset; highlight(gi); setActive(parsed.events[gi]); },
-      onEnd() { btn.textContent = '▶ Tocar'; btn.classList.remove('on'); fb && fb.setActive([]); },
+      onEnd() { btn.textContent = '▶ Tocar'; btn.classList.remove('on'); fb && fb.setActive([]); setTimeout(() => { if (!player.playing) A.setDelay(0); }, 2500); },
     });
     function range() {
       if (A0 == null) return null;
@@ -241,13 +242,14 @@ const U = (() => {
       opts.onPlay && opts.onPlay(lick);
       const pct = +host.querySelector('[data-speed]').value;
       const ab = B0 != null;
+      A.setDelay(host.querySelector('[data-dly]').checked ? 45 / (lick.bpm * pct / 100) : 0);
       player.play(sub(), { bpm: lick.bpm * pct / 100, loop: ab || host.querySelector('[data-loop]').checked, click: host.querySelector('[data-click]').checked,
         meter: meterOpt.meter, pickup: ab ? 0 : meterOpt.pickup, swing: !!lick.swing });
       btn.textContent = '■ Parar'; btn.classList.add('on');
       S.practiced();
     }
     btn.addEventListener('click', () => {
-      if (player.playing) { player.stop(); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); return; }
+      if (player.playing) { player.stop(); A.setDelay(0); btn.textContent = '▶ Tocar'; btn.classList.remove('on'); return; }
       stopMic(); play();
     });
     tabHost.addEventListener('click', e => {

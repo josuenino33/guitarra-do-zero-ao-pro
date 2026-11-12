@@ -44,12 +44,13 @@ V.repertorio = (el) => {
       let items = list.filter(x => x.status === st.v);
       if (!items.length) return '';
       items = items.sort((a, b) => st.v === 'palco' ? (a.order || 0) - (b.order || 0) : (b.updatedAt || 0) - (a.updatedAt || 0));
-      return `<section class="panel"><p class="eyebrow">${st.label}${st.v === 'palco' ? ' · ordem do show' : ''}</p><ol class="songs ${st.v === 'palco' ? 'setlist' : ''}">${items.map((s, i) => `<li>
-        <div class="sg-main"><b>${U.esc(s.title)}</b><span class="small">${[s.artist, s.key && 'Tom ' + s.key, s.bpm && s.bpm + ' BPM', s.tuning && s.tuning !== 'padrao' ? TUNINGS.find(t => t.id === s.tuning)?.name : ''].filter(Boolean).map(U.esc).join(' · ')}</span>
+      return `<section class="panel"><p class="eyebrow">${st.label}${st.v === 'palco' ? ' · ordem do show' : ''}</p>${st.v === 'palco' ? `<div class="ctrl-row"><a class="btn primary" href="#palco-set">🎤 Modo Palco do setlist</a></div>` : ''}<ol class="songs ${st.v === 'palco' ? 'setlist' : ''}">${items.map((s, i) => `<li>
+        <div class="sg-main"><b>${U.esc(s.title)}</b><span class="small">${[s.artist, s.key && 'Tom ' + s.key, s.mk != null && SONGW.origKey(s) && s.mk !== SONGW.origKey(s).pc ? 'Ministro em ' + SONGW.keyLabel(s.mk, SONGW.origKey(s).minor) : '', s.bpm && s.bpm + ' BPM', s.tuning && s.tuning !== 'padrao' ? TUNINGS.find(t => t.id === s.tuning)?.name : ''].filter(Boolean).map(U.esc).join(' · ')}</span>
           ${s.notes ? `<span class="small sg-notes">${U.esc(s.notes)}</span>` : ''}</div>
         <div class="ctrl-row">
           ${safeUrl(s.link) ? `<a class="btn" href="${U.esc(safeUrl(s.link))}" target="_blank" rel="noopener noreferrer">Abrir link ↗</a>` : ''}
-          <button type="button" class="btn primary" data-practice="${s.id}">▶ Praticar</button>
+          <a class="btn primary" href="#musica-${s.id}">🎼 ${s.album || s.chords ? 'Acordes' : 'Montar acordes'}</a>
+          <button type="button" class="btn" data-practice="${s.id}">▶ Praticar</button>
           <select data-status="${s.id}" id="st-${s.id}" aria-label="Status">${SONG_STATUS.map(o => `<option value="${o.v}" ${o.v === s.status ? 'selected' : ''}>${o.label}</option>`).join('')}</select>
           ${st.v === 'palco' ? `<button type="button" class="btn ghost" data-up="${s.id}" aria-label="Subir" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="btn ghost" data-down="${s.id}" aria-label="Descer" ${i === items.length - 1 ? 'disabled' : ''}>↓</button>` : ''}
           <button type="button" class="btn ghost" data-edit="${s.id}">Editar</button>

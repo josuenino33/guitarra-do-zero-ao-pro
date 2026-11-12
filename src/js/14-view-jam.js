@@ -23,8 +23,19 @@ const JAMS = [
     chords:['C','G','Am','F'], scales:['pent_maior','maior'] },
   { id:'valsa', title:'Valsa 3/4', key:'G', bpm:100, meter:3, sub:2, feel:'waltz', bass:'waltz', comp:['--D-D-'],
     chords:['G','D','D','G'], scales:['maior','pent_maior'] },
+  // worship: degs = graus do tom maior (0 = I … 5 = vi); os acordes coloridos são gerados no tom escolhido (WV)
+  { id:'w-cong', title:'Worship congregacional', key:'G', bpm:72, meter:4, sub:2, feel:'worship', bass:'whole', comp:['L---D-DU'],
+    chords:['G','D','Em','C'], degs:[0,4,5,3], worship:true, scales:['pent_maior','maior'] },
+  { id:'w-68', title:'Worship balada 6/8', key:'D', bpm:58, meter:2, sub:3, feel:'sixeight', bass:'sixeight', comp:['L--D--'],
+    chords:['Bm','G','D','A'], degs:[5,3,0,4], worship:true, scales:['pent_maior','maior'] },
+  { id:'w-build', title:'Worship crescendo', key:'E', bpm:74, meter:4, sub:2, feel:'build', bass:'build', build:true,
+    comp:['--------', 'L-------', 'L---D-DU', 'D-DU-UDU'], chords:['A','E','B','C#m'], degs:[3,0,4,5], worship:true, scales:['pent_maior','maior'] },
+  { id:'w-amb', title:'Ambiente (pad)', key:'A', bpm:68, meter:4, sub:2, feel:'ambient', bass:'none', comp:['--------'],
+    chords:['A','D','F#m','E'], degs:[0,3,5,4], worship:true, scales:['pent_maior','maior'] },
 ];
-const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, labels:'iv' };
+const BUILD_LV = [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
+const BUILD_NAMES = ['Intro: só pad', 'Verso', 'Pré-refrão', 'Refrão'];
+const JAM = { id:'blues', scale:null, bpm:null, key:null, drums:true, bass:true, comp:true, pad:true, labels:'iv', phr:'ostinato', lead:true, dly:true, seed:1, gtr:'open' };
 UIP.track('jam', JAM);
 
 function parseChord(name) {
@@ -37,18 +48,27 @@ const jamKeyName = (jam, pc) => T.spellAscii(T.spellScale(pc, jam.minor ? 'menor
 V.jam = (el, id) => {
   if (id && JAMS.some(j => j.id === id)) { if (JAM.id !== id) { JAM.scale = null; JAM.bpm = null; JAM.key = null; } JAM.id = id; }
   if (!JAMS.some(j => j.id === JAM.id)) JAM.id = 'blues';
+  const focusW = U.set().focus === 'worship';
+  if (focusW && !id && JAM.id === 'blues') { JAM.id = 'w-cong'; JAM.scale = null; JAM.bpm = null; JAM.key = null; }
+  const order = focusW ? JAMS.filter(j => j.worship).concat(JAMS.filter(j => !j.worship)) : JAMS;
   const jam = JAMS.find(j => j.id === JAM.id);
   if (!JAM.scale || !jam.scales.includes(JAM.scale)) JAM.scale = jam.scales[0];
   if (!JAM.bpm) JAM.bpm = jam.bpm;
   const baseKey = T.pcOf(jam.key);
   const keyPc = JAM.key == null ? baseKey : JAM.key;
   const keyName = jamKeyName(jam, keyPc);
-  const chords = jam.chords.map(c => parseChord(T.transposeName(c, jam.key, keyName)));
+  // guitarra base: acordes abertos coloridos (WV) ou tríades agudas com condução de vozes (TRI)
+  const triPath = jam.worship && JAM.gtr !== 'open' ? TRI.progPath(keyPc, jam.degs, JAM.gtr, 8) : null;
+  const chords = jam.chords.map((c, i) => {
+    const sh = triPath ? TRI.shape(triPath[i]) : jam.worship ? WV.best(keyPc, jam.degs[i]) : null;
+    const pc = parseChord(sh ? sh.name : T.transposeName(c, jam.key, keyName));
+    pc.shape = sh; return pc;
+  });
   const latin = U.set().latin;
 
   el.innerHTML = treinoTabs('jam') + `
     <section class="panel">
-      <div class="ctrl-row">${U.chips('jam', JAMS.map(j => ({ v: j.id, label: j.title })), jam.id)}</div>
+      <div class="ctrl-row">${U.chips('jam', order.map(j => ({ v: j.id, label: (j.worship ? '✨ ' : '') + j.title })), jam.id)}</div>
       <div class="ctrl-row">
         <label class="field">Tom <select data-k="key" id="jam-key">${T.ROOTS.map((r, i) => `<option value="${i}" ${i === keyPc ? 'selected' : ''}>${T.spellName(T.parseName(jamKeyName(jam, i)), latin)}${jam.minor ? 'm' : ''}</option>`).join('')}</select></label>
         <label class="field">Escala <select data-k="scale" id="jam-scale">${jam.scales.map(s => `<option value="${s}" ${s === JAM.scale ? 'selected' : ''}>${T.SCALES[s].name} de ${T.spellName(T.parseName(keyName), latin)}</option>`).join('')}</select></label>
@@ -58,8 +78,24 @@ V.jam = (el, id) => {
         <label class="check"><input type="checkbox" data-k="drums" id="jam-drums" ${JAM.drums ? 'checked' : ''}> Bateria</label>
         <label class="check"><input type="checkbox" data-k="bass" id="jam-bass" ${JAM.bass ? 'checked' : ''}> Baixo</label>
         <label class="check"><input type="checkbox" data-k="comp" id="jam-comp" ${JAM.comp ? 'checked' : ''}> Acordes</label>
-        <span class="small">${jam.meter === 2 ? 'Compasso 6/8' : jam.meter + '/4'} · ${({ shuffle:'shuffle', jazz:'swing', funk:'semicolcheias', reggae:'one drop', bossa:'bossa', sixeight:'6/8', waltz:'valsa', metal:'metal', straight:'reto' })[jam.feel]}</span>
+        ${jam.worship ? `<label class="check"><input type="checkbox" data-k="pad" id="jam-pad" ${JAM.pad ? 'checked' : ''}> Pad</label>` : ''}
+        <span class="small">${jam.meter === 2 ? 'Compasso 6/8' : jam.meter + '/4'} · ${({ shuffle:'shuffle', jazz:'swing', funk:'semicolcheias', reggae:'one drop', bossa:'bossa', sixeight:'6/8', waltz:'valsa', metal:'metal', straight:'reto', worship:'worship', build:'crescendo', ambient:'ambiente' })[jam.feel]}</span>
       </div>
+      ${jam.worship ? `<div class="worship-box">
+        <div class="ctrl-row"><span class="small">Guitarra base:</span>${U.chips('gtr', [{ v:'open', label:'Acordes abertos' }, { v:'123', label:'Tríades 1-2-3' }, { v:'234', label:'Tríades 2-3-4' }], JAM.gtr)}</div>
+        <p class="small">${triPath ? `Tríades na inversão mais perto da anterior: a mão anda ${TRI.totalMove(triPath)} casas por volta. A nota de cima de cada tríade forma uma melodia.` : 'Acordes coloridos com cordas soltas soando, escolhidos para o tom.'} Toque para ouvir. Delay do pedal: <b data-delay>${WV.dottedDelay(JAM.bpm, jam.sub)} ms</b> (${jam.sub === 3 ? 'duas colcheias do 6/8' : 'colcheia pontuada'}).${jam.build ? ' Parte: <b data-stage>' + BUILD_NAMES[0] + '</b>' : ''}</p>
+        <div class="chord-row">${chords.filter((c, i, a) => c.shape && a.findIndex(x => x.name === c.name) === i).map(c => `<button type="button" class="chord-card" data-wv="${chords.indexOf(c)}" aria-label="Ouvir ${c.name}"><b>${prettyChord(c.name)}</b>${CH.diagram(c.shape)}</button>`).join('')}</div>
+      </div>
+      <div class="worship-box">
+        <p class="eyebrow">Frases pra solar</p>
+        <div class="ctrl-row">${U.chips('phr', WV.PHRASES.map(p => ({ v: p.id, label: p.name })), JAM.phr)}<button type="button" class="btn" data-act="reroll">🎲 Outra versão</button></div>
+        <div class="ctrl-row">
+          <label class="check"><input type="checkbox" data-k="lead" id="jam-lead" ${JAM.lead ? 'checked' : ''}> Tocar a frase com a base</label>
+          <label class="check"><input type="checkbox" data-k="dly" id="jam-dly" ${JAM.dly ? 'checked' : ''}> Delay pontilhado na guitarra</label>
+        </div>
+        <div class="tab-scroll" data-ptab></div>
+        <p class="small" data-ptip></p>
+      </div>` : ''}
       <div class="jam-now">
         <button type="button" class="btn primary big" data-act="go">▶ Tocar base</button>
         <div class="now"><span>Agora</span><b data-now>${prettyChord(chords[0].name)}</b></div>
@@ -94,24 +130,54 @@ V.jam = (el, id) => {
   const BOOGIE = [0, 4, 7, 9, 10, 9, 7, 4];
   const FUNK = { 0: 0, 3: 12, 6: 10, 8: 0, 10: 7, 14: 12 };
   const slots = jam.meter * jam.sub;
+  // frase de solo gerada para a progressão e o tom atuais
+  let phr = null, phrHl = () => {};
+  function paintPhrase() {
+    if (!jam.worship) return;
+    const box = el.querySelector('[data-ptab]'); if (!box) return;
+    phr = TAB.parse(WV.phrase(JAM.phr, keyPc, jam.degs, jam.meter, jam.sub, JAM.seed).src);
+    phrHl = TAB.render(box, phr, { meter: jam.meter });
+    el.querySelector('[data-ptip]').textContent = (WV.PHRASES.find(p => p.id === JAM.phr) || {}).tip || '';
+  }
+  paintPhrase();
+  const applyDelay = () => A.setDelay(jam.worship && JAM.dly && clock.running ? WV.dottedDelay(JAM.bpm, jam.sub) / 1000 : 0);
+  let lvl = 2;
+  // pad: tônica grave + notas do acorde uma oitava acima
+  const padNotes = c => { const b = 43 + T.mod(c.root - 7); return [b, b + 12].concat(T.CHORDS[c.q].iv.filter(i => i).slice(0, 4).map(i => b + 12 + i)); };
   const clock = A.Clock(() => JAM.bpm, jam.sub, (i, t) => {
     const spb = 60 / JAM.bpm, sd = spb / jam.sub;
     const barN = Math.floor(i / slots), bar = barN % chords.length, pos = i % slots, beat = Math.floor(pos / jam.sub), off = pos % jam.sub;
     const c = chords[bar], next = chords[(bar + 1) % chords.length];
     const swing = (jam.feel === 'shuffle' || jam.feel === 'jazz') && jam.sub === 2 && off === 1;
     const tt = swing ? t + spb / 6 : t;
-    if (pos === 0) setTimeout(() => showChord(bar), Math.max(0, (t - A.ctx.currentTime) * 1000));
+    lvl = jam.build ? BUILD_LV[barN % BUILD_LV.length] : 2;
+    if (pos === 0) setTimeout(() => { showChord(bar); const st = el.querySelector('[data-stage]'); if (st) st.textContent = BUILD_NAMES[lvl]; }, Math.max(0, (t - A.ctx.currentTime) * 1000));
+    if (jam.worship && JAM.lead && phr && i % (slots * chords.length) === 0)
+      TAB.scheduleNotes(phr, t, JAM.bpm, (k, tk) => setTimeout(() => phrHl(k), Math.max(0, (tk - A.ctx.currentTime) * 1000)));
+    if (jam.worship && JAM.pad && pos === 0) A.pad(padNotes(c), t, spb * jam.meter + 0.25, jam.build ? 0.6 + lvl * 0.15 : 0.8);
     if (JAM.drums) drums(jam.feel, pos, beat, off, tt, barN);
     if (JAM.bass) bassLine(jam.bass, c, next, pos, beat, off, tt, spb, sd);
     if (JAM.comp) {
-      const pat = jam.comp[barN % jam.comp.length], sym = pat[pos];
-      if (sym && sym !== '-') RH.hit(sym, c.name, tt, sd, pos === 0, 'back');
+      const pat = jam.build ? jam.comp[lvl] : jam.comp[barN % jam.comp.length], sym = pat[pos];
+      if (sym && sym !== '-') RH.hit(sym, c.shape || c.name, tt, sd, pos === 0, 'back');
     }
   });
 
   function drums(feel, pos, beat, off, t, barN) {
     const D = A.drum;
     switch (feel) {
+      case 'ambient':
+        if (pos === 0) D('kick', t, 0.3); break;
+      case 'build':
+        if (lvl === 0) { if (pos === 0) D('kick', t, 0.3); break; }
+        if (lvl === 1) { if (off === 0 && (beat === 0 || beat === 2)) D('kick', t, 0.55); if (off) D('hat', t, 0.3); break; }
+        if (lvl === 3) { if (off === 0) D('kick', t, 0.8); if (off === 0 && (beat === 1 || beat === 3)) D('snare', t, 0.8); D('hat', t, off ? 0.5 : 0.75); break; }
+        // nível 2 segue o padrão worship
+      case 'worship':
+        if (off === 0 && (beat === 0 || beat === 2)) D('kick', t, 0.8);
+        if (beat === 1 && off === 1) D('kick', t, 0.4);
+        if (off === 0 && (beat === 1 || beat === 3)) D('snare', t, 0.55);
+        D('hat', t, off ? 0.4 : 0.25); break;
       case 'funk':
         if ([0, 6, 8].includes(pos)) D('kick', t);
         if (pos === 4 || pos === 12) D('snare', t); else if (pos === 7 || pos === 14) D('snare', t, 0.25);
@@ -147,6 +213,13 @@ V.jam = (el, id) => {
     const r = bassMidi(c.root), minor = T.CHORDS[c.q].iv.includes(3);
     const third = r + (minor ? 3 : 4), fifth = r + 7;
     switch (kind) {
+      case 'none': break;
+      case 'whole': if (pos === 0) A.bass(r, t, spb * jam.meter * 0.95); break;
+      case 'build':
+        if (lvl === 1 && pos === 0) A.bass(r, t, spb * jam.meter * 0.95);
+        else if (lvl === 2 && off === 0 && (beat === 0 || beat === 2)) A.bass(r, t, spb * 1.9);
+        else if (lvl === 3 && off === 0) A.bass(r, t, spb * 0.85);
+        break;
       case 'boogie': A.bass(r + (minor && BOOGIE[pos] === 4 ? 3 : BOOGIE[pos]), t, spb * 0.45); break;
       case 'eighths': A.bass(r, t, sd * 0.85); break;
       case 'walk': {
@@ -167,14 +240,22 @@ V.jam = (el, id) => {
   el.addEventListener('click', e => {
     const chip = e.target.closest('[data-chips="jam"] .chip');
     if (chip) { clock.stop(); A.stopAll(); location.hash = '#jam-' + chip.dataset.v; return; }
+    const gc = e.target.closest('[data-chips="gtr"] .chip');
+    if (gc) { JAM.gtr = gc.dataset.v; const running = clock.running; clock.stop(); A.stopAll(); A.setDelay(0); APP.rerender(); if (running) U.toast('Base alterada. Toque de novo.'); return; }
+    const pc = e.target.closest('[data-chips="phr"] .chip');
+    if (pc) { JAM.phr = pc.dataset.v; el.querySelectorAll('[data-chips="phr"] .chip').forEach(c => c.classList.toggle('on', c === pc)); paintPhrase(); return; }
+    if (e.target.closest('[data-act="reroll"]')) { JAM.seed = 1 + Math.floor(Math.random() * 233000); paintPhrase(); return; }
+    const wv = e.target.closest('[data-wv]');
+    if (wv) { WV.strum(chords[+wv.dataset.wv].shape); return; }
     const btn = e.target.closest('[data-act="go"]');
     if (btn) {
-      if (clock.running) { clock.stop(); A.stopAll(); btn.textContent = '▶ Tocar base'; showChord(0); }
-      else { clock.start(); btn.textContent = '■ Parar'; S.practiced(); }
+      if (clock.running) { clock.stop(); A.stopAll(); applyDelay(); phrHl(-1); btn.textContent = '▶ Tocar base'; showChord(0); }
+      else { clock.start(); applyDelay(); btn.textContent = '■ Parar'; S.practiced(); }
     }
   });
   el.addEventListener('input', e => {
-    if (e.target.dataset.k === 'bpm') { JAM.bpm = +e.target.value; el.querySelector('[data-bpm]').textContent = JAM.bpm; }
+    if (e.target.dataset.k === 'bpm') { JAM.bpm = +e.target.value; el.querySelector('[data-bpm]').textContent = JAM.bpm;
+      const dl = el.querySelector('[data-delay]'); if (dl) dl.textContent = WV.dottedDelay(JAM.bpm, jam.sub) + ' ms'; applyDelay(); }
   });
   el.addEventListener('change', e => {
     const k = e.target.dataset.k;
@@ -182,7 +263,7 @@ V.jam = (el, id) => {
       if (k === 'scale') JAM.scale = e.target.value; else JAM.key = +e.target.value;
       const running = clock.running; APP.rerender(); if (running) U.toast('Base alterada. Toque de novo.');
     }
-    if (['drums', 'bass', 'comp'].includes(k)) JAM[k] = e.target.checked;
+    if (['drums', 'bass', 'comp', 'pad', 'lead', 'dly'].includes(k)) { JAM[k] = e.target.checked; if (k === 'dly') applyDelay(); }
   });
-  return () => { clock.stop(); A.stopAll(); };
+  return () => { clock.stop(); A.stopAll(); A.setDelay(0); };
 };

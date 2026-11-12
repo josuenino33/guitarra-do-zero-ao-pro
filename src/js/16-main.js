@@ -80,6 +80,8 @@ const APP = (() => {
     if (h === 'editor' || pre('editor-') != null) return ['licks', el => V.editor(el, pre('editor-'))];
     if (h === 'estudos') return ['licks', el => V.licks(el, null, { estudos: true })];
     if (h === 'repertorio') return ['licks', el => V.repertorio(el)];
+    if (pre('musica-') != null) return ['licks', el => V.musica(el, pre('musica-'))];
+    if (pre('palco-') != null) return ['licks', el => V.palco(el, pre('palco-'))];
     if (h === 'treino') return ['treino', el => V.metronomo(el)];
     if (h === 'levadas' || pre('levadas-') != null) return ['treino', el => V.levadas(el, pre('levadas-'))];
     if (h === 'trocas') return ['treino', el => V.trocas(el)];
@@ -93,6 +95,7 @@ const APP = (() => {
     if (h === 'braco') return ['braco', el => V.braco(el)];
     if (h === 'acordes') return ['braco', el => V.acordes(el)];
     if (h === 'campo') return ['braco', el => V.campo(el)];
+    if (h === 'triades') return ['braco', el => V.triades(el)];
     if (h === 'progresso') return ['progresso', el => V.progresso(el)];
     return ['trilha', el => V.trilha(el)];
   }
@@ -118,6 +121,7 @@ const APP = (() => {
     const st = S.get().settings;
     const sh = document.getElementById('settings');
     sh.querySelector('[data-body]').innerHTML = `
+      <div class="set-row"><span>Foco</span>${U.chips('focus', [{ v:'geral', label:'Geral' }, { v:'worship', label:'✨ Worship / louvor' }], st.focus || 'geral')}</div>
       <div class="set-row"><span>Nomes das notas</span>${U.chips('latin', [{ v:'0', label:'C D E' }, { v:'1', label:'Dó Ré Mi' }], st.latin ? '1' : '0')}</div>
       <div class="set-row"><span>Mão</span>${U.chips('lefty', [{ v:'0', label:'Destro' }, { v:'1', label:'Canhoto' }], st.lefty ? '1' : '0')}</div>
       <div class="set-row"><span>Casas visíveis</span>${U.chips('frets', [{ v:'12', label:'12' }, { v:'15', label:'15' }, { v:'22', label:'22' }], String(st.frets))}</div>

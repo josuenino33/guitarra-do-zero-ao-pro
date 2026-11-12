@@ -53,14 +53,14 @@ const PROG_MINOR = [[1, 4, 5, 1], [1, 6, 3, 7], [1, 7, 6, 7], [1, 4, 7, 3], [2, 
 const PROG_NAMED = { 'ii-V-I': [2, 5, 1, 1], 'I-V-vi-IV': [1, 5, 6, 4] };
 
 W.campo = (host, cfg = {}) => {
-  let root = T.pcOf(cfg.root || 'C'), scale = cfg.scale || 'maior', tet = !!cfg.tetrads, view = 0, pi = 0, pattern = 'pop', bpm = 84;
+  let root = T.pcOf(cfg.root || 'C'), scale = cfg.scale || 'maior', tet = cfg.tetrads ? 1 : 0, view = 0, pi = 0, pattern = 'pop', bpm = 84;
   const views = cfg.views;
   const progs = () => scale === 'maior' ? PROG_MAJOR : PROG_MINOR;
   if (cfg.prog && PROG_NAMED[cfg.prog]) pi = Math.max(0, progs().findIndex(p => p.join() === PROG_NAMED[cfg.prog].join()));
   host.innerHTML = `
     ${views ? `<div class="ctrl-row" data-views></div>` : ''}
     <div class="ctrl-row"><label class="field">Tom <select data-root id="campo-root">${U.rootOptions(root)}</select></label>
-      ${U.chips('tet', [{ v: 0, label: 'Tríades' }, { v: 1, label: 'Tétrades' }], tet ? 1 : 0)}</div>
+      <span data-tetc></span></div>
     <div class="campo" data-grid></div>
     <p class="small">T = tônica (repouso) · SD = subdominante (afastamento) · D = dominante (tensão). Toque num acorde para ouvir.</p>
     <div class="prog-box">
@@ -76,27 +76,32 @@ W.campo = (host, cfg = {}) => {
   const $ = s => host.querySelector(s);
   let degs = [];
   const player = RH.Strummer({ onSlot(bar) { host.querySelectorAll('[data-bars] li').forEach((li, i) => li.classList.toggle('on', i === bar)); } });
-  const chordsOf = p => p.map(d => tet ? degs[d - 1].tetrad : degs[d - 1].triad);
+  // tet: 0 = tríades, 1 = tétrades, 2 = formas worship (só no tom maior, graus I a vi)
+  const wShape = i => tet === 2 && scale === 'maior' && i < 6 ? WV.best(root, i) : null;
+  const label = i => { const w = wShape(i); return w ? w.name : tet ? degs[i].tetrad : degs[i].triad; };
+  const chordsOf = p => p.map(d => wShape(d - 1) || label(d - 1));
   function paint() {
     degs = harmonize(root, scale);
+    if (tet === 2 && scale !== 'maior') tet = 0;
+    $('[data-tetc]').innerHTML = U.chips('tet', [{ v: 0, label: 'Tríades' }, { v: 1, label: 'Tétrades' }].concat(scale === 'maior' ? [{ v: 2, label: '✨ Worship' }] : []), tet);
     if (views) $('[data-views]').innerHTML = U.chips('cview', views.map((v, i) => ({ v: i, label: v.label })), view);
     $('[data-grid]').innerHTML = degs.map((d, i) => `<button type="button" class="campo-deg fn-${d.fn}" data-deg="${i}">
-      <span class="roman">${d.roman}</span><b>${prettyChord(tet ? d.tetrad : d.triad)}</b><span class="fn">${d.fn}</span>${CH.diagram(CH.get(tet ? d.tetrad : d.triad))}</button>`).join('');
+      <span class="roman">${d.roman}</span><b>${prettyChord(label(i))}</b><span class="fn">${d.fn}</span>${CH.diagram(wShape(i) || CH.get(label(i)))}</button>`).join('');
     $('[data-progs]').innerHTML = U.chips('prog', progs().map((p, i) => ({ v: i, label: p.map(x => degs[x - 1].roman).join('–') })), pi);
-    $('[data-bars]').innerHTML = chordsOf(progs()[pi]).map(c => `<li>${prettyChord(c)}</li>`).join('');
+    $('[data-bars]').innerHTML = progs()[pi].map(d => `<li>${prettyChord(label(d - 1))}</li>`).join('');
   }
   function restart() { if (player.running) player.start({ pattern, chords: chordsOf(progs()[pi]), bpm }); }
   host.addEventListener('click', e => {
     const chip = e.target.closest('[data-chips] .chip');
     if (chip) {
       const g = chip.parentElement.dataset.chips;
-      if (g === 'tet') tet = chip.dataset.v === '1';
+      if (g === 'tet') tet = +chip.dataset.v;
       if (g === 'prog') pi = +chip.dataset.v;
       if (g === 'pat') pattern = chip.dataset.v;
       if (g === 'cview') { view = +chip.dataset.v; scale = views[view].scale; pi = Math.min(pi, progs().length - 1); }
       paint(); restart(); return;
     }
-    const d = e.target.closest('[data-deg]'); if (d) { CH.strum(tet ? degs[+d.dataset.deg].tetrad : degs[+d.dataset.deg].triad); return; }
+    const d = e.target.closest('[data-deg]'); if (d) { const i = +d.dataset.deg, w = wShape(i); if (w) WV.strum(w); else CH.strum(label(i)); return; }
     const b = e.target.closest('[data-act="play"]');
     if (b) { if (player.running) { player.stop(); b.textContent = '▶ Tocar progressão'; } else { player.start({ pattern, chords: chordsOf(progs()[pi]), bpm }); b.textContent = '■ Parar'; S.practiced(); } }
   });

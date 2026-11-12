@@ -22,8 +22,10 @@
     dom7: [0, 2, 4, 6], maj7: [0, 2, 4, 6], m7: [0, 2, 4, 6], m7b5: [0, 2, 4, 6], dim7: [0, 2, 4, 6], mmaj7: [0, 2, 4, 6], aummaj7: [0, 2, 4, 6],
     six: [0, 2, 4, 5], m6: [0, 2, 4, 5], nine: [0, 2, 4, 6, 1], m9: [0, 2, 4, 6, 1], maj9: [0, 2, 4, 6, 1], add9: [0, 1, 2, 4],
     thirteen: [0, 2, 4, 6, 5], b9: [0, 2, 4, 6, 1], s9: [0, 2, 4, 6, 2],
+    // acordes coloridos do worship
+    madd9: [0, 1, 2, 4], m11: [0, 2, 4, 6, 3], six9: [0, 2, 4, 5, 1], sus4add9: [0, 1, 3, 4],
   };
-  const EXT = new Set(['nine', 'm9', 'maj9', 'add9', 'thirteen', 'b9', 's9']);
+  const EXT = new Set(['nine', 'm9', 'maj9', 'add9', 'thirteen', 'b9', 's9', 'madd9', 'm11', 'six9', 'sus4add9']);
   const PREFERRED = new Set(['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']);
 
   const norm = d => { d = T.mod(d); return d > 6 ? d - 12 : d; };

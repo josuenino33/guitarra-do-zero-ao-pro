@@ -1,4 +1,6 @@
 /* Layout: app de estudo com barra de seções no topo (no celular, embaixo); coluna de até 1180px; o braço da guitarra é a peça principal de cada tela */
+/* elementos com o atributo hidden ficam escondidos em todas as versões (antes só o PWA tinha esta regra e a folha de Configurações ficava presa aberta no arquivo .html) */
+[hidden] { display: none !important; }
 :root {
   --bg: #E7ECE9; --surface: #F7F9F7; --surface-2: #DCE3DF; --fg: #17201C; --muted: #53625B; --line: #C4CDC8;
   --accent: #1C5887; --accent-ink: #FFFFFF; --accent-soft: #D5E4F0;

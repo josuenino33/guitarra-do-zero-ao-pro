@@ -5,10 +5,10 @@ const js = f => fs.readFileSync(path.join(root, 'src/js', f), 'utf8');
 const order = fs.readdirSync(path.join(root, 'src/js')).filter(f => /^(01|02b|04|05|06|07)/.test(f)).sort();
 const ctx = { console, S: { get: () => ({ myLicks: [] }) }, UIP: { lickKey: () => null } };
 vm.createContext(ctx);
-vm.runInContext(order.map(js).join('\n') + '\n;globalThis.o={T,CH,RH,TAB,MODULES,LEVELS,LICKS,SONGS,VOICINGS,QUAL_SUFFIX,harmonize};', ctx);
+vm.runInContext(order.map(js).join('\n') + '\n;globalThis.o={T,CH,RH,TAB,MODULES,LEVELS,LICKS,SONGS,VOICINGS,QUAL_SUFFIX,harmonize,WV};', ctx);
 vm.runInContext(js('09e-widgets-adv.js').split('const DICT_GROUPS')[0], ctx);
 const jamSrc = js('14-view-jam.js'); const JAMS = vm.runInContext('(' + jamSrc.slice(jamSrc.indexOf('[', jamSrc.indexOf('const JAMS')), jamSrc.indexOf('];', jamSrc.indexOf('const JAMS')) + 1) + ')', ctx);
-const { T, CH, RH, TAB, MODULES, LICKS, VOICINGS, harmonize } = ctx.o;
+const { T, CH, RH, TAB, MODULES, LICKS, VOICINGS, harmonize, WV } = ctx.o;
 
 let errs = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { errs++; if (errs <= 60) console.log('  ERRO:', msg); } };
@@ -211,6 +211,84 @@ for (let r = 0; r < 12; r++) {
   for (const q of ['maior', 'menor', 'dim', 'aum', 'sus2', 'sus4', 'maj7', 'dom7', 'm7', 'm7b5', 'dim7']) {
     const vs = CH.voicings(r, q, 15);
     ok(vs.length > 0 && vs.every(v => v.f.every(f => f <= 15)), `tipo de acorde: forma de ${q} em ${r} até a casa 15`);
+  }
+}
+
+sec('16. Worship: acordes coloridos gerados (12 tons, graus I a vi) e bases worship');
+for (let k = 0; k < 12; k++) {
+  const sc = T.SCALES.maior.iv.map(x => N(k + x)), H = harmonize(k, 'maior');
+  for (let d = 0; d < 6; d++) {
+    const vs = WV.list(k, d);
+    ok(vs.length >= 2, `worship ${k} grau ${d + 1}: precisa de pelo menos 2 formas`);
+    vs.forEach(v => {
+      const p = CH.parse(v.name), notes = CH.voicing(v), pcs = new Set(notes.map(n => N(n.midi - H[d].pc)));
+      const fr = v.f.filter(f => f > 0), tag = `worship ${v.name} [${v.f.join(' ')}]`;
+      ok(p && p.root === H[d].pc && p.q === v.q && !!T.CHORDS[p.q], `${tag}: cifra reconhecida com a tônica do grau`);
+      ok(N(notes[0].midi) === H[d].pc, `${tag}: baixo na tônica`);
+      ok(notes.every(n => sc.includes(N(n.midi))), `${tag}: só notas do tom`);
+      const want = new Set(T.CHORDS[v.q].iv.map(N)); if (v.q === 'm11') want.add(2);
+      ok([...pcs].every(x => want.has(x)), `${tag}: nota fora da cifra`);
+      ok(T.CHORDS[v.q].iv.filter(x => x !== 7 && x !== 2 && !(v.q === 'm11' && x === 10)).every(x => pcs.has(N(x))), `${tag}: falta nota que dá nome ao acorde`);
+      ok(notes.length >= 4 && fr.length >= 2 && fr.length <= 4 && Math.max(...fr) - Math.min(...fr) <= 3 && Math.max(...fr) <= 12, `${tag}: tocável (4+ cordas, 2 a 4 dedos, mão em até 4 casas)`);
+      ok(notes.filter((a, i) => notes.some((b, j) => j > i && Math.abs(a.midi - b.midi) === 1)).length <= 1, `${tag}: no máximo um choque de semitom`);
+    });
+  }
+}
+for (const j of JAMS.filter(j => j.worship)) {
+  const H = harmonize(T.pcOf(j.key), 'maior');
+  ok(j.degs.length === j.chords.length, `${j.id}: graus e acordes do mesmo tamanho`);
+  j.degs.forEach((d, i) => ok(CH.parse(j.chords[i]).root === H[d].pc && CH.parse(j.chords[i]).q === H[d].q3, `${j.id}: ${j.chords[i]} é o grau ${H[d].roman} de ${j.key}`));
+  (j.build ? j.comp : j.comp).forEach(c => ok(c.length === j.meter * j.sub, `${j.id}: levada ${c} do tamanho do compasso`));
+}
+for (let k = 0; k < 12; k++) for (const j of JAMS.filter(j => j.worship)) for (const ph of WV.PHRASES) for (const seed of [1, 7, 42]) {
+  const r = WV.phrase(ph.id, k, j.degs, j.meter, j.sub, seed), p = TAB.parse(r.src), tag = `frase ${ph.id} ${j.id} em ${k} (${seed})`;
+  ok(Math.abs(p.beats - j.degs.length * j.meter) < 1e-9, `${tag}: ocupa exatamente ${j.degs.length} compassos`);
+  const H = harmonize(k, 'maior');
+  if (ph.id === 'triades') {
+    const bl = j.meter;
+    ok(p.events.every(e => { const d = j.degs[Math.floor(e.beat / bl + 1e-9)], tones = T.CHORDS[H[d].q3].iv.map(x => N(x + H[d].pc)); return e.notes.every(o => tones.includes(N(T.TUNING[o.s] + o.f)) && o.f <= 17); }), `${tag}: só notas da tríade de cada compasso`);
+    continue;
+  }
+  ok(p.events.every(e => e.notes.every(o => [0, 2, 4, 7, 9].includes(N(T.TUNING[o.s] + o.f - k)) && o.f >= 0 && o.f <= 17)), `${tag}: pentatônica maior até a casa 17`);
+  j.degs.forEach((d, b) => { const e = p.events.find(x => !x.rest && Math.abs(x.beat - b * j.meter) < 1e-9);
+    if (e && ph.id !== 'ostinato') ok(e.notes.every(o => T.CHORDS[H[d].q3].iv.map(x => N(x + H[d].pc)).includes(N(T.TUNING[o.s] + o.f)) || b === j.degs.length - 1 || [2, 7].includes(N(T.TUNING[o.s] + o.f - k))), `${tag}: compasso ${b + 1} começa em nota do acorde`); });
+}
+console.log('  Worship em G: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(7, d).name).join(' ') + ' | em E♭: ' + [0, 1, 2, 3, 4, 5].map(d => WV.best(3, d).name).join(' '));
+
+sec('18. Tríades: inversões e condução de vozes (12 tons, 3 grupos de cordas, 4 progressões)');
+{
+  const TRI = vm.runInContext('TRI', ctx);
+  for (let k = 0; k < 12; k++) for (const set of ['123', '234', '345']) for (const degs of [[0, 4, 5, 3], [5, 3, 0, 4], [3, 0, 4, 5], [0, 3, 5, 4], [1, 4, 0, 0]]) {
+    const H = harmonize(k, 'maior'), p = TRI.progPath(k, degs, set, 7), tag = `tríades ${k} ${set} ${degs.join('')}`;
+    ok(!!p && p.length === degs.length, `${tag}: caminho completo`);
+    if (!p) continue;
+    p.forEach((v, i) => {
+      const pcs = v.frets.map((f, n) => N(T.TUNING[v.strings[n]] + f)), want = T.CHORDS[H[degs[i]].q3].iv.map(x => N(x + H[degs[i]].pc));
+      ok(new Set(pcs).size === 3 && pcs.every(x => want.includes(x)), `${tag}: ${v.name} com as 3 notas da tríade`);
+      ok(N(pcs[0] - H[degs[i]].pc) === [0, want[1] === N(H[degs[i]].pc + 3) ? 3 : 4, 7][v.inv] || N(pcs[0] - H[degs[i]].pc) === T.CHORDS[H[degs[i]].q3].iv[v.inv], `${tag}: ${v.name} inversão pelo baixo`);
+      ok(v.hi - v.lo <= 5 && v.lo >= 0 && v.hi <= 15, `${tag}: ${v.name} tocável`);
+      ok(TRI.move(v, p[(i + 1) % p.length]) <= 7, `${tag}: troca ${v.name} → ${p[(i + 1) % p.length].name} sem salto`);
+    });
+    for (const mode of ['bloco', 'arpejo']) for (const [m, s] of [[4, 2], [2, 3]]) ok(Math.abs(TAB.parse(TRI.src(p, mode, m, s)).beats - degs.length * m) < 1e-9, `${tag}: tab ${mode} ${m}/${s} com ${degs.length} compassos`);
+  }
+  const g = TRI.progPath(7, [0, 4, 5, 3], '123', 7);
+  console.log('  G–D–Em–C nas cordas 1-2-3: ' + g.map(v => `${v.name} [${v.frets.join(' ')}] ${T.INV_NAME[v.inv]}`).join(' · ') + ` · movimento total ${TRI.totalMove(g)} casas`);
+}
+
+sec('17. Análise de áudio (música sintética G–D–Em–C, andamento fixo e acelerando)');
+{
+  const MA = vm.runInContext('MA', ctx), sr = 11025, prog = [[43, 55, 59, 62, 67], [38, 50, 57, 62, 66], [40, 52, 55, 59, 64], [36, 48, 55, 60, 64]];
+  for (const [b0, b1] of [[80, 80], [76, 84]]) {
+    const bt = []; let t = 0.4; for (let i = 0; i < 64; i++) { bt.push(t); t += 60 / (b0 + (b1 - b0) * i / 64); }
+    const L = Math.floor((t + 1) * sr), x = new Float32Array(L);
+    bt.forEach((s0, i) => { const t0 = Math.floor(s0 * sr); for (const m of prog[Math.floor(i / 4) % 4]) { const f = 440 * 2 ** ((m - 69) / 12); for (let j = 0; j < 0.7 * sr && t0 + j < L; j++) x[t0 + j] += 0.1 * Math.exp(-j / sr * 3) * (Math.sin(2 * Math.PI * f * j / sr) + 0.5 * Math.sin(4 * Math.PI * f * j / sr)); } });
+    const r = MA.analyzeSync(x, sr), tag = `áudio ${b0}→${b1} BPM`;
+    ok(r.key === 7 && !r.minor, `${tag}: tom G maior (achou ${r.key}${r.minor ? ' menor' : ''})`);
+    ok(Math.abs(r.bpm - (b0 + b1) / 2) <= 3, `${tag}: andamento ${r.bpm}`);
+    const got = r.bars.filter(b => b[1] >= 0).slice(0, 16).map(b => b[1]).join(' ');
+    ok(got === '0 4 5 3 0 4 5 3 0 4 5 3 0 4 5 3', `${tag}: graus ${got}`);
+    const downs = bt.filter((_, i) => i % 4 === 0);
+    ok(r.bars.slice(0, 16).every(b => downs.some(d => Math.abs(d - b[0]) < 0.06)), `${tag}: compassos começam no tempo 1`);
   }
 }
 
