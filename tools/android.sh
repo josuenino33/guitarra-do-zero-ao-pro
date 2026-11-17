@@ -18,7 +18,8 @@ cd "$APP"
 cat > package.json <<'JSON'
 { "name": "mapa-do-braco-android", "private": true, "version": "1.0.0" }
 JSON
-npm install --no-audit --no-fund @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8 >/dev/null
+# text-to-speech: voz que lê as aulas (o WebView do Android não tem speechSynthesis)
+npm install --no-audit --no-fund @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8 @capacitor-community/text-to-speech@8 >/dev/null
 cat > capacitor.config.json <<'JSON'
 {
   "appId": "io.github.josuenino33.mapadobraco",
@@ -32,6 +33,9 @@ MAN=android/app/src/main/AndroidManifest.xml
 # microfone (afinador, praticar com microfone, gravador) e áudio
 sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />#' "$MAN"
 grep -q RECORD_AUDIO "$MAN"
+# voz das aulas: no Android 11+ o app precisa declarar que procura o serviço de texto para fala
+grep -q TTS_SERVICE "$MAN" || sed -i 's#<application#<queries>\n        <intent>\n            <action android:name="android.intent.action.TTS_SERVICE" />\n        </intent>\n    </queries>\n\n    <application#' "$MAN"
+grep -q TTS_SERVICE "$MAN"
 # ícone: usa o ícone do PWA em todas as densidades (ImageMagick: 'magick' na versão 7, 'convert' na 6)
 IM=$(command -v magick || command -v convert || true)
 if [ -z "$IM" ]; then sudo apt-get install -y -qq imagemagick >/dev/null 2>&1 || apt-get install -y -qq imagemagick >/dev/null 2>&1 || true; IM=$(command -v magick || command -v convert); fi

@@ -1,0 +1,11 @@
+/* ===== Voz: ouvir a aula ===== */
+.voz-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.voz-bar.on { position: sticky; top: 6px; z-index: 5; padding: 6px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0, 0, 0, .12); width: fit-content; max-width: 100%; }
+.voz-bar .btn { min-height: 38px; }
+.voz-bar .voz-rate { font-family: var(--f-mono); min-width: 3.4em; }
+.voz-pos { color: var(--muted); padding: 0 4px; white-space: nowrap; }
+.voz-on { background: var(--accent-soft); border-radius: 6px; box-shadow: 0 0 0 6px var(--accent-soft); transition: background .25s, box-shadow .25s; }
+.lesson-head h1.voz-on { box-shadow: 0 0 0 4px var(--accent-soft); }
+.voz-test-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.voz-test-row select { max-width: 100%; min-width: 0; flex: 1 1 200px; }

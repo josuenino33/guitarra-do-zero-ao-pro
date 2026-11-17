@@ -2,10 +2,10 @@
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const root = process.argv[2] || path.join(__dirname, '..');
 const js = f => fs.readFileSync(path.join(root, 'src/js', f), 'utf8');
-const order = fs.readdirSync(path.join(root, 'src/js')).filter(f => /^(01|02b|04|05|06|07)/.test(f)).sort();
+const order = fs.readdirSync(path.join(root, 'src/js')).filter(f => /^(01|02b|02f|04|05|06|07)/.test(f)).sort();
 const ctx = { console, S: { get: () => ({ myLicks: [] }) }, UIP: { lickKey: () => null } };
 vm.createContext(ctx);
-vm.runInContext(order.map(js).join('\n') + '\n;globalThis.o={T,CH,RH,TAB,MODULES,LEVELS,LICKS,SONGS,VOICINGS,QUAL_SUFFIX,harmonize,WV};', ctx);
+vm.runInContext(order.map(js).join('\n') + '\n;globalThis.o={T,CH,RH,TAB,MODULES,LEVELS,LICKS,SONGS,VOICINGS,QUAL_SUFFIX,harmonize,WV,VOZ};', ctx);
 vm.runInContext(js('09e-widgets-adv.js').split('const DICT_GROUPS')[0], ctx);
 const jamSrc = js('14-view-jam.js'); const JAMS = vm.runInContext('(' + jamSrc.slice(jamSrc.indexOf('[', jamSrc.indexOf('const JAMS')), jamSrc.indexOf('];', jamSrc.indexOf('const JAMS')) + 1) + ')', ctx);
 const { T, CH, RH, TAB, MODULES, LICKS, VOICINGS, harmonize, WV } = ctx.o;
@@ -296,6 +296,30 @@ sec('17. Análise de áudio (música sintética G–D–Em–C, andamento fixo e
     const downs = bt.filter((_, i) => i % 4 === 0);
     ok(r.bars.slice(0, 16).every(b => downs.some(d => Math.abs(d - b[0]) < 0.06)), `${tag}: compassos começam no tempo 1`);
   }
+}
+
+sec('19. Voz das aulas: o texto falado não tem cifra, grau ou símbolo sem converter');
+{
+  const VOZ = ctx.o.VOZ;
+  const cases = [
+    ['G – D – Em – C', 'Sol, Ré, Mi menor, Dó'], ['Música em A.', 'Música em Lá.'], ['A guitarra soa.', 'A guitarra soa.'],
+    ['Em cada troca', 'Em cada troca'], ['C#m7(b5)/E', 'Dó sustenido meio diminuto, com baixo em Mi'], ['F7M(9)', 'Fá com sétima maior e nona'],
+    ['I – V – vi – IV', 'um, cinco, seis, quatro'], ['3:7h', 'corda 3, casa 7, hammer-on'], ['72 BPM', '72 batidas por minuto'], ['Eu vi o V7.', 'Eu vi o cinco com sétima.'],
+  ];
+  cases.forEach(([a, b]) => ok(VOZ.fala(a) === b, 'fala(' + a + ') = "' + VOZ.fala(a) + '", esperado "' + b + '"'));
+  const strip = h => h.replace(/<b>([^<]*)<\/b>/g, (k, x) => '\u0001' + x + '\u0002').replace(/<\/(p|li)>/g, '\n').replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  // “Em” no começo da frase é a preposição, não o acorde
+  const CIFRA = /(?<![\p{L}\d])[A-G](?:#|♯|♭|b)?(?:m|7|9|M|sus\d?|add\d+|°)(?:\d|M|\([^)]*\))*(?![\p{L}\d])/u;
+  const semEm = t => t.replace(/(^|[.!?:;]\s+)Em(?=\s)/g, '$1');
+  let n = 0;
+  MODULES.forEach(m => m.lessons.forEach(l => [l.title, ...strip(l.body).split('\n'), ...(l.tasks || []).map(strip)].filter(x => x.trim()).forEach(p => {
+    const t = VOZ.fala(p); n++;
+    ok(!/[\u0000-\u0008<>]/.test(t), l.id + ': caractere de controle ou HTML na fala: ' + t.slice(0, 80));
+    ok(!CIFRA.test(semEm(t)), l.id + ': cifra sem converter: ' + (semEm(t).match(CIFRA) || [''])[0] + ' em “' + t.slice(0, 80) + '”');
+    ok(!/[♯♭→↓↑]|\bBPM\b/u.test(t), l.id + ': símbolo sem converter: ' + t.slice(0, 80));
+  })));
+  console.log('  ' + n + ' trechos das aulas desta edição convertidos para fala.');
 }
 
 console.log(`\n${checks} verificações, ${errs} erro(s).`);
