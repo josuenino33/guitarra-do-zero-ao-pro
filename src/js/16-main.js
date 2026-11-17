@@ -128,7 +128,19 @@ const APP = (() => {
       <div class="set-row"><span>Timbre</span>${U.chips('tone', [{ v:'clean', label:'Limpo' }, { v:'drive', label:'Drive' }], st.tone)}</div>
       <div class="set-row"><label for="set-amb">Ambiência (reverb)</label><input type="range" id="set-amb" min="0" max="1" step="0.05" value="${st.amb ?? 0.35}"></div>
       <div class="set-row"><label for="set-vol">Volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05" value="${st.volume}"></div>
+      ${VOZ.available() ? `<div class="set-row"><label for="set-voz">Voz das aulas</label><div class="voz-test-row">
+        <select id="set-voz"><option value="">Automática</option></select>
+        <button type="button" class="btn" data-voz-test>Testar</button></div></div>
+      <div class="set-row"><label for="set-voz-rate">Velocidade da voz</label><input type="range" id="set-voz-rate" min="0.6" max="1.6" step="0.1" value="${st.vozRate || 1}"></div>` : ''}
       <p class="small">Toque qualquer casa do braço para ouvir a nota.</p>`;
+    // vozes em português disponíveis neste aparelho (chegam depois)
+    const sel = sh.querySelector('#set-voz');
+    if (sel) VOZ.voices().then(list => {
+      if (!sel.isConnected) return;
+      sel.insertAdjacentHTML('beforeend', list.map(v => `<option value="${U.esc(v.id)}">${U.esc(v.name)}${/pt[-_]PT/i.test(v.lang) ? ' (Portugal)' : ''}</option>`).join(''));
+      sel.value = list.some(v => v.id === st.vozName) ? st.vozName : '';
+      if (!list.length) sel.insertAdjacentHTML('afterend', '<p class="small">Este aparelho não tem voz em português instalada. No Android: Configurações → Idioma → Saída de texto para fala.</p>');
+    });
   }
 
   function init() {
@@ -140,7 +152,8 @@ const APP = (() => {
     const close = () => { sh.hidden = true; };
     document.getElementById('btn-settings').addEventListener('click', () => sh.hidden ? open() : close());
     sh.addEventListener('click', e => {
-      if (e.target === sh || e.target.closest('[data-close]')) return close();
+      if (e.target === sh || e.target.closest('[data-close]')) { VOZ.silence(); return close(); }
+      if (e.target.closest('[data-voz-test]')) return VOZ.test();
       const chip = e.target.closest('[data-chips] .chip'); if (!chip) return;
       const k = chip.parentElement.dataset.chips, v = chip.dataset.v;
       S.update(s => {
@@ -155,6 +168,11 @@ const APP = (() => {
     sh.addEventListener('input', e => {
       if (e.target.id === 'set-vol') { A.setVolume(+e.target.value); S.update(s => { s.settings.volume = +e.target.value; }); }
       if (e.target.id === 'set-amb') { A.setAmbience(+e.target.value); S.update(s => { s.settings.amb = +e.target.value; }); }
+      if (e.target.id === 'set-voz-rate') S.update(s => { s.settings.vozRate = Math.round(+e.target.value * 10) / 10; });
+    });
+    sh.addEventListener('change', e => {
+      if (e.target.id === 'set-voz') { S.update(s => { s.settings.vozName = e.target.value; }); VOZ.test(); }
+      if (e.target.id === 'set-voz-rate') VOZ.test();
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sh.hidden) close(); });
 

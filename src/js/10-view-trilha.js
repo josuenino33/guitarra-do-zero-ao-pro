@@ -86,6 +86,7 @@ V.lesson = (el, id) => {
       <header class="lesson-head">
         <p class="eyebrow">Aula ${L.idx + 1} de ${L.mod.lessons.length} · ${L.min} min</p>
         <h1>${L.title}</h1>
+        ${VOZ.available() ? '<div class="voz-bar" data-voz role="group" aria-label="Ouvir a aula"></div>' : ''}
       </header>
       <div class="prose">${L.body}</div>
     </article>
@@ -165,7 +166,57 @@ V.lesson = (el, id) => {
     });
   }
 
+  // ----- voz: lê a aula em voz alta, destacando o trecho -----
+  const vozBar = el.querySelector('[data-voz]');
+  let rd = null;
+  if (vozBar) {
+    const RATES = [0.8, 1, 1.2, 1.4];
+    const rateLabel = r => String(r).replace('.', ',') + '×';
+    const paint = (state, i) => {
+      const r = +S.get().settings.vozRate || 1;
+      vozBar.classList.toggle('on', state !== 'stop');
+      vozBar.innerHTML = state === 'stop'
+        ? `<button type="button" class="btn voz-main" data-voz-act="play">🔊 Ouvir aula</button>
+           <button type="button" class="btn ghost voz-rate" data-voz-act="rate" aria-label="Velocidade da voz">${rateLabel(r)}</button>`
+        : `<button type="button" class="btn primary voz-main" data-voz-act="toggle">${state === 'play' ? '⏸ Pausar' : '▶ Continuar'}</button>
+           <button type="button" class="btn ghost" data-voz-act="prev" aria-label="Trecho anterior">⏮</button>
+           <button type="button" class="btn ghost" data-voz-act="next" aria-label="Próximo trecho">⏭</button>
+           <button type="button" class="btn ghost" data-voz-act="stop" aria-label="Parar">■</button>
+           <button type="button" class="btn ghost voz-rate" data-voz-act="rate" aria-label="Velocidade da voz">${rateLabel(r)}</button>
+           <span class="voz-pos small">${i + 1} de ${rd.parts.length}</span>`;
+    };
+    rd = VOZ.reader(VOZ.lessonParts(el, L.title), paint);
+    paint('stop', 0);
+    vozBar.addEventListener('click', e => {
+      const act = e.target.closest('[data-voz-act]')?.dataset.vozAct; if (!act) return;
+      if (act === 'play') rd.play(0);
+      else if (act === 'toggle') rd.toggle();
+      else if (act === 'prev') rd.step(-1);
+      else if (act === 'next') rd.step(1);
+      else if (act === 'stop') rd.stop();
+      else if (act === 'rate') {
+        const r = +S.get().settings.vozRate || 1, nx = RATES[(RATES.indexOf(r) + 1) % RATES.length] || 1;
+        S.update(s => { s.settings.vozRate = nx; });
+        if (rd.state === 'play') rd.play(); else paint(rd.state, rd.index);
+      }
+    });
+    // com a leitura ligada, tocar num parágrafo faz a voz ler a partir dele
+    el.querySelector('article.lesson').addEventListener('click', e => {
+      if (rd.state === 'stop' || e.target.closest('a, button, [data-voz]')) return;
+      const k = rd.parts.findIndex(p => p.el && p.el !== el.querySelector('.lesson-head h1') && p.el.contains(e.target));
+      if (k >= 0) rd.play(k);
+    });
+    el.querySelector('.practice').addEventListener('click', e => {
+      if (rd.state === 'stop' || e.target.closest('a, button')) return;
+      const k = rd.parts.findIndex(p => p.el && p.el.contains(e.target));
+      if (k >= 0) rd.play(k);
+    });
+    cleanups.push(() => rd.stop());
+  }
+
   el.addEventListener('click', e => {
+    // tocar um exemplo (braço, acordes, lick) pausa a voz para os sons não se misturarem
+    if (rd && rd.state === 'play' && e.target.closest('.demo, [data-lick], .fb-wrap, [data-act="hear"]')) rd.pause();
     const chip = e.target.closest('[data-chips="view"] .chip, [data-chips="labels"] .chip');
     if (chip && fb && !widget) {
       const g = chip.parentElement.dataset.chips;
